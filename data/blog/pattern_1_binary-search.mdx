@@ -11,11 +11,9 @@ Binary search is one of the most elegant and efficient algorithms in computer sc
 
 The traditional binary search is an algorithm that finds the position of a target value within a sorted array or list. It operates by repeatedly dividing the search interval in half. If the target value is less than the value in the middle of the interval, it narrows the search to the lower half. If the target value is greater, it narrows the search to the upper half. This process continues until the target value is found or the search interval is empty.
 
-This method can be extended to more general cases. Initially, we identify the search range, which is defined by a minimal and a maximal value. In a standard binary search, this range is typically from 0 to the length of the array minus 1. We also recognize that within this range, there exists a boundary: to the left of the boundary, a certain condition is not satisfied, while to the right of the boundary, the condition is met.
+This method can be generalized for broader applications. First, we establish the search range, defined by a minimum and maximum value. In a typical binary search, this range spans from 0 to the length of the array. Within this range, there is a boundary: to the left of this boundary, a certain condition is not met; to the right, the condition is satisfied. If we can easily determine whether the condition is met for any value within the range, we can apply binary search to locate the boundary between the two sides in O(log(N)) time.
 
-In the context of traditional binary search, the condition usually involves finding values in a sorted array that are greater than or equal to a target value. If a problem conforms to this type of condition, it can be effectively solved using a general binary search approach.
-
-The key to solve these problems is to identify the low and high boundary and the condition to decide the boundary.
+If a problem involves searching within a linear range and requires finding an extreme value or boundary where a condition is satisfied, binary search can be effectively used to quickly pinpoint this boundary.
 
 Here are the code template for Python and TypeScript.
 
@@ -450,39 +448,6 @@ function searchMatrix(matrix: number[][], target: number): boolean {
 };
 ```
 
-#### 240. Search a 2D Matrix II[Medium]
-
-Write an efficient algorithm that searches for a value target in an m x n integer matrix matrix. This matrix has the following properties:
-
-Integers in each row are sorted in ascending from left to right.
-Integers in each column are sorted in ascending from top to bottom.
-
-
-```TypeScript
-function searchMatrix(matrix: number[][], target: number): boolean {
-    const m = matrix.length;
-    const n = matrix[0].length;
-    // Top Right corn. It has the largest value in its row and has the smallest value in its column.
-    // If the target value is equal to the value in top right corner, return true;
-    // If the target value is greater than the value in top right corner,
-    // it means all values in this row is less than the target value; So all of them can be removed from search area.
-    // If the target value is smalelr than the value in top right corner,
-    // it means all values in this column are greater than the target value. So all them can be removed from search area.
-    // O(max(m, n))
-    let row = 0;
-    let col = n - 1;
-    while (row < m && col >= 0) {
-        if (matrix[row][col] === target) return true;
-        if (matrix[row][col] < target) {
-            row += 1;
-        } else {
-            col -= 1;
-        }
-    }
-    return false;
-};
-```
-
 #### 162. Find Peak Element[Medium]
 
 A peak element is an element that is strictly greater than its neighbors.
@@ -670,7 +635,7 @@ function findMin(nums: number[]): number {
 };
 ```
 
-#### 154.Find Minimum in Rotated Sorted Array II
+#### 154.Find Minimum in Rotated Sorted Array II[Hard]
 
 Suppose an array of length n sorted in ascending order is rotated between 1 and n times. For example, the array nums = [0,1,4,4,5,6,7] might become:
 
@@ -714,13 +679,15 @@ function findMin(nums: number[]): number {
 };
 ```
 
-#### 275. H-Index II
+#### 275. H-Index II[Medium]
 
 Given an array of integers citations where citations[i] is the number of citations a researcher received for their ith paper and citations is sorted in ascending order, return the researcher's h-index.
 
 According to the definition of h-index on Wikipedia: The h-index is defined as the maximum value of h such that the given researcher has published at least h papers that have each been cited at least h times.
 
 You must write an algorithm that runs in logarithmic time.
+
+**Solution:** The search range is between 0 and `citations.length`. We can divide the array into two parts: the left part where `citations[mid] < n - mid` and the right part where `citations[mid] >= n - mid`. Since `citations[mid]` is sorted, values on the left side are smaller and values on the right side are larger. Additionally, `n - mid` is larger on the left side and smaller on the right side. The boundary position where these conditions change is the answer.
 
 ```TypeScript
 function hIndex(citations: number[]): number {
@@ -740,13 +707,17 @@ function hIndex(citations: number[]): number {
 };
 ```
 
-#### 1011. Capacity To Ship Packages Within D Days
+#### 1011. Capacity To Ship Packages Within D Days[Medium]
 
 A conveyor belt has packages that must be shipped from one port to another within days days.
 
 The ith package on the conveyor belt has a weight of weights[i]. Each day, we load the ship with packages on the conveyor belt (in the order given by weights). We may not load more weight than the maximum weight capacity of the ship.
 
 Return the least weight capacity of the ship that will result in all the packages on the conveyor belt being shipped within days days.
+
+**Solution:** The minimum capacity required is the maximum weight of a single package, as any capacity smaller than this would be insufficient to complete the work. The maximum capacity is the total weight, which would allow us to ship all packages in one day. We can divide the search range into two parts: on the left, where we cannot complete the work within `days`, and on the right, where we can complete the work within `days`.
+
+The condition function determines if a given capacity is sufficient to complete the work. The goal is to find the minimal capacity that meets this requirement. We do this by adding weights one by one and checking if the cumulative weight exceeds the current capacity. If it does, we increment the `count` (representing the number of days needed) and reset the total weight.
 
 ```TypeScript
 function shipWithinDays(weights: number[], days: number): number {
@@ -755,12 +726,12 @@ function shipWithinDays(weights: number[], days: number): number {
     const maxWeight = Math.max(...weights); // Ship with weights.length days
     const totalWeight = weights.reduce((acc, cur) => acc + cur, 0); // Ship it with one day
     let [lo, hi] = [maxWeight, totalWeight + 1];
-    const condition = (mid: number): boolean => {
+    const condition = (capacity: number): boolean => {
         let count = 0;
         let total = 0;
         weights.forEach(weight => {
             total += weight;
-            if (total > mid) {
+            if (total > capacity) {
                 total = weight;
                 count += 1;
             }
@@ -782,7 +753,7 @@ function shipWithinDays(weights: number[], days: number): number {
 };
 ```
 
-#### 410. Split Array Largest Sum
+#### 410. Split Array Largest Sum[Hard]
 
 Given an integer array nums and an integer k, split nums into k non-empty subarrays such that the largest sum of any subarray is minimized.
 
@@ -790,12 +761,13 @@ Return the minimized largest sum of the split.
 
 A subarray is a contiguous part of the array.
 
+**Solution:** As same as 1011. Capacity To Ship Packages Within D Days
 
 ```TypeScript
 // As same as 1011. Capacity To Ship Packages Within D Days
 ```
 
-#### 875. Koko Eating Bananas
+#### 875. Koko Eating Bananas[Medium]
 
 Koko loves to eat bananas. There are n piles of bananas, the ith pile has piles[i] bananas. The guards have gone and will come back in h hours.
 
@@ -805,11 +777,16 @@ Koko likes to eat slowly but still wants to finish eating all the bananas before
 
 Return the minimum integer k such that she can eat all the bananas within h hours.
 
+**Solution:** The minimum speed is 1 (Koko eats one banana at a time), while the maximum speed is the size of the largest pile (Koko eats an entire pile each hour). We divide the search range into two parts: on the left side, we cannot finish eating all the piles within `h` hours with the current speed, and on the right side, we can finish within `h` hours.
+
+To determine if a given speed is sufficient, calculate the hours required to eat each pile as `Math.ceil(pile / speed)`, then sum these hours. If the total is less than or equal to `h`, the speed is feasible; otherwise, it is not.
+
+The boundary is the answer for this question.
 ```TypeScript
 function minEatingSpeed(piles: number[], h: number): number {
     let [lo, hi] = [1, Math.max(...piles)];
-    const feasible = (mid: number): boolean => {
-        const hours = piles.map(pile => Math.ceil(pile / mid))
+    const feasible = (speed: number): boolean => {
+        const hours = piles.map(pile => Math.ceil(pile / speed))
                            .reduce((acc, cur) => acc + cur, 0);
         return hours <= h;
     };
@@ -825,7 +802,7 @@ function minEatingSpeed(piles: number[], h: number): number {
 };
 ```
 
-#### 1482. Minimum Number of Days to Make m Bouquets
+#### 1482. Minimum Number of Days to Make m Bouquets[Medium]
 
 You are given an integer array bloomDay, an integer m and an integer k.
 
@@ -835,15 +812,21 @@ The garden consists of n flowers, the ith flower will bloom in the bloomDay[i] a
 
 Return the minimum number of days you need to wait to be able to make m bouquets from the garden. If it is impossible to make m bouquets return -1.
 
+**Solution:** If the number of flowers is less than the required `m` bouquets and `k` adjacent flowers per bouquet, it is impossible to find a solution.
+
+The minimum number of days is 1, and the maximum is the highest value in `bloomDay` plus 1. We divide the search range into two parts: on the left side, we can achieve the goal within `days`, and on the right side, we cannot.
+
+To determine feasibility, we use a `feasible` function to simulate the flower-picking process by checking adjacent flowers. If a flower is ready, we increment the count `cur`; if not, we reset `cur` to 0. If `cur` reaches `k`, we reset it and increment the bouquet count. We then check if the total bouquet count is at least `m`.
+
 ```TypeScript
 function minDays(bloomDay: number[], m: number, k: number): number {
     const n = bloomDay.length;
     if (n < m * k) return -1;
-    const feasible = (mid: number): boolean => {
+    const feasible = (days: number): boolean => {
         let count = 0;
         let cur = 0;
         bloomDay.forEach(day => {
-            if (day <= mid) {
+            if (day <= days) {
                 cur += 1;
                 if (cur === k) {
                     cur = 0;
@@ -868,14 +851,13 @@ function minDays(bloomDay: number[], m: number, k: number): number {
 };
 ```
 
-#### 668. Kth Smallest Number in Multiplication Table
+#### 668. Kth Smallest Number in Multiplication Table[Hard]
 
 Nearly everyone has used the [Multiplication Table](https://en.wikipedia.org/wiki/Multiplication_table). The multiplication table of size `m x n` is an integer matrix `mat` where `mat[i][j] == i * j` (1-indexed).
 
 Given three integers m, n, and k, return the kth smallest element in the m x n multiplication table.
 
-Explain:
-In order to find the k-th smallest value in the table, we can design an `enough` function, given an input num, determine whether there're at least k values less than or equal to num. **The minimal num satisfying enough function is the answer we're looking for.**
+**Solution:** The search range is from 1 to `m * n`. We divide this range into two parts: on the left, the count of elements less than `x` is less than `k`, and on the right, the count is greater than or equal to `k`. We can use an `enough` function to check if there are at least `k` values less than or equal to a given `x`. **The smallest value satisfying the `enough` function is the answer we seek.**. To count the numbers which are less than x, we can go through the row one by one. It is the min value of `Math.floor(x / i)` (a part of row.) and `n` (the whole row).
 
 ```TypeScript
 function findKthNumber(m: number, n: number, k: number): number {
@@ -903,14 +885,15 @@ function findKthNumber(m: number, n: number, k: number): number {
 };
 ```
 
-#### 719. Find K-th Smallest Pair Distance
+#### 719. Find K-th Smallest Pair Distance[Hard]
 
 The distance of a pair of integers a and b is defined as the absolute difference between a and b.
 
 Given an integer array nums and an integer k, return the kth smallest distance among all the pairs nums[i] and nums[j] where `0 <= i < j < nums.length`.
 
-Explain
-We can design an enough function, given an input distance, determine whether there're at least k pairs whose distances are less than or equal to distance.
+**Solution:** First, we sort the array. The range for the pair distance is between 0 and the maximum value (`nums[n - 1]`) and the minimum value (`nums[0]`). We can create an `enough` function to determine if there are at least `k` pairs with distances less than or equal to a given distance. Using this function, we can find the boundary: on the left side, there are fewer than `k` pairs with distances less than or equal to the distance, and on the right side, there are more than `k` pairs. The boundary value is the answer we are seeking.
+
+To implement the `enough` function, use a sliding window technique to count pairs with distances less than or equal to the given distance. Fix `i` and extend `j` as far as possible until the difference exceeds the distance. The count of valid pairs will be `j - i - 1`. Move `i` forward one step at a time and update the count accordingly.
 
 ```TypeScript
 function smallestDistancePair(nums: number[], k: number): number {
@@ -943,11 +926,15 @@ function smallestDistancePair(nums: number[], k: number): number {
 };
 ```
 
-#### 1201. Ugly Number III
+#### 1201. Ugly Number III[Medium]
 
 An ugly number is a positive integer that is divisible by a, b, or c.
 
 Given four integers n, a, b, and c, return the nth ugly number.
+
+**Solution:** The search range is between 1 and \(10^{10}\). This range is divided into two parts: on the left, the total number of ugly numbers (divisible by \(a\), \(b\), or \(c\)) is less than \(n\); on the right, the total number of ugly numbers is greater than or equal to \(n\).
+
+We need an `enough` function that takes a number as input and calculates the number of ugly numbers less than this number. To achieve this, we will use the Greatest Common Divisor (GCD) to compute the Least Common Multiple (LCM) and then use the LCMs to determine the count of ugly numbers.
 
 ```TypeScript
 function nthUglyNumber(n: number, a: number, b: number, c: number): number {
@@ -972,23 +959,23 @@ function nthUglyNumber(n: number, a: number, b: number, c: number): number {
         return total >= n;
     }
 
-    let left = 1;
-    let right = 10 ** 10;
+    let lo = 1;
+    let hi = 10 ** 10;
 
-    while (left < right) {
-        const mid = left + Math.floor((right - left) / 2);
+    while (lo < hi) {
+        const mid = lo + Math.floor((hi - lo) / 2);
         if (enough(mid)) {
-            right = mid;
+            hi = mid;
         } else {
-            left = mid + 1;
+            lo = mid + 1;
         }
     }
 
-    return left;
+    return lo;
 };
 ```
 
-#### 1283. Find the Smallest Divisor Given a Threshold
+#### 1283. Find the Smallest Divisor Given a Threshold[Medium]
 
 Given an array of integers nums and an integer threshold, we will choose a positive integer divisor, divide all the array by it, and sum the division's result. Find the smallest divisor such that the result mentioned above is less than or equal to threshold.
 
@@ -996,29 +983,29 @@ Each result of the division is rounded to the nearest integer greater than or eq
 
 The test cases are generated so that there will be an answer.
 
-```python
-class Solution:
-    def smallestDivisor(self, nums: List[int], threshold: int) -> int:
-        def enough(mid):
-            ans = 0
-            for num in nums:
-                if num % mid == 0:
-                    ans += num // mid
-                else:
-                    ans += num // mid
-                    ans += 1
-            return ans <= threshold
-        lo, hi = 1, max(nums)
-        while lo < hi:
-            mid = (lo + hi) // 2
-            if enough(mid):
-                hi = mid
-            else:
-                lo = mid + 1
-        return lo
+**Solution:** The minimum value for the divisor is 1, and the maximum value is one more than the largest number in the array. We create an `enough` function that takes a divisor as input, divides each number in the array by this divisor, sums the results, and checks if the sum is less than or equal to the threshold. The search range is split into two parts: on the left side, the `enough` function returns false, and on the right side, it returns true.
+
+```TypeScript
+function smallestDivisor(nums: number[], threshold: number): number {
+    const enough = (divisor: number): boolean => {
+        const result = nums.map(num => Math.ceil(num / divisor))
+            .reduce((acc, cur) => acc + cur, 0);
+        return result <= threshold;
+    };
+    let [lo, hi] = [1, Math.max(...nums) + 1];
+    while (lo < hi) {
+        const mid = Math.floor((hi + lo) / 2);
+        if (enough(mid)) {
+            hi = mid;
+        } else {
+            lo = mid + 1;
+        }
+    }
+    return lo;
+};
 ```
 
-#### 222. Count Complete Tree Nodes
+#### 222. Count Complete Tree Nodes[Easy]
 
 Given the root of a complete binary tree, return the number of the nodes in the tree.
 
@@ -1026,85 +1013,93 @@ According to Wikipedia, every level, except possibly the last, is completely fil
 
 Design an algorithm that runs in less than O(n) time complexity.
 
-
-```python
-# 2. bisect_left variant
-class TreeNode:
-    def __init__(self, val=0, left=None, right=None):
-        self.val = val
-        self.left = left
-        self.right = right
-
-def countNodes(root: TreeNode) -> int:
-    if not root:
-        return 0
-
-    # Function to compute the height of the tree
-    def get_height(node):
-        height = 0
-        while node.left:
-            height += 1
-            node = node.left
-        return height
-
-    # Check if a node exists at idx (0-indexed) in the last level
-    def exists(idx, height, node):
-        left, right = 0, 2 ** height - 1
-        for _ in range(height):
-            mid = (left + right) // 2
-            if idx <= mid:
-                node = node.left
-                right = mid
-            else:
-                node = node.right
-                left = mid + 1
-        return node is not None
-
-    height = get_height(root)
-    if height == 0:
-        return 1
-
-    # Binary search to find the number of nodes on the last level
-    # Binary search to find the number of nodes on the last level
-    left, right = 0, 2 ** height
-    dropLeftPart = lambda mid: exists(mid, height, root)
-    while left < right:
-        mid = (left + right) // 2
-        if dropLeftPart(mid):
-            left = mid + 1
-        else:
-            right = mid
-
-    # Total nodes = all nodes above the last level + nodes on the last level
-    return (2 ** height - 1) + left
-# Example usage:
-# Constructing a complete binary tree [1, 2, 3, 4, 5, 6]
-#          1
-#        /   \
-#       2     3
-#      / \   /
-#     4   5 6
-
-root = TreeNode(1)
-root.left = TreeNode(2)
-root.right = TreeNode(3)
-root.left.left = TreeNode(4)
-root.left.right = TreeNode(5)
-root.right.left = TreeNode(6)
-
-print(countNodes(root))  # Output: 6
-```
-
+Solution:
 1. **Calculate the tree height**:
-
    - Move to the leftmost path of the tree to determine the height `h` of the tree.
-
 2. **Binary Search on the Last Level**:
    - Use binary search to count the number of nodes in the last level.
    - For a complete binary tree, the last level may not be completely filled. The nodes in the last level are numbered from `0` to `2^h - 1`.
    - Perform a binary search on the index range `[0, 2^h - 1]` to determine how many nodes exist on the last level.
 
-#### 378. Kth Smallest Element in a Sorted Matrix
+```TypeScript
+function countNodes(root: TreeNode | null): number {
+    if (root === null) return 0;
+    // Function to compute the height of the tree
+    const getHeight = (root: TreeNode): number => {
+        let p = root;
+        let height = 0;
+        while (p.left !== null) {
+            height += 1;
+            p = p.left;
+        }
+        return height;
+    };
+    // Check if a node exists at idx (0-indexed) in the last level
+    const notExists = (idx: number): boolean => {
+        let node: TreeNode = root;
+        let [left, right] = [0, 2 ** height - 1];
+        for (let i = 0; i < height; i++) {
+            const mid = Math.floor((left + right) / 2);
+            if (idx <= mid) {
+                node = node.left;
+                right = mid;
+            } else {
+                node = node.right;
+                left = mid + 1;
+            }
+        }
+        return node === null;
+    };
+    const height = getHeight(root)
+    if (height === 0) return 1;
+    let [lo, hi] = [0, 2 ** height];
+    while (lo < hi) {
+        const mid = Math.floor((lo + hi) / 2);
+        if (notExists(mid)) {
+            hi = mid;
+        } else {
+            lo = mid + 1;
+        }
+    }
+    return (2 ** height - 1) + lo;
+};
+```
+
+#### 240. Search a 2D Matrix II[Medium]
+
+Write an efficient algorithm that searches for a value target in an m x n integer matrix matrix. This matrix has the following properties:
+
+Integers in each row are sorted in ascending from left to right.
+Integers in each column are sorted in ascending from top to bottom.
+
+**Solution:** This question is related to 378. Kth Smallest Element in a Sorted Matrix[Medium].
+
+```TypeScript
+function searchMatrix(matrix: number[][], target: number): boolean {
+    const m = matrix.length;
+    const n = matrix[0].length;
+    // Top Right corn. It has the largest value in its row and has the smallest value in its column.
+    // If the target value is equal to the value in top right corner, return true;
+    // If the target value is greater than the value in top right corner,
+    // it means all values in this row is less than the target value; So all of them can be removed from search area.
+    // If the target value is smalelr than the value in top right corner,
+    // it means all values in this column are greater than the target value. So all them can be removed from search area.
+    // O(max(m, n))
+    let row = 0;
+    let col = n - 1;
+    while (row < m && col >= 0) {
+        if (matrix[row][col] === target) return true;
+        if (matrix[row][col] < target) {
+            row += 1;
+        } else {
+            col -= 1;
+        }
+    }
+    return false;
+};
+```
+
+#### 378. Kth Smallest Element in a Sorted Matrix[Medium]
 
 Given an n x n matrix where each of the rows and columns is sorted in ascending order, return the kth smallest element in the matrix.
 
@@ -1117,35 +1112,45 @@ Follow up:
 Could you solve the problem with a constant memory (i.e., O(1) memory complexity)?
 Could you solve the problem in O(n) time complexity? The solution may be too advanced for an interview but you may find reading this paper fun.
 
-```python
-class Solution:
-    def kthSmallest(self, matrix: List[List[int]], k: int) -> int:
-        n = len(matrix)
+```TypeScript
+function kthSmallest(matrix: number[][], k: number): number {
+    const n = matrix.length;
 
-        def countLessEqual(x):
-            # Function to count the number of elements less than or equal to x
-            count = 0
-            row, col = n - 1, 0
-            while row >= 0 and col < n:
-                if matrix[row][col] <= x:
-                    count += (row + 1)
-                    col += 1
-                else:
-                    row -= 1
-            return count
+    function feasible(x: number): boolean {
+        // Function to count the number of elements less than or equal to x
+        let count = 0;
+        let row = n - 1;
+        let col = 0;
 
-        left, right = matrix[0][0], matrix[-1][-1]
-        while left < right:
-            mid = (left + right) // 2
-            if countLessEqual(mid) < k:
-                left = mid + 1
-            else:
-                right = mid
+        while (row >= 0 && col < n) {
+            if (matrix[row][col] <= x) {
+                count += (row + 1);
+                col += 1;
+            } else {
+                row -= 1;
+            }
+        }
 
-        return left
+        return count >= k;
+    }
+
+    let lo = matrix[0][0];
+    let hi = matrix[n - 1][n - 1];
+
+    while (lo < hi) {
+        const mid = Math.floor((lo + hi) / 2);
+        if (feasible(mid)) {
+            hi = mid;
+        } else {
+            lo = mid + 1;
+        }
+    }
+
+    return lo;
+}
 ```
 
-#### 2187. Minimum Time to Complete Trips
+#### 2187. Minimum Time to Complete Trips[Medium]
 
 You are given an array time where time[i] denotes the time taken by the ith bus to complete one trip.
 
@@ -1153,33 +1158,74 @@ Each bus can make multiple trips successively; that is, the next trip can start 
 
 You are also given an integer totalTrips, which denotes the number of trips all buses should make in total. Return the minimum time required for all buses to complete at least totalTrips trips.
 
-```python
-class Solution:
-    def minimumTime(self, time: List[int], totalTrips: int) -> int:
-        def trips_completed_by_time(T):
-            # Calculate the total number of trips all buses can make by time T
-            return sum(T // t for t in time)
+**Solution:** The search range for the time is between 1 and the maximum value of the time array multiplied by totalTrips. We divide this range into two parts: on the left side, we can only complete fewer than `totalTrips`, while on the right side, we can complete `totalTrips` or more. Given a time `T`, we calculate the number of trips each bus can make and sum them up. We then compare this total with `totalTrips` to determine whether the completed trips are equal to or greater than `totalTrips`.
 
-        # Set initial bounds for binary search
-        low, high = 1, max(time) * totalTrips
-
-        while low < high:
-            mid = (low + high) // 2
-            if trips_completed_by_time(mid) >= totalTrips:
-                high = mid  # try for a smaller time
-            else:
-                low = mid + 1  # need more time
-
-        return low
+```TypeScript
+function minimumTime(time: number[], totalTrips: number): number {
+    const feasible = (midTime: number): boolean => {
+        const trips = time.map(v => Math.floor(midTime / v))
+            .reduce((acc, cur) => acc + cur, 0);
+        return trips >= totalTrips;
+    };
+    let [lo, hi] = [1, Math.max(...time) * totalTrips];
+    while (lo < hi) {
+        const mid = Math.floor((lo + hi) / 2);
+        if (feasible(mid)) {
+            hi = mid;
+        } else {
+            lo = mid + 1;
+        }
+    }
+    return lo;
+};
 ```
 
-#### 1060. Missing Element in Sorted Array
+#### 1539.Kth Missing Positive Numnber[Easy]
+
+Given an array arr of positive integers sorted in a strictly increasing order, and an integer k.
+
+Return the kth positive integer that is missing from this array.
+
+```TypeScript
+function findKthPositive(arr: number[], k: number): number {
+    const nums = arr;
+    // Number of missing elements until 1
+    const missingCount = (index: number): number => nums[index] - 1 - 1 - (index - 0 - 1);
+    const n = nums.length;
+    // If k missing numbers are beyond the last element in nums
+    if (k > missingCount(n - 1)) {
+        return nums[n - 1] + k - missingCount(n - 1);
+    }
+
+    let [lo, hi] = [0, n];
+    // Binary search to find the position where the kth missing number should be
+    while (lo < hi) {
+        const mid = Math.floor((lo + hi) / 2);
+        if (missingCount(mid) >= k) {
+            hi = mid;
+        } else {
+            lo = mid + 1;
+        }
+    }
+    // Find the exact kth missing number
+    if (lo === 0) return k;
+    return nums[lo - 1] + k - missingCount(lo - 1);
+};
+```
+
+#### 1060. Missing Element in Sorted Array[Medium]
 
 Given an integer array nums which is sorted in ascending order and all of its elements are unique and given also an integer k, return the kth missing number starting from the leftmost number of the array.
 
 Follow up: Can you find a logarithmic time complexity (i.e., O(log(n))) solution?
 
-```python
+**Solution:** We first developed a function to find the count of missing numbers between `nums[index]` and `nums[0]`. The total number of numbers between these two elements is `nums[index] - nums[0] - 1`. The current number of elements in the array between these indices is `index - 1`. Therefore, the number of missing numbers is calculated as `(nums[index] - nums[0] - index + 1)`.
+
+If `k` is greater than `missingCount(n - 1)`, it indicates that the missing number is located after the last element in the array. We can find it using the formula `nums[n - 1] + k - missingCount(n - 1)`.
+
+The search range is initially from 0 to n. We can divide the range into two parts: the left part and the right part. In the left part, the count of missing numbers is less than `k`. In the right part, the count of missing numbers is greater than or equal to `k`. We then use binary search to find the boundary.
+
+```Python
 class Solution:
     def missingElement(self, nums: List[int], k: int) -> int:
         def missing_count(index):
@@ -1206,7 +1252,33 @@ class Solution:
         return nums[left - 1] + k - missing_count(left - 1)
 ```
 
-#### 1891. Cutting Ribbons
+```TypeScript
+// Similar to 1539.Kth Missing Positive Numnber[Easy]
+function missingElement(nums: number[], k: number): number {
+    // Number of missing elements until nums[index]
+    const missingCount = (index: number): number => nums[index] - nums[0] - 1 - (index - 0 - 1);
+    const n = nums.length;
+    // If k missing numbers are beyond the last element in nums
+    if (k > missingCount(n - 1)) {
+        return nums[n - 1] + k - missingCount(n - 1);
+    }
+
+    let [lo, hi] = [0, n];
+    // Binary search to find the position where the kth missing number should be
+    while (lo < hi) {
+        const mid = Math.floor((lo + hi) / 2);
+        if (missingCount(mid) >= k) {
+            hi = mid;
+        } else {
+            lo = mid + 1;
+        }
+    }
+    // Find the exact kth missing number
+    return nums[lo - 1] + k - missingCount(lo - 1);
+};
+```
+
+#### 1891. Cutting Ribbons[Medium]
 
 You are given an integer array ribbons, where ribbons[i] represents the length of the ith ribbon, and an integer k. You may cut any of the ribbons into any number of segments of positive integer lengths, or perform no cuts at all.
 
@@ -1220,30 +1292,30 @@ Your goal is to obtain k ribbons of all the same positive integer length. You ar
 
 Return the maximum possible positive integer length that you can obtain k ribbons of, or 0 if you cannot obtain k ribbons of the same length.
 
-```python
-class Solution:
-    def maxLength(self, ribbons: List[int], k: int) -> int:
-        def canCutRibbons(length):
-            count = 0
-            for ribbon in ribbons:
-                count += ribbon // length
-            return count
+**Solution:** The search range for the length is between 0 and the maximum length plus 1. We can split this range into two parts: on the left side, it is possible to cut the ribbons to obtain at least `k` ribbons of the same length, while on the right side, it is impossible. We define a `feasible` function, which takes a length as input and checks whether it is possible to cut `k` ribbons of that length. We then find the minimum length where it becomes impossible to cut `k` ribbons. If we subtract 1 from this length, we get the maximum length at which it is possible to cut `k` ribbons of the same length.
 
-        left, right = 1, max(ribbons)
-        best_length = 0
-
-        while left <= right:
-            mid = (left + right) // 2
-            if canCutRibbons(mid) >= k:
-                best_length = mid
-                left = mid + 1
-            else:
-                right = mid - 1
-
-        return best_length
+```TypeScript
+function maxLength(ribbons: number[], k: number): number {
+    // Given a length: len, is impossible to cut k ribbons with length of len.
+    const feasible = (len: number): boolean => {
+        const count = ribbons.map(ribbon => Math.floor(ribbon / len))
+            .reduce((acc, cur) => acc + cur, 0);
+        return count < k;
+    };
+    let [lo, hi] = [0, Math.max(...ribbons) + 1];
+    while (lo < hi) {
+        const mid = Math.floor((lo + hi) / 2);
+        if (feasible(mid)) {
+            hi = mid;
+        } else {
+            lo = mid + 1;
+        }
+    }
+    return lo - 1;
+};
 ```
 
-#### 540. Single Element in a Sorted Array
+#### 540. Single Element in a Sorted Array[Medium]
 
 You are given a sorted array consisting of only integers where every element appears exactly twice, except for one element which appears exactly once.
 
@@ -1251,25 +1323,36 @@ Return the single element that appears only once.
 
 Your solution must run in O(log n) time and O(1) space.
 
-```python
-class Solution:
-    def singleNonDuplicate(self, nums: List[int]) -> int:
-        left, right = 0, len(nums) - 1
+**Solution:** The search range is between `0` and `n`. We divide this range into two parts: on the left side, the total count of numbers starting from the second occurrence with the same value is even; on the right side, this count is odd. We define a `condition` function that consistently returns `true` on the right side of the search range. In this function, we first check if the current number is equal to the one before or after it. We then calculate the total count of numbers starting from the second occurrence to determine whether the number is on the left or right side of the search range. Finally, the boundary of left side and right side is the answer we are looking for.
 
-        while left < right:
-            mid = (left + right) // 2
-            if mid % 2 == 1:
-                mid -= 1  # Ensure mid is even
-
-            if nums[mid] == nums[mid + 1]:
-                left = mid + 2
-            else:
-                right = mid
-
-        return nums[left]
+```TypeScript
+function singleNonDuplicate(nums: number[]): number {
+    const n = nums.length;
+    let [lo, hi] = [0, n];
+    const condition = (mid: number): boolean => {
+        if (nums[mid] === nums[mid + 1]) {
+            const count = mid + 1 - 0 + 1;
+            return count % 2 !== 0;
+        } else if (nums[mid] === nums[mid - 1]) {
+            const count = mid - 0 + 1;
+            return count % 2 !== 0;
+        } else {// mid is the element which appears only once
+            return true;
+        }
+    };
+    while (lo < hi) {
+        const mid = Math.floor((lo + hi) / 2);
+        if (condition(mid)) {
+            hi = mid;
+        } else {
+            lo = mid + 1;
+        }
+    }
+    return nums[lo];
+};
 ```
 
-#### 374. Guess Number Higher or Lower
+#### 374. Guess Number Higher or Lower[Easy]
 
 We are playing the Guess Game. The game is as follows:
 
@@ -1284,96 +1367,53 @@ You call a pre-defined API int guess(int num), which returns three possible resu
 0: your guess is equal to the number I picked (i.e. num == pick).
 Return the number that I picked.
 
+**Solution:** The search range is from 1 to n + 1. We divide this range into two parts: on the left, the guess function returns 1 (indicating num < pick), and on the right, the guess function returns 0 or -1 (indicating num >= pick). The boundary where the transition occurs is the index where nums equals pick.
 
-```python
-# The guess API is already defined for you.
-# @param num, your guess
-# @return -1 if num is higher than the picked number
-#          1 if num is lower than the picked number
-#          otherwise return 0
-# def guess(num: int) -> int:
-
-class Solution:
-    def guessNumber(self, n: int) -> int:
-        lo = 1
-        hi = n
-        # Your guess is higher than or equal to the number I picked (i.e. num >= pick).
-        condition = lambda mid: guess(mid) <= 0
-        while lo < hi:
-            mid = (lo + hi) // 2
-            if condition(mid):
-                hi = mid
-            else:
-                lo = mid + 1
-        return lo
+```TypeScript
+function guessNumber(n: number): number {
+    let [lo, hi] = [1, n + 1];
+    while (lo < hi) {
+        const mid = Math.floor((lo + hi) / 2);
+        if (guess(mid) <= 0) {
+            hi = mid;
+        } else {
+            lo = mid + 1;
+        }
+    }
+    return lo;
+};
 ```
 
-#### 270. Closest Binary Search Tree Value
+#### 270. Closest Binary Search Tree Value[Easy]
 
 Given the root of a binary search tree and a target value, return the value in the BST that is closest to the target. If there are multiple answers, print the smallest.
 
+**Solution:** First, we convert the binary search tree into a sorted array. Then, we find the value in the array that is greater than or equal to the target, which splits the search range (from 0 to the length of the array) into two parts. Finally, we compare the boundary value with the index just before it to determine the answer.
 
-```python
-# Definition for a binary tree node.
-# class TreeNode:
-#     def __init__(self, val=0, left=None, right=None):
-#         self.val = val
-#         self.left = left
-#         self.right = right
-class Solution:
-    def closestValue(self, root: Optional[TreeNode], target: float) -> int:
-        def helper(root):
-            if root == None:
-                return []
-            return helper(root.left) + [root.val] + helper(root.right)
-        nums = helper(root)
-        lo = 0
-        hi = len(nums)
-        condition = lambda mid: nums[mid] > target
-        while lo < hi:
-            mid = (lo + hi) // 2
-            if condition(mid):
-                hi = mid
-            else:
-                lo = mid + 1
-        if lo == 0:
-            return nums[lo]
-        if lo == len(nums):
-            return nums[len(nums) - 1]
-        diff1 = abs(nums[lo] - target)
-        diff2 = abs(nums[lo - 1] - target)
-        if diff1 < diff2:
-            return nums[lo]
-        return nums[lo - 1]
+```TypeScript
+function closestValue(root: TreeNode | null, target: number): number {
+    const treeToArray = (root: TreeNode | null): number[] => {
+        if (root === null) return [];
+        return [...treeToArray(root.left), ...[root.val], ...treeToArray(root.right)];
+    };
+    const nums = treeToArray(root);
+    let [lo, hi] = [0, nums.length];
+    while (lo < hi) {
+        const mid = Math.floor((lo + hi) / 2);
+        if (nums[mid] >= target) {
+            hi = mid;
+        } else {
+            lo = mid + 1;
+        }
+    }
+    // lo, lo - 1
+    if (lo === 0) return nums[0];
+    if (Math.abs(nums[lo] - target) < Math.abs(nums[lo - 1] - target)) {
+        return nums[lo];
+    }
+    return nums[lo - 1];
+};
 ```
-
-#### 1539.Kth Missing Positive Numnber
-
-Given an array arr of positive integers sorted in a strictly increasing order, and an integer k.
-
-Return the kth positive integer that is missing from this array.
-
-```Python
-class Solution:
-    def findKthPositive(self, arr: List[int], k: int) -> int:
-        left, right = 0, len(arr) - 1
-
-        # Binary search to find the smallest index where the missing count >= k
-        while left <= right:
-            mid = (left + right) // 2
-            if arr[mid] - (mid + 1) < k:
-                left = mid + 1
-            else:
-                right = mid - 1
-
-        # If left is greater than the size of the array, calculate the kth missing number directly
-        if left == len(arr):
-            return arr[-1] + (k - (arr[-1] - len(arr)))
-
-        # Otherwise, calculate the kth missing number within the array bounds
-        return left + k
-```
-
 
 ### Reference
 
