@@ -3,7 +3,6 @@ title: Pattern 1 Binary Search
 date: "2024-05-21"
 tags: ["leetcode", "pattern"]
 draft: false
-images: ['/static/images/canada/mountains.jpg']
 ---
 
 ### Introduction
@@ -60,8 +59,7 @@ Given an array of integers nums which is sorted in ascending order, and an integ
 
 You must write an algorithm with O(log n) runtime complexity.
 
-Solution:
-The search range is between 0 and the length of sorted array and we can divided the search range into two parts. In the left part, the values are less than the target and in the right part, the values are greater or equal to the target. After we cand find the boundary, we can test whether the related value is target or not.
+**Solution:** The search range is from 0 to the length of the sorted array. We can divide this range into two parts: on the left, the values are less than the target, and on the right, the values are greater than or equal to the target. Once we find the boundary between these two parts, we can check if the value at the boundary is the target or not.
 
 ```Python
 class Solution:
@@ -103,7 +101,7 @@ Given a sorted array of distinct integers and a target value, return the index i
 
 You must write an algorithm with O(log n) runtime complexity.
 
-Solution: Similar to 704.Binary Search[easy], we can solve it by find the boundary between the values less than the target and the values equal to or greater than the target.
+**Solution:** Similar to the 704.Binary Search [easy], we can solve this problem by identifying the boundary between values that are less than the target and those that are equal to or greater than the target.
 
 ```Python
 class Solution:
@@ -141,10 +139,6 @@ function searchInsert(nums: number[], target: number): number {
 You are given an array of characters letters that is sorted in non-decreasing order, and a character target. There are at least two different characters in letters.
 
 Return the smallest character in letters that is lexicographically greater than target. If such a character does not exist, return the first character in letters.
-
-Solution: we can solve it by find the boundary between the values equal to or less than the target and the values greater than the target.
-
-Here's a rewritten version of the text:
 
 **Solution:** This problem can be efficiently solved by employing a binary search approach to locate a specific boundary within the array. Our goal is to identify the dividing line between two groups of values:
 1. Values that are equal to or less than the target
