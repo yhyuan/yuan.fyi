@@ -1,6 +1,6 @@
 ---
-title: Pattern 2 Sliding Window
-date: "2024-05-22"
+title: Pattern 1 Sliding Window
+date: "2022-10-03"
 tags: ["leetcode", "pattern"]
 draft: false
 ---
@@ -32,98 +32,58 @@ Pseudo code:
 
 2. Minimum sliding window
 
-In this approach, we're aiming to find the minimum length of a window that meets a certain condition. We start by defining pointers for the front and end of the window and initialize the result to infinity. First, we move the front pointer, `i`, forward as far as possible until the condition is met, effectively expanding the window. If we reach the end without meeting the condition, we simply test the condition again and break if necessary. Next, we move the back pointer, `j`, forward as far as possible until the condition is no longer met, thereby shrinking the window. The window [j - 1, i - 1] now satisfies the condition. Its length is calculated as `i - j + 1`. We then compare this length with the current minimum result and update the result if this window is shorter.
-
-```js
-// Pseudo code
-// initialize front and back pointers: i,j and final result: ans with Infinity.
-// while i < n.
-//    Move the front: i as far as possible until a condtion is met.
-//    Test the condition again. If it fails, it means we have reached the end. //    Move the back as far as possible until the condtion is NOT met.
-//    Range: [j - 1, i - 1] is the smallest window which meets the condition
-//    ans = min(ans, i - 1 - (j - 1) + 1)
-```
+In this approach, our goal is to find the minimum length of a window that satisfies a specific condition. We add elements to the window one by one. When adding an element causes the condition to be met, we start removing elements from the beginning of the window until the condition is no longer met. At that point, we have a valid window [left - 1, right]. We calculate its length as `right - (left - 1) + 1` and compare it with the current minimum length. If this window is shorter, we update the final result.
 
 ```TypeScript
-function minSlidingWindow(...) {
-    const n = nums.length;
-    let i = 0; // right index
-    let j = 0; // left index
-    // let total = 0;
+function minimumCardPickup(cards: number[]): number {
+    const meetCondition = (state): boolean => ......;
+    const n = cards.length;
+
+    let state = ....
     let ans = Infinity;
-    const state = ....
-    const meetCondition = (state) => .......;
-    while (i < n) {
-        // move the right index i as far as possible until the condition is met
-        while ((i < n) && !meetCondition(state)) {
-            // Add nums[i] to sliding window
-            // Update the state
-            i += 1;
+    let left = 0;
+    for (let right = 0; right < n; right++) {
+        // Update state by adding right element
+        // .......
+        if (meetCondition(state)) {
+            while (meetCondition(state)) {
+                // Update state by removing left element
+                // .......
+                left += 1;
+            }
+            // [left - 1, right] is the subarray meeting the condition.
+            ans = Math.min(ans, right - (left - 1) + 1);
         }
-        // If the condition is not met, there is no need to shrink the window.
-        // Otherwise, whether we run to the end of the array, we still need to shrink the window.
-        if (!meetCondition(state)) {
-            break;
-        }
-        // move the left index j as far as possible unitl the condition is not met
-        while (meetCondition(state)) {
-            // drop nums[j] from sliding window
-            // Update the state
-            j += 1;
-        }
-        // the range [j - 1, i - 1] meets the condition and [j, i - 1] does not meet.
-        // The length of [j - 1, i - 1] is i - j + 1.
-        ans = Math.min(ans, i - j + 1);
     }
-    return ans === Infinity ? 0 : ans;
+    return ans === Infinity ? -1 : ans;
 };
 ```
 
 3. Maximum sliding window
 
-In this approach, we're aiming to find the maxinum length of a window that meets a certain condition. We start by defining pointers for the front and end of the window and initialize the result to 0. First, we move the front pointer, `i`, forward as far as possible until the condition is NOT met, effectively expanding the window. If we reach the end without NOT meeting the condition, we simply test the condition again and compare the result with final result and break if necessary. If we reach thend with NOT meeting the condition, we compare the result with the final result. Next, we move the back pointer, `j`, forward as far as possible until the condition is no longer met, thereby shrinking the window. The window [j - 1, i - 1] now satisfies the condition. Its length is calculated as `i - j + 1`. We then compare this length with the current minimum result and update the result if this window is shorter.
-
-```js
-// Pseudo code
-// initialize front and back pointers: i,j and final result: ans with 0.
-// while i < n.
-//    Move the front i as far as possible until a condtion is NOT met.
-//    Test the condtion again.
-//        If it still meets, it means we have reached the end. [j, i - 1] (i = n) meet the condition. we break out.
-//        Otherwise, [j, i - 2] meets the conditons and we continue the loop.
-//    Move the back j as far as possible until the condtion is met.
-```
+In this approach, our goal is to find the maximum length of a window that satisfies a specific condition. We add elements one by one to the window. If adding an element causes the condition to fail, we remove elements from the beginning of the window. Once we find a valid window [left, right], we calculate its length as `right - left + 1` and compare it with the current maximum length. If this window is longer, we update the final result.
 
 ```TypeScript
-function maxSlidingWindow(...) {
-    const n = nums.length;
-    let i = 0; // right index
-    let j = 0; // left index
-    let ans = 0;
-    const state = ....
-    const meetCondition = (state) => .......;
-    while (i < n) {
-        // move the right index i as far as possible until the condition is NOT met or reach the end of the array
-        while ((i < n) && meetCondition(state)) {
-            // Add nums[i] to sliding window
-            // Update the state
-            i += 1;
+function lengthOfLongestSubstringKDistinct(s: string, k: number): number {
+    const n = s.length;
+    let ans = -1;
+    let state = .......
+    const meetCondition = (state): boolean => ........;
+    let left = 0;
+    for (let right = 0; right < n; right++) {
+        // Update state by adding right element
+        // .......
+        while (!meetCondition(freq, k)) {
+            // Update state by removing left element
+            // ........
+            left += 1;
         }
-        // If the condition is still met, it means it breaks because we have reached the end of array. Therefore, range [j, i - 1] (i is n now) meet the condtion. So the size is i - j. If the condition is not met, it means it breaks in the middle of array. Range [j, i - 2] meet the condition, the size is i - 2 - j + 1 = i - j - 1
-        if (meetCondition(state)) {
-            ans = Math.max(ans, i - j);
-            break;
-        } else {
-            ans = Math.max(ans, i - j - 1);
-        }
-        // move the left index j as far as possible unitl the condition is met
-        while (!meetCondition(state)) {
-            // drop nums[j] from sliding window
-            // Update the state
-            j += 1;
-        }
+        // the number of new subarrays ending at right is (right - left + 1).
+        // [left, right], [left + 1, right], [left + 2, right]......[right, right]
+        // count += right - left + 1;
+        ans = Math.max(ans, right - left + 1);
     }
-    return ans === Infinity ? 0 : ans;
+    return ans;
 };
 ```
 
@@ -401,45 +361,39 @@ function containsNearbyDuplicate(nums: number[], k: number): boolean {
 
 ### 2. Minimum sliding window Problems
 
-#### 209. Minimum Size Subarray Sum
+#### 209. Minimum Size Subarray Sum[Medium]
 
 Given an array of positive integers nums and a positive integer target, return the minimal length of a subarray whose sum is greater than or equal to target. If there is no such subarray, return 0 instead.
 
 Follow up: If you have figured out the O(n) solution, try coding another solution of which the time complexity is O(n log(n)).
 
-**Solution:** We use the sum of the window elements as the state and check if it exceeds the target. First, we move the front pointer `i` until the sum meets the condition. Then, we verify that the end of the array hasn't been reached. Next, we shrink the window by moving the back pointer `j`. The window defined by `[j - 1, i - 1]` is the smallest one that meets the condition. We then compare this window with the final result and update it if the new window is smaller.
+**Solution:** We use the sum of the window elements as the state and check if it exceeds the target.
 
 ```TypeScript
 function minSubArrayLen(target: number, nums: number[]): number {
     const n = nums.length;
-    let i = 0; // right index
-    let j = 0; // left index
-    let total = 0; // for window
+    let total = 0;
     let ans = Infinity;
-    const meetCondition = (total: number, target: number) => total >= target;
-    while (i < n) {
-        // move the right index i as far as possible until the condition is met
-        while ((i < n) && !meetCondition(total, target)) {
-            total += nums[i];
-            i += 1;
+    const meetCondition = (total) => total >= target;
+    let left = 0;
+    for (let right = 0; right < n; right++) {
+        // Update state by adding right element
+        total += nums[right];
+        if (meetCondition(total)) {
+            while (meetCondition(total)) {
+                // Update state by removing left element
+                total -= nums[left];
+                left += 1;
+            }
+            // [left - 1, right] is the subarray meeting the condition.
+            ans = Math.min(ans, right - (left - 1) + 1);
         }
-        if (!meetCondition(total, target)) {
-            break;
-        }
-        // move the left index j as far as possible unitl the condition is not met
-        while (meetCondition(total, target)) {
-            total -= nums[j];
-            j += 1;
-        }
-        // the range [j - 1, i - 1] meets the condition and [j, i - 1] does not meet.
-        // The length of [j - 1, i - 1] is i - j + 1.
-        ans = Math.min(ans, i - j + 1);
     }
     return ans === Infinity ? 0 : ans;
-};
+}
 ```
 
-#### 76. Minimum Window Substring
+#### 76. Minimum Window Substring[Hard]
 
 Given two strings s and t of lengths m and n respectively, return the minimum window substring of s such that every character in t (including duplicates) is included in the window. If there is no such substring, return the empty string "".
 
@@ -451,52 +405,54 @@ Follow up: Could you find an algorithm that runs in O(m + n) time?
 
 ```TypeScript
 function minWindow(s: string, t: string): string {
-    const getIndex = (s: string, i: number): number => {
-        const charCode = s.charCodeAt(i);
-        if (charCode >= 'a'.charCodeAt(0) && charCode <= 'z'.charCodeAt(0)) {
-            return charCode - 'a'.charCodeAt(0);
+    const aCharCode = 'a'.charCodeAt(0);
+    const zCharCode = 'z'.charCodeAt(0);
+    const upperACharCode = 'A'.charCodeAt(0);
+    const upperZCharCode = 'Z'.charCodeAt(0);
+
+    const getIndex = (charCode: number): number => {
+        if (charCode >= aCharCode && charCode <= zCharCode) {
+            return charCode - aCharCode;
         }
-        if (charCode >= 'A'.charCodeAt(0) && charCode <= 'Z'.charCodeAt(0)) {
-            return charCode - 'A'.charCodeAt(0) + 26;
+        if (charCode >= upperACharCode && charCode <= upperZCharCode) {
+            return charCode - upperACharCode + 26;
         }
-        throw new Error(`Incorrect character: ${s.charAt(i)}`);
+        throw new Error(`Incorrect character: ${charCode}`);
     };
     const getCharsFreq = (s: string): number[] => {
         const result: number[] = Array(52).fill(0);
-        [...s].forEach((_, index) => {
-            result[getIndex(s, index)] += 1;
+        [...s].forEach((char, index) => {
+            result[getIndex(char.charCodeAt(0))] += 1;
         });
         return result;
     };
+    const isFreqIncluded = (freq: number[], containerFreq: number[]) => freq.every((val, index) => val <= containerFreq[index]);
     const tFreq = getCharsFreq(t);
-    const sFreq: number[] = Array(52).fill(0);;
+    const sFreq: number[] = Array(52).fill(0);
     const meetCondition = (tFreq: number[], sFreq: number[]): boolean => tFreq.every((val, index) => val <= sFreq[index]);
-    let i = 0;
-    let j = 0;
     let ans = "";
     const n = s.length;
-    while (i < n) {
-        while ((i < n) && !meetCondition(tFreq, sFreq)) {
-            sFreq[getIndex(s, i)] += 1;
-            i++;
-        }
-        if (!meetCondition(tFreq, sFreq)) {
-            break;
-        }
-        while (meetCondition(tFreq, sFreq)) {
-            sFreq[getIndex(s, j)] -= 1;
-            j++;
-        }
-        // [j - 1, i - 1] meet the needs.
-        if ((ans === "") || (ans.length > i - j + 1)) {
-            ans = s.slice(j - 1, i);
+    let left = 0;
+    for (let right = 0; right < n; right++) {
+        // Update state by adding right element
+        sFreq[getIndex(s.charCodeAt(right))] += 1;
+        if (meetCondition(tFreq, sFreq)) {
+            while (meetCondition(tFreq, sFreq)) {
+                // Update state by removing left element
+                sFreq[getIndex(s.charCodeAt(left))] -= 1;
+                left += 1;
+            }
+            // [left - 1, right] is the subarray meeting the condition.
+            if ((ans === "") || (ans.length > right - left + 1)) {
+                ans = s.slice(left - 1, right + 1);
+            }
         }
     }
     return ans;
 };
 ```
 
-#### 2260. Minimum Consecutive Cards to Pick Up
+#### 2260. Minimum Consecutive Cards to Pick Up[Medium]
 
 You are given an integer array cards where cards[i] represents the value of the ith card. A pair of cards are matching if the cards have the same value.
 
@@ -508,32 +464,32 @@ Return the minimum number of consecutive cards you have to pick up to have a pai
 function minimumCardPickup(cards: number[]): number {
     const meetCondition = (matchedCard: number | undefined): boolean => matchedCard !== undefined;
     const n = cards.length;
-    let i = 0;
-    let j = 0;
+
     const cardSet: Set<number> = new Set([]);
     let matchedCard: number | undefined = undefined;
     let ans = Infinity;
-    while (i < n) {
-        while ((i < n) && !meetCondition(matchedCard)) {
-            if (cardSet.has(cards[i])) {
-                matchedCard = cards[i];
-            } else {
-                cardSet.add(cards[i]);
+    let left = 0;
+    for (let right = 0; right < n; right++) {
+        // Update state by adding right element
+        if (cardSet.has(cards[right])) {
+            matchedCard = cards[right];
+        } else {
+            cardSet.add(cards[right]);
+        }
+
+        if (meetCondition(matchedCard)) {
+            while (meetCondition(matchedCard)) {
+                // Update state by removing left element
+                if (cards[left] === matchedCard as number) {
+                    matchedCard = undefined;
+                } else {
+                    cardSet.delete(cards[left]);
+                }
+                left += 1;
             }
-            i += 1;
+            // [left - 1, right] is the subarray meeting the condition.
+            ans = Math.min(ans, right - (left - 1) + 1);
         }
-        if (!meetCondition(matchedCard)) {
-            break;
-        }
-        while (meetCondition(matchedCard)) {
-            if (cards[j] === matchedCard as number) {
-                matchedCard = undefined;
-            } else {
-                cardSet.delete(cards[j]);
-            }
-            j += 1;
-        }
-        ans = Math.min(ans, i - j + 1);
     }
     return ans === Infinity ? -1 : ans;
 };
@@ -541,7 +497,7 @@ function minimumCardPickup(cards: number[]): number {
 
 ### 3. Maximum sliding window  Problems
 
-#### 340. Longest Substring with At Most K Distinct Characters
+#### 340. Longest Substring with At Most K Distinct Characters[Medium]
 
 Given a string s and an integer k, return the length of the longest
 substring of s that contains at most k distinct characters.
@@ -551,39 +507,63 @@ substring of s that contains at most k distinct characters.
 ```TypeScript
 function lengthOfLongestSubstringKDistinct(s: string, k: number): number {
     const n = s.length;
-    let i = 0;
-    let j = 0;
     let ans = -1;
     const freq: {[key: string] : number} = {};
     const meetCondition = (freq: {[key: string] : number}, k: number) => Object.keys(freq).length <= k;
-    while (i < n) {
-        // Move the right index as far as possible until the condition is not met.
-        while ((i < n) && meetCondition(freq, k)) {
-            freq[s.charAt(i)] = (freq[s.charAt(i)] ?? 0) + 1;
-            i += 1;
-        }
-        // [j, i - 2] is the range which meets the condtion.
-        // freq contains the data from [j, i - 1]
-        if (meetCondition(freq, k)) {
-            ans = Math.max(ans, i - 1 - j + 1);
-            break;
-        } else {
-            ans = Math.max(ans, i - 2 - j + 1);
-        }
-        // move the left index as far as possible until the condition is met.
+    let left = 0;
+    for (let right = 0; right < n; right++) {
+        // Update state by adding right element
+        freq[s[right]] = (freq[s[right]] ?? 0) + 1;
+
         while (!meetCondition(freq, k)) {
-            freq[s.charAt(j)] -= 1;
-            if (freq[s.charAt(j)] === 0) {
-                delete freq[s.charAt(j)];
+            // Update state by removing left element
+            freq[s[left]] -= 1;
+            if (freq[s[left]] === 0) {
+                delete freq[s[left]];
             }
-            j += 1;
+
+            left += 1;
         }
+        // the number of new subarrays ending at right is (right - left + 1).
+        // [left, right], [left + 1, right], [left + 2, right]......[right, right]
+        // count += right - left + 1;
+        ans = Math.max(ans, right - left + 1);
     }
     return ans;
 };
 ```
 
-#### 904. Fruit Into Baskets
+#### 713. Subarray Product Less Than K[Medium]
+
+Given an array of integers nums and an integer k, return the number of contiguous subarrays where the product of all the elements in the subarray is strictly less than k.
+
+**Solution:** We can use the product of elements to represent the window state. The condition to check is whether the product is less than \( k \).
+
+```TypeScript
+function numSubarrayProductLessThanK(nums: number[], k: number): number {
+    const n = nums.length;
+    if (k <= 1) return 0;
+    let prod = 1; // State
+    const meetCondition = (prod: number): boolean = prod < k;
+    let count = 0;
+    let left = 0;
+    for (let right = 0; right < n; right++) {
+        // Update state by adding right element
+        prod *= nums[right];
+        while (!meetCondition(prod)) {
+            // Update state by removing left element
+            prod /= nums[left];
+            left += 1;
+        }
+        // the number of new subarrays ending at right is (right - left + 1).
+        // [left, right], [left + 1, right], [left + 2, right]......[right, right]
+        count += right - left + 1;
+    }
+    return count;
+};
+```
+
+#### 904. Fruit Into Baskets[Medium]
 
 You are visiting a farm that has a single row of fruit trees arranged from left to right. The trees are represented by an integer array fruits where fruits[i] is the type of fruit the ith tree produces.
 
@@ -603,37 +583,31 @@ function totalFruit(fruits: number[]): number {
     const n = fruits.length;
     const meetCondition = (freq: {[key: string] : number}) : boolean => Object.keys(freq).length <= 2;
     let ans = -1;
-    let i = 0;
-    let j = 0;
     const freq: {[key: string] : number} = {};
-    while (i < n) {
-        while ((i < n) && meetCondition(freq)) {
-            const val = fruits[i];
-            freq[val] = (freq[val] ?? 0) + 1;
-            i += 1;
-        }
-        // freq contains the result from range: j to i - 1
-        if (meetCondition(freq)) {
-            ans = Math.max(ans, i - 1 - j + 1);
-            break;
-        } else {
-            // range j to i - 2 meet the condition
-            ans = Math.max(ans, i - 2 - j + 1);
-        }
+    let left = 0;
+    for (let right = 0; right < n; right++) {
+        // Update state by adding right element
+        freq[fruits[right]] = (freq[fruits[right]] ?? 0) + 1;
+
         while (!meetCondition(freq)) {
-            const val = fruits[j];
-            freq[val] -= 1;
-            if (freq[val] === 0) {
-                delete freq[val];
+            // Update state by removing left element
+            freq[fruits[left]] -= 1;
+            if (freq[fruits[left]] === 0) {
+                delete freq[fruits[left]];
             }
-            j += 1;
+
+            left += 1;
         }
+        // the number of new subarrays ending at right is (right - left + 1).
+        // [left, right], [left + 1, right], [left + 2, right]......[right, right]
+        // count += right - left + 1;
+        ans = Math.max(ans, right - left + 1);
     }
     return ans;
 };
 ```
 
-#### 159. Longest Substring with At Most Two Distinct Characters
+#### 159. Longest Substring with At Most Two Distinct Characters[Medium]
 
 Given a string s, return the length of the longest substring that contains at most two distinct characters.
 
@@ -643,38 +617,32 @@ Given a string s, return the length of the longest substring that contains at mo
 function lengthOfLongestSubstringTwoDistinct(s: string): number {
     const n = s.length;
     const meetCondition = (freq: {[key: string]: number}) => Object.keys(freq).length <= 2;
-    let i = 0;
-    let j = 0;
     let ans = -1;
     const freq: {[key: string]: number} = {};
-    while (i < n) {
-        while ((i < n) && meetCondition(freq)) {
-            const char = s.charAt(i);
-            freq[char] = (freq[char] ?? 0) + 1;
-            i += 1;
-        }
-        if (meetCondition(freq)) {
-            // j to i - 1
-            ans = Math.max(ans, i - 1 - j + 1);
-            break;
-        } else {
-            // j to i - 2
-            ans = Math.max(ans, i - 2 - j + 1);
-        }
-        while(!meetCondition(freq)) {
-            const char = s.charAt(j);
-            freq[char] -= 1;
-            if (freq[char] === 0) {
-                delete freq[char];
+    let left = 0;
+    for (let right = 0; right < n; right++) {
+        // Update state by adding right element
+        freq[s[right]] = (freq[s[right]] ?? 0) + 1;
+
+        while (!meetCondition(freq)) {
+            // Update state by removing left element
+            freq[s[left]] -= 1;
+            if (freq[s[left]] === 0) {
+                delete freq[s[left]];
             }
-            j += 1;
+
+            left += 1;
         }
+        // the number of new subarrays ending at right is (right - left + 1).
+        // [left, right], [left + 1, right], [left + 2, right]......[right, right]
+        // count += right - left + 1;
+        ans = Math.max(ans, right - left + 1);
     }
     return ans;
 };
 ```
 
-#### 3. Longest Substring Without Repeating Characters
+#### 3. Longest Substring Without Repeating Characters[Medium]
 
 Given a string s, find the length of the longest substring without repeating characters.
 
@@ -687,37 +655,32 @@ function lengthOfLongestSubstring(s: string): number {
     const meetCondition = (freq: {[key: string]: number}): boolean => {
         return [...Object.values(freq)].every(val => val <= 1);
     };
-    let i = 0;
-    let j = 0;
     let ans = -1;
     const freq: {[key: string]: number} = {};
-    while (i < n) {
-        while ((i < n) && meetCondition(freq)) {
-            const char = s.charAt(i);
-            freq[char] = (freq[char] ?? 0) + 1;
-            i += 1;
-        }
-        if (meetCondition(freq)) {
-            // j to i - 1
-            ans = Math.max(ans, i - 1 - j + 1);
-            break;
-        } else {
-            // j to i - 2
-            ans = Math.max(ans, i - 2 - j + 1);
-        }
-        while(!meetCondition(freq)) {
-            const char = s.charAt(j);
-            freq[char] -= 1;
-            if (freq[char] === 0) {
-                delete freq[char];
+    let left = 0;
+    for (let right = 0; right < n; right++) {
+        // Update state by adding right element
+        freq[s[right]] = (freq[s[right]] ?? 0) + 1;
+
+        while (!meetCondition(freq)) {
+            // Update state by removing left element
+            freq[s[left]] -= 1;
+            if (freq[s[left]] === 0) {
+                delete freq[s[left]];
             }
-            j += 1;
+
+            left += 1;
         }
+        // the number of new subarrays ending at right is (right - left + 1).
+        // [left, right], [left + 1, right], [left + 2, right]......[right, right]
+        // count += right - left + 1;
+        ans = Math.max(ans, right - left + 1);
     }
     return ans;
 };
 ```
-#### 424. Longest Repeating Character Replacement
+
+#### 424. Longest Repeating Character Replacement[Medium]
 
 You are given a string s and an integer k. You can choose any character of the string and change it to any other uppercase English character. You can perform this operation at most k times.
 
@@ -736,38 +699,32 @@ function characterReplacement(s: string, k: number): number {
         const total = [...Object.values(freq)].reduce((acc, cur) => acc + cur, 0);
         return total - max <= k;
     };
-    let i = 0;
-    let j = 0;
     let ans = -1;
     const freq: {[key: string]: number} = {};
-    while (i < n) {
-        while ((i < n) && meetCondition(freq)) {
-            const char = s.charAt(i);
-            freq[char] = (freq[char] ?? 0) + 1;
-            i += 1;
-        }
-        if (meetCondition(freq)) {
-            // j to i - 1
-            ans = Math.max(ans, i - 1 - j + 1);
-            break;
-        } else {
-            // j to i - 2
-            ans = Math.max(ans, i - 2 - j + 1);
-        }
-        while(!meetCondition(freq)) {
-            const char = s.charAt(j);
-            freq[char] -= 1;
-            if (freq[char] === 0) {
-                delete freq[char];
+    let left = 0;
+    for (let right = 0; right < n; right++) {
+        // Update state by adding right element
+        freq[s[right]] = (freq[s[right]] ?? 0) + 1;
+
+        while (!meetCondition(freq)) {
+            // Update state by removing left element
+            freq[s[left]] -= 1;
+            if (freq[s[left]] === 0) {
+                delete freq[s[left]];
             }
-            j += 1;
+
+            left += 1;
         }
+        // the number of new subarrays ending at right is (right - left + 1).
+        // [left, right], [left + 1, right], [left + 2, right]......[right, right]
+        // count += right - left + 1;
+        ans = Math.max(ans, right - left + 1);
     }
     return ans;
 };
 ```
 
-#### 485. Max Consecutive Ones
+#### 485. Max Consecutive Ones[Easy]
 
 Given a binary array nums, return the maximum number of consecutive 1's in the array.
 
@@ -804,7 +761,7 @@ function findMaxConsecutiveOnes(nums: number[]): number {
 };
 ```
 
-#### 487. Max Consecutive Ones II
+#### 487. Max Consecutive Ones II[Medium]
 
 Given a binary array nums, return the maximum number of consecutive 1's in the array if you can flip at most one 0.
 
@@ -815,38 +772,33 @@ Follow up: What if the input numbers come in one by one as an infinite stream? I
 ```TypeScript
 // Find the longest window which only contain 1 or 0 zero.
 function findMaxConsecutiveOnes(nums: number[]): number {
-    let i = 0; // front
-    let j = 0; // end
     let countZero = 0;
+    const meetCondition = (countZero) => countZero <= 1;
     const n = nums.length;
     let ans = 0;
-    const meetCondition = (countZero) => countZero <= 1;
-    while (i < n) {
-        // Move front as far as possible or front and end only conatin one zero.
-        while (i < n && meetCondition(countZero)) {
-            if (nums[i] === 0) {
-                countZero += 1;
-            }
-            i += 1;
-        }
-        if (meetCondition(countZero)) {
-            ans = Math.max(ans, i - j);
-            break;
-        } else {
-            ans = Math.max(ans, i - j - 1)
+    let left = 0;
+    for (let right = 0; right < n; right++) {
+        // Update state by adding right element
+        if (nums[right] === 0) {
+            countZero += 1;
         }
         while (!meetCondition(countZero)) {
-            if (nums[j] === 0) {
+            // Update state by removing left element
+            if (nums[left] === 0) {
                 countZero -= 1;
             }
-            j += 1;
+            left += 1;
         }
+        // the number of new subarrays ending at right is (right - left + 1).
+        // [left, right], [left + 1, right], [left + 2, right]......[right, right]
+        // count += right - left + 1;
+        ans = Math.max(ans, right - left + 1);
     }
     return ans;
 };
 ```
 
-#### 1004. Max Consecutive Ones III
+#### 1004. Max Consecutive Ones III[Medium]
 
 Given a binary array nums and an integer k, return the maximum number of consecutive 1's in the array if you can flip at most k 0's.
 
@@ -854,32 +806,27 @@ Given a binary array nums and an integer k, return the maximum number of consecu
 
 ```TypeScript
 function longestOnes(nums: number[], k: number): number {
-    let i = 0; // front
-    let j = 0; // end
     let countZero = 0;
+    const meetCondition = (countZero) => countZero <= k;
     const n = nums.length;
     let ans = 0;
-    const meetCondition = (countZero) => countZero <= k;
-    while (i < n) {
-        // Move front as far as possible or front and end only conatin one zero.
-        while (i < n && meetCondition(countZero)) {
-            if (nums[i] === 0) {
-                countZero += 1;
-            }
-            i += 1;
-        }
-        if (meetCondition(countZero)) {
-            ans = Math.max(ans, i - j);
-            break;
-        } else {
-            ans = Math.max(ans, i - j - 1)
+    let left = 0;
+    for (let right = 0; right < n; right++) {
+        // Update state by adding right element
+        if (nums[right] === 0) {
+            countZero += 1;
         }
         while (!meetCondition(countZero)) {
-            if (nums[j] === 0) {
+            // Update state by removing left element
+            if (nums[left] === 0) {
                 countZero -= 1;
             }
-            j += 1;
+            left += 1;
         }
+        // the number of new subarrays ending at right is (right - left + 1).
+        // [left, right], [left + 1, right], [left + 2, right]......[right, right]
+        // count += right - left + 1;
+        ans = Math.max(ans, right - left + 1);
     }
     return ans;
 };
