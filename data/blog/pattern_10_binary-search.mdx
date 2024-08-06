@@ -1409,6 +1409,36 @@ function closestValue(root: TreeNode | null, target: number): number {
 };
 ```
 
+#### 658.Find K Closest Elements[Medium]
+
+Given a sorted integer array arr, two integers k and x, return the k closest integers to x in the array. The result should also be sorted in ascending order.
+
+An integer a is closer to x than an integer b if:
+
+|a - x| < |b - x|, or
+|a - x| == |b - x| and a < b
+
+Solution: We want to find the most left boundary that `x - arr[mid] > arr[mid + k] - x`
+
+```Python
+class Solution:
+    def findClosestElements(self, arr: List[int], k: int, x: int) -> List[int]:
+        if len(arr) <= k:
+            return arr
+
+        # Binary search to find the starting point
+        left, right = 0, len(arr) - k
+        while left < right:
+            mid = left + (right - left) // 2
+            if x - arr[mid] > arr[mid + k] - x:
+                left = mid + 1
+            else:
+                right = mid
+
+        # Return the subarray of k elements starting from the found index
+        return arr[left:left+k]
+```
+
 ### Reference
 
 https://towardsdatascience.com/powerful-ultimate-binary-search-template-and-many-leetcode-problems-1f850ef95651

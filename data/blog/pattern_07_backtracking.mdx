@@ -288,26 +288,6 @@ class Solution:
             return generate_trees_helper(1, n)
 ```
 
-#### 96.Unique Binary Search Trees[Medium]
-
-Given an integer n, return the number of structurally unique BST's (binary search trees) which has exactly n nodes of unique values from 1 to n.
-
-```Python
-class Solution:
-    def numTrees(self, n: int) -> int:
-        dp = [0] * (n + 1)
-        dp[0] = 1  # Base case: Empty tree
-
-        # Calculate the number of unique BSTs for each number of nodes from 1 to n
-        for i in range(1, n + 1):
-            # Calculate the number of unique BSTs using each number as the root
-            for j in range(1, i + 1):
-                # The number of unique BSTs with j as the root = dp[j - 1] (left subtree) * dp[i - j] (right subtree)
-                dp[i] += dp[j - 1] * dp[i - j]
-
-        return dp[n]
-```
-
 #### 52. N-Queens II[Hard]
 
 The n-queens puzzle is the problem of placing n queens on an n x n chessboard such that no two queens attack each other.
