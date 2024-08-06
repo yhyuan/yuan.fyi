@@ -1,0 +1,1041 @@
+---
+title: Pattern 5 Tree Search
+date: "2024-05-05"
+tags: ["leetcode", "pattern"]
+draft: false
+---
+
+### Introduction
+
+Tree search algorithms are fundamental techniques used to explore and traverse tree data structures. Two of the most commonly used algorithms for this purpose are Breadth-First Search (BFS) and Depth-First Search (DFS). Each algorithm offers distinct advantages and is suited to different types of problems.
+
+**Breadth-First Search** explores a tree level by level, starting from the root and moving outward. It uses a queue to keep track of nodes to be explored.
+1. **Initialize the Queue:** Start by enqueuing the root node.
+2. **Explore Nodes:** Dequeue a node, process it, and enqueue its children (if any). Repeat this process until the queue is empty.
+3. **Level-wise Exploration:** Nodes are explored in the order they are enqueued, ensuring that all nodes at a given depth are processed before moving on to nodes at the next depth level.
+
+Advantages of BFS
+
+- **Shortest Path:** BFS finds the shortest path in an unweighted tree, as it explores all nodes at the present depth level before moving on to nodes at the next depth level.
+- **Level-order Traversal:** Useful for tasks that require visiting nodes level-by-level, such as printing tree nodes level-wise or finding the minimum depth of a tree.
+
+Disadvantages of BFS
+
+- **Memory Usage:** BFS can require substantial memory, especially for wide trees, because it stores all nodes at the current depth level in the queue.
+- **Not Optimal for Deep Trees:** If a tree is very deep but narrow, BFS may take considerable time and memory due to the vast number of nodes at the shallow levels.
+
+Pseduo code:
+```TypeScript
+function BFS(root: TreeNode | null): number[] {
+    if (root === null) return [];
+    let queue: TreeNode[] = [root];
+    // let ans: number[] = [root.val];
+    let ans: ........
+    while (queue.length > 0) {
+        queue = queue.map(node => {
+            const result: TreeNode[] = [];
+            if (node.left !== null) {
+                result.push(node.left);
+            }
+            if (node.right !== null) {
+                result.push(node.right);
+            }
+            return result;
+        }).reduce((acc, cur) => acc.concat(cur), []);
+        if (queue.length > 0) {
+            // Process ans
+        }
+    }
+    return ans;
+};
+```
+
+**Depth-First Search** explores as far down a branch as possible before backtracking. It uses a stack (or recursion) to keep track of nodes.
+
+1. **Initialize the Stack:** Start by pushing the root node onto the stack.
+2. **Explore Nodes:** Pop a node from the stack, process it, and push its children (if any) onto the stack. Repeat this process until the stack is empty.
+3. **Deep Exploration:** Nodes are explored in a depth-first manner, meaning you dive into the deepest branch before backtracking.
+
+Advantages of DFS
+
+- **Memory Efficiency:** DFS generally uses less memory than BFS because it doesn't need to store all nodes at a given level, just the current path.
+- **Path Finding:** Can be useful for finding a path between nodes in a complex or deep tree, especially when you are interested in exploring a single path thoroughly.
+
+Disadvantages of DFS
+
+- **Path Length:** DFS does not guarantee the shortest path. It may explore a longer path before finding a shorter one.
+- **Stack Overflow:** For very deep trees, especially with recursion, there is a risk of stack overflow if the tree depth exceeds the system's recursion limit.
+
+Pseduo code:
+```TypeScript
+function solver(root: TreeNode | null....): ... {
+    if (root === null) return ...;
+    if (root.left === null && root.right === null) {
+      ......
+    }
+    if (root.left === null) {
+        // only consider right branch
+        return ......;
+    }
+    if (root.right === null) {
+        // only consider left branch
+        return ......;
+    }
+    // conside both branch by combining the results together
+    return .......;
+};
+```
+
+<TOCInline toc={props.toc} exclude="Introduction" />
+
+### 1. Tree Breadth First Search (BFS)
+
+#### 102.Binary Tree Level Order Traversal[Medium]
+
+Given the root of a binary tree, return the level order traversal of its nodes' values. (i.e., from left to right, level by level).
+
+**Solution:** During the BFS traversal, we convert the values in the queue to an array and append this array to the final result after traversing each layer of the tree.
+
+```TypeScript
+function levelOrder(root: TreeNode | null): number[][] {
+    if (root === null) return [];
+    let queue: TreeNode[] = [root];
+    const ans: number[][] = [];
+    while (queue.length > 0) {
+
+        const values: number[] = queue.map(node => node.val);
+        if (values.length > 0) {
+            ans.push(values);
+        }
+
+        queue = queue.map(node => {
+            const result: TreeNode[] = [];
+            if (node.left !== null) {
+                result.push(node.left);
+            }
+            if (node.right !== null) {
+                result.push(node.right);
+            }
+            return result;
+        }).reduce((acc, cur) => acc.concat(cur), []);
+    }
+    return ans;
+};
+```
+
+#### 107.Binary Tree Level Order Traversal II[Medium]
+
+Given the root of a binary tree, return the bottom-up level order traversal of its nodes' values. (i.e., from left to right, level by level from leaf to root).
+
+**Solution:** Like in problem 102, *Binary Tree Level Order Traversal*, we use BFS for this problem as well. However, instead of appending the values to the end of the final result, we insert them at the beginning.
+
+```TypeScript
+function levelOrderBottom(root: TreeNode | null): number[][] {
+    if (root === null) return [];
+    let queue: TreeNode[] = [root];
+    const ans: number[][] = [];
+    while (queue.length > 0) {
+
+        const values: number[] = queue.map(node => node.val);
+        if (values.length > 0) {
+            ans.unshift(values);
+        }
+
+        queue = queue.map(node => {
+            const result: TreeNode[] = [];
+            if (node.left !== null) {
+                result.push(node.left);
+            }
+            if (node.right !== null) {
+                result.push(node.right);
+            }
+            return result;
+        }).reduce((acc, cur) => acc.concat(cur), []);
+    }
+    return ans;
+};
+```
+
+#### 103.Binary Tree Zigzag Level Order Traversal[Medium]
+
+Given the root of a binary tree, return the zigzag level order traversal of its nodes' values. (i.e., from left to right, then right to left for the next level and alternate between).
+
+**Solution:** Similar to problem 102, *Binary Tree Level Order Traversal*, we use BFS for this problem. We utilize a flag to determine whether the result array should be reversed for each layer. This flag is toggled as we process each level of the tree.
+
+```TypeScript
+function zigzagLevelOrder(root: TreeNode | null): number[][] {
+    if (root === null) return [];
+    let queue: TreeNode[] = [root];
+    const ans: number[][] = [];
+    let reverse = false;
+    while (queue.length > 0) {
+
+        const values: number[] = queue.map(node => node.val);
+        if (values.length > 0) {
+            if (reverse) {
+                values.reverse();
+            }
+            reverse = !reverse;
+            ans.push(values);
+        }
+
+        queue = queue.map(node => {
+            const result: TreeNode[] = [];
+            if (node.left !== null) {
+                result.push(node.left);
+            }
+            if (node.right !== null) {
+                result.push(node.right);
+            }
+            return result;
+        }).reduce((acc, cur) => acc.concat(cur), []);
+    }
+    return ans;
+};
+```
+
+#### 637.Average of Levels in Binary Tree[Easy]
+
+Given the root of a binary tree, return the average value of the nodes on each level in the form of an array. Answers within 10-5 of the actual answer will be accepted.
+
+**Solution:** Like in problem 102, *Binary Tree Level Order Traversal*, we use BFS for this problem as well. We compute the average of the values at each level and append it to the final result.
+
+```TypeScript
+function averageOfLevels(root: TreeNode | null): number[] {
+    if (root === null) return [];
+    let queue: TreeNode[] = [root];
+    const ans: number[] = [];
+    while (queue.length > 0) {
+
+        const values: number[] = queue.map(node => node.val);
+        if (values.length > 0) {
+            ans.push(values.reduce((acc, cur) => acc + cur, 0) / values.length);
+        }
+
+        queue = queue.map(node => {
+            const result: TreeNode[] = [];
+            if (node.left !== null) {
+                result.push(node.left);
+            }
+            if (node.right !== null) {
+                result.push(node.right);
+            }
+            return result;
+        }).reduce((acc, cur) => acc.concat(cur), []);
+    }
+    return ans;
+};
+```
+
+#### 1161.Maximum Level Sum of a Binary Tree[Medium]
+
+Given the root of a binary tree, the level of its root is 1, the level of its children is 2, and so on.
+
+Return the **smallest** level x such that the sum of all the values of nodes at level x is **maximal**.
+
+**Solution:** Similar to problem 102, *Binary Tree Level Order Traversal*, we use BFS for this problem as well. We calculate the sum of values at each level and append it to the final result. After processing all levels, we find the maximum value in the final result and return its index.
+
+```TypeScript
+function maxLevelSum(root: TreeNode | null): number {
+    let queue: TreeNode[] = [root];
+    const ans: number[] = [];
+    while (queue.length > 0) {
+
+        const values: number[] = queue.map(node => node.val);
+        if (values.length > 0) {
+            ans.push(values.reduce((acc, cur) => acc + cur, 0));
+        }
+
+        queue = queue.map(node => {
+            const result: TreeNode[] = [];
+            if (node.left !== null) {
+                result.push(node.left);
+            }
+            if (node.right !== null) {
+                result.push(node.right);
+            }
+            return result;
+        }).reduce((acc, cur) => acc.concat(cur), []);
+    }
+    const maxValue = Math.max(...ans);
+    return ans.findIndex(v => v === maxValue) + 1;
+};
+```
+
+#### 111.Minimum Depth of Binary Tree[Easy]
+
+Given a binary tree, find its minimum depth.
+
+The minimum depth is the number of nodes along the shortest path from the root node down to the nearest leaf node.
+
+Note: A leaf is a node with no children.
+
+**Solution:** Similar to problem 102, *Binary Tree Level Order Traversal*, we use BFS for this problem as well. We increment the layer count with each level traversal. When we encounter a node without left and right children, we return the current level as the result.
+
+```TypeScript
+function minDepth(root: TreeNode | null): number {
+    if (root === null) return 0;
+    let queue: TreeNode[] = [root];
+    let level = 1;
+    while (queue.length > 0) {
+        const index = queue.findIndex(node => node.left === null && node.right === null);
+        if (index >= 0) {
+            return level;
+        }
+        queue = queue.map(node => {
+            const result: TreeNode[] = [];
+            if (node.left !== null) {
+                result.push(node.left);
+            }
+            if (node.right !== null) {
+                result.push(node.right);
+            }
+            return result;
+        }).reduce((acc, cur) => acc.concat(cur), []);
+        if (queue.length > 0) {
+            level += 1;
+        }
+    }
+    return level;
+};
+```
+
+#### 104.Maximum Depth of Binary Tree[Easy]
+
+Given the root of a binary tree, return its maximum depth.
+
+A binary tree's maximum depth is the number of nodes along the longest path from the root node down to the farthest leaf node.
+
+**Solution:** Similar to problem 102, *Binary Tree Level Order Traversal*, we use BFS for this problem as well. We increment the layer count with each level traversal and return the final value of the layer count as the result.
+
+```TypeScript
+function maxDepth(root: TreeNode | null): number {
+    if (root === null) return 0;
+    let queue: TreeNode[] = [root];
+    let level = 1;
+    while (queue.length > 0) {
+        queue = queue.map(node => {
+            const result: TreeNode[] = [];
+            if (node.left !== null) {
+                result.push(node.left);
+            }
+            if (node.right !== null) {
+                result.push(node.right);
+            }
+            return result;
+        }).reduce((acc, cur) => acc.concat(cur), []);
+        if (queue.length > 0) {
+            level += 1;
+        }
+    }
+    return level;
+}
+```
+
+#### 116. Populating Next Right Pointers in Each Node[Medium]
+
+You are given a perfect binary tree where all leaves are on the same level, and every parent has two children. The binary tree has the following definition:
+```TypeScript
+struct Node {
+  int val;
+  Node *left;
+  Node *right;
+  Node *next;
+}
+```
+Populate each next pointer to point to its next right node. If there is no next right node, the next pointer should be set to NULL.
+
+Initially, all next pointers are set to NULL.
+
+**Solution:** Similar to problem 102, *Binary Tree Level Order Traversal*, we use BFS for this problem as well. For each level in the queue, we set the `next` pointer of each node to point to the next node in the same level.
+
+```TypeScript
+function connect(root: _Node | null): _Node | null {
+    if (root === null) return root;
+    let queue: _Node[] = [root];
+    while (queue.length > 0) {
+        queue = queue.map(node => {
+            const result: _Node[] = [];
+            if (node.left !== null) {
+                result.push(node.left);
+            }
+            if (node.right !== null) {
+                result.push(node.right);
+            }
+            return result;
+        }).reduce((acc, cur) => acc.concat(cur), []);
+        if (queue.length > 1) {
+            for (let i = 1; i < queue.length; i++) {
+                queue[i - 1].next = queue[i];
+            }
+        }
+    }
+    return root;
+};
+```
+
+#### 117. Populating Next Right Pointers in Each Node II[Medium]
+
+Given a binary tree
+```TypeScript
+struct Node {
+  int val;
+  Node *left;
+  Node *right;
+  Node *next;
+}
+```
+Populate each next pointer to point to its next right node. If there is no next right node, the next pointer should be set to NULL.
+
+Initially, all next pointers are set to NULL.
+
+Follow-up:
+
+You may only use constant extra space.
+The recursive approach is fine. You may assume implicit stack space does not count as extra space for this problem.
+
+```TypeScript
+// As same as 116
+```
+
+#### 199.Binary Tree Right Side View[Medium]
+
+Given the root of a binary tree, imagine yourself standing on the right side of it, return the values of the nodes you can see ordered from top to bottom.
+
+**Solution:** Similar to problem 102, *Binary Tree Level Order Traversal*, we use BFS for this problem as well. For each level in the queue, we identify the last node and add it to the final result.
+
+```TypeScript
+function rightSideView(root: TreeNode | null): number[] {
+    if (root === null) return [];
+    let queue: TreeNode[] = [root];
+    let ans: number[] = [root.val];
+    while (queue.length > 0) {
+        queue = queue.map(node => {
+            const result: TreeNode[] = [];
+            if (node.left !== null) {
+                result.push(node.left);
+            }
+            if (node.right !== null) {
+                result.push(node.right);
+            }
+            return result;
+        }).reduce((acc, cur) => acc.concat(cur), []);
+        if (queue.length > 0) {
+            ans.push(queue.at(-1).val);
+        }
+    }
+    return ans;
+};
+```
+
+### 2. Tree Depth First Search (DFS)
+
+#### 112.Path Sum[Easy]
+
+Given the root of a binary tree and an integer targetSum, return true if the tree has a root-to-leaf path such that adding up all the values along the path equals targetSum.
+A leaf is a node with no children.
+
+**Solution:** The function `hasPathSum(root, targetSum)` can be broken down into two recursive calls: `hasPathSum(root.left, targetSum - root.val)` and `hasPathSum(root.right, targetSum - root.val)`.
+
+```TypeScript
+function hasPathSum(root: TreeNode | null, targetSum: number): boolean {
+    if (root === null) return false;
+    if (root.left === null && root.right === null) {
+        return root.val === targetSum;
+    }
+    if (root.left === null) {
+        return hasPathSum(root.right, targetSum - root.val);
+    }
+    if (root.right === null) {
+        return hasPathSum(root.left, targetSum - root.val);
+    }
+    return hasPathSum(root.left, targetSum - root.val) || hasPathSum(root.right, targetSum - root.val);
+};
+```
+
+#### 113.Path Sum II[Medium]
+
+Given the root of a binary tree and an integer targetSum, return all root-to-leaf paths where the sum of the node values in the path equals targetSum. Each path should be returned as a list of the node values, not node references.
+
+A root-to-leaf path is a path starting from the root and ending at any leaf node. A leaf is a node with no children.
+
+**Solution:** The function `pathSum(root, targetSum)` is divided into two recursive calls: `pathSum(root.left, targetSum - root.val)` and `pathSum(root.right, targetSum - root.val)`. If either the left or right branch returns valid results, `root.val` is appended to those results.
+
+```TypeScript
+function pathSum(root: TreeNode | null, targetSum: number): number[][] {
+    if (root === null) return [];
+    if (root.left === null && root.right === null) {
+        if (root.val === targetSum) return [[root.val]];
+        return [];
+    }
+    if (root.left === null) {
+        const results = pathSum(root.right, targetSum - root.val);
+        return results.map(result => [...[root.val], ...result])
+    }
+    if (root.right === null) {
+        const results = pathSum(root.left, targetSum - root.val);
+        return results.map(result => [...[root.val], ...result])
+    }
+    const rightResults = pathSum(root.right, targetSum - root.val);
+    const leftResults = pathSum(root.left, targetSum - root.val);
+    const results = [...leftResults, ...rightResults];
+    return results.map(result => [...[root.val], ...result])
+};
+```
+
+#### 257. Binary Tree Paths[Easy]
+
+Given the root of a binary tree, return all root-to-leaf paths in any order.
+
+A leaf is a node with no children.
+
+**Solution:** If we obtain results from the left and right branches, we can prepend `root.val` to each path in the results.
+
+```TypeScript
+function binaryTreePaths(root: TreeNode | null): string[] {
+    if (root === null) return [];
+    if (root.left === null && root.right === null) return [`${root.val}`];
+    if (root.left === null) {
+        const results = binaryTreePaths(root.right);
+        return results.map(path => `${root.val}->${path}`);
+    }
+    if (root.right === null) {
+        const results = binaryTreePaths(root.left);
+        return results.map(path => `${root.val}->${path}`);
+    }
+    const results = [...binaryTreePaths(root.left), ...binaryTreePaths(root.right)];
+    return results.map(path => `${root.val}->${path}`);
+};
+```
+
+#### 129.Sum Root to Leaf Numbers[Medium]
+
+You are given the root of a binary tree containing digits from 0 to 9 only.
+
+Each root-to-leaf path in the tree represents a number.
+
+For example, the root-to-leaf path 1 -> 2 -> 3 represents the number 123.
+Return the total sum of all root-to-leaf numbers. Test cases are generated so that the answer will fit in a 32-bit integer.
+
+A leaf node is a node with no children.
+
+**Solution:** We use a helper function called `solver` to find all paths from the root to the leaf nodes. We then convert these paths into numbers and sum them to obtain the final result.
+
+```TypeScript
+function sumNumbers(root: TreeNode | null): number {
+    const solver = (root: TreeNode | null): string[] => {
+        if (root === null) return [];
+        if (root.left === null && root.right === null) return [`${root.val}`];
+        if (root.left === null) {
+            const results = solver(root.right);
+            return results.map(path => `${root.val}${path}`);
+        }
+        if (root.right === null) {
+            const results = solver(root.left);
+            return results.map(path => `${root.val}${path}`);
+        }
+        const results = [...solver(root.left), ...solver(root.right)];
+        return results.map(path => `${root.val}${path}`);
+    };
+    const ans: string[] = solver(root);
+    return ans.map(path => Number.parseInt(path, 10)).reduce((acc, cur) => acc + cur, 0);
+};
+```
+
+#### 437.Path Sum III[Medium]
+
+Given the root of a binary tree and an integer targetSum, return the number of paths where the sum of the values along the path equals targetSum.
+
+The path does not need to start or end at the root or a leaf, but it must go downwards (i.e., traveling only from parent nodes to child nodes).
+
+**Solution:** There are two scenarios for finding paths:
+
+1. **Paths Starting from the Root:** For paths that begin at the root, we use `solver(root.left, targetSum - root.val)` and `solver(root.right, targetSum - root.val)`. Note that this scenario specifically requires paths to start from the root, which distinguishes it from the `pathSum` problem.
+
+2. **Paths Not Starting from the Root:** For paths that do not start at the root, we use `pathSum(root.left, targetSum - root.val)` and `pathSum(root.right, targetSum - root.val)`.
+
+```TypeScript
+function pathSum(root: TreeNode | null, targetSum: number): number {
+    // If the root node is the starting point of path.
+    const solver = (root: TreeNode | null, targetSum: number): number => {
+        let ans = root.val === targetSum ? 1 : 0;
+        if (root.left === null && root.right === null) {
+            return ans;
+        }
+        if (root.left === null) {
+            return ans + solver(root.right, targetSum - root.val);
+        }
+        if (root.right === null) {
+            return ans + solver(root.left, targetSum - root.val);
+        }
+        return ans + solver(root.right, targetSum - root.val) + solver(root.left, targetSum - root.val);
+    };
+
+    if (root === null) return 0;
+    // If the root node is the starting point of path.
+    let ans = solver(root, targetSum);
+    if (root.left === null && root.right === null) {
+        return ans;
+    }
+    if (root.left === null) {
+        // The solution does not starting from root and the ones starting from root.
+        return ans + pathSum(root.right, targetSum);
+    }
+    if (root.right === null) {
+        // The solution does not starting from root and the ones starting from root.
+        return ans + pathSum(root.left, targetSum);
+    }
+    return ans + pathSum(root.right, targetSum) + pathSum(root.left, targetSum);
+};
+```
+
+#### 543.Diameter of Binary Tree[Easy]
+
+Given the root of a binary tree, return the length of the diameter of the tree.
+
+The diameter of a binary tree is the length of the longest path between any two nodes in a tree. This path may or may not pass through the root.
+
+The length of a path between two nodes is represented by the number of edges between them.
+
+**Solution:** We traverse each node and recursively compute the maximum depth of both its left and right branches. During this traversal, we also calculate the longest path that passes through each node, which is the sum of the maximum depths of its left and right branches.
+
+```TypeScript
+function diameterOfBinaryTree(root: TreeNode | null): number {
+    if (root === null) return 0;
+    let longestPath = 0;
+    const maxDepth = (root: TreeNode | null): number => {
+        if (root === null) return 0;
+        const leftMaxDepth = maxDepth(root.left);
+        const rightMaxDepth = maxDepth(root.right);
+        longestPath = Math.max(longestPath, leftMaxDepth + rightMaxDepth);
+        return Math.max(leftMaxDepth, rightMaxDepth) + 1;
+    };
+    maxDepth(root);
+    return longestPath;
+};
+```
+
+#### 124.Binary Tree Maximum Path Sum[Hard]
+
+A path in a binary tree is a sequence of nodes where each pair of adjacent nodes in the sequence has an edge connecting them. A node can only appear in the sequence at most once. Note that the path does not need to pass through the root.
+
+The path sum of a path is the sum of the node's values in the path.
+
+Given the root of a binary tree, return the maximum path sum of any non-empty path.
+
+**Solution:** Similar to problem 543, *Diameter of Binary Tree*, we traverse each node and recursively compute the maximum path sum (starting from the current node) for both its left and right branches. During this process, we also update `max_sum` with the maximum path sum that includes the current node, which is the sum of the maximum path sums from its left and right branches.
+
+```TypeScript
+function maxPathSum(root: TreeNode | null): number {
+    let max_sum = -Infinity;
+    // Calculate the maximum path sum starting from the current node
+    const findMaxSumPath = (root: TreeNode | null): number => {
+        if (root === null) return 0;
+        // Calculate the maximum path sum starting from the current node
+        const left_sum = Math.max(0, findMaxSumPath(root.left));
+        const right_sum = Math.max(0, findMaxSumPath(root.right));
+        // Update max_sum with the maximum path sum that includes the current node
+        max_sum = Math.max(max_sum, root.val + left_sum + right_sum);
+        // Return the maximum path sum that includes either the left or right subtree
+        return root.val + Math.max(left_sum, right_sum);
+    };
+    findMaxSumPath(root);
+    return max_sum;
+};
+```
+
+#### 110. Balanced Binary Tree[Easy]
+
+Given a binary tree, determine if it is height-balanced
+
+Check the depth of each node and update whether the tree is balanced.
+
+**Solution:** Similar to problem 543, *Diameter of Binary Tree*, we traverse each node and recursively compute the depth of both its left and right branches. During this process, we also update the final result by checking the difference in depth between the left and right branches. If this difference is not smaller than 2, we update the final result accordingly.
+
+```TypeScript
+function isBalanced(root: TreeNode | null): boolean {
+    let ans = true;
+    const calculateDepth = (root: TreeNode | null): number => {
+        if (!ans) return 0;
+        if (root === null) return 0;
+        if (root.left === null && root.right === null) return 1;
+        let rightDepth = 1;
+        let leftDepth = 1;
+        if (root.left === null) {
+            rightDepth = calculateDepth(root.right);
+        }
+        if (root.right === null) {
+            leftDepth = calculateDepth(root.left);
+        }
+        rightDepth = calculateDepth(root.right);
+        leftDepth = calculateDepth(root.left);
+        if (Math.abs(rightDepth - leftDepth) > 1) {
+            ans = false;
+        }
+        return Math.max(rightDepth, leftDepth) + 1;
+    };
+    calculateDepth(root);
+    return ans;
+};
+```
+
+#### 236. Lowest Common Ancestor of a Binary Tree[Medium]
+
+Given a binary tree, find the lowest common ancestor (LCA) of two given nodes in the tree.
+
+According to the definition of LCA on Wikipedia: “The lowest common ancestor is defined between two nodes p and q as the lowest node in T that has both p and q as descendants (where we allow a node to be a descendant of itself).”
+
+All Node.val are unique.
+p != q
+p and q will exist in the tree.
+
+**Solution:** There are two possible scenarios:
+
+1. **p and q on the Same Branch:** If both `p` and `q` are on the same branch (either left or right), only one of `lowestCommonAncestor(root.right, p, q)` or `lowestCommonAncestor(root.left, p, q)` will be non-null.
+
+2. **p and q on Different Branches:** If `p` and `q` are on different branches, both `lowestCommonAncestor(root.right, p, q)` and `lowestCommonAncestor(root.left, p, q)` will be non-null.
+
+```TypeScript
+function lowestCommonAncestor(root: TreeNode | null, p: TreeNode | null, q: TreeNode | null): TreeNode | null {
+    if (root === null) return null;
+    if (root === p || root === q) return root;
+    // Can be used figured out whether p, q are in the same branch or not
+    const left = lowestCommonAncestor(root.left, p, q);
+    const right = lowestCommonAncestor(root.right, p, q);
+    // p and q are on different branches of root.
+    if (left !== null && right !== null) return root;
+    // If p and q are both on left branch
+    if (left !== null) return left;
+    // If p and q are both on the right branch.
+    return right;
+};
+```
+
+#### 98. Validate Binary Search Tree[Medium]
+
+Given the root of a binary tree, determine if it is a valid binary search tree (BST).
+
+A valid BST is defined as follows:
+The left subtree of a node contains only nodes with keys less than the node's key.
+The right subtree of a node contains only nodes with keys greater than the node's key.
+Both the left and right subtrees must also be binary search trees.
+
+**Solution:** We can create a helper function to check if `root.val` falls within a specified range.
+
+```TypeScript
+function isValidBST(root: TreeNode | null): boolean {
+    const validate = (root: TreeNode | null, left = -Infinity, right = Infinity): boolean => {
+        if(root === null) return true;
+        if (root.val <= left || root.val >= right) return false;
+        return validate(root.left, left, root.val) && validate(root.right, root.val, right);
+    };
+    return validate(root);
+};
+```
+
+**Solution 2:** We can create a helper function to calculate the maximum and minimum values of each tree node. During this process, we also check whether the tree is balanced.
+
+```TypeScript
+function isValidBST(root: TreeNode | null): boolean {
+    let ans = true;
+    const calculateMinMaxValues = (root: TreeNode | null): [number, number] => {
+        if (!ans) return [0, 0];
+        if (root === null) return [-Infinity, Infinity];
+        if (root.left === null && root.right === null) return [root.val, root.val];
+        if (root.left === null) {
+            const [rightMin, rightMax] = calculateMinMaxValues(root.right);
+            if (rightMin <= root.val) {
+                ans = false;
+            }
+            return [Math.min(root.val, rightMin), Math.max(root.val, rightMax)];
+        }
+        if (root.right === null) {
+            const [leftMin, leftMax] = calculateMinMaxValues(root.left);
+            if (leftMax >= root.val) {
+                ans = false;
+            }
+            return [Math.min(root.val, leftMin), Math.max(root.val, leftMax)];
+        }
+        const [rightMin, rightMax] = calculateMinMaxValues(root.right);
+        const [leftMin, leftMax] = calculateMinMaxValues(root.left);
+        if (rightMin <= root.val || leftMax >= root.val) {
+            ans = false;
+        }
+        return [Math.min(root.val, leftMin), Math.max(root.val, rightMax)];
+    };
+    calculateMinMaxValues(root);
+    return ans;
+};
+```
+
+#### 701. Insert into a Binary Search Tree[Medium]
+
+You are given the root node of a binary search tree (BST) and a value to insert into the tree. Return the root node of the BST after the insertion. It is guaranteed that the new value does not exist in the original BST.
+
+Notice that there may exist multiple valid ways for the insertion, as long as the tree remains a BST after insertion. You can return any of them.
+
+It's guaranteed that val does not exist in the original BST.
+
+**Solution:** We can solve this problem recursively. If the root is null, we return a new node with the given value. If the value is less than the root's value, we recursively call the function on the left subtree to insert the value. Otherwise, we recursively call the function on the right subtree to insert the value.
+
+```TypeScript
+function insertIntoBST(root: TreeNode | null, val: number): TreeNode | null {
+    if (root === null) {
+        return new TreeNode(val);
+    }
+    if (val < root.val) {
+        root.left = insertIntoBST(root.left, val);
+        return root;
+    }
+    root.right = insertIntoBST(root.right, val);
+    return root;
+};
+```
+
+#### 144.Binary Tree Preorder Traversal[Easy]
+
+```TypeScript
+function preorderTraversal(root: TreeNode | null): number[] {
+    function preorder(root: TreeNode | null): void {
+        if (root === null) {
+            return;
+        }
+        ans.push(root.val);
+        preorder(root.left);
+        preorder(root.right);
+    }
+    const ans = [];
+    preorder(root);
+    return ans;
+};
+```
+
+#### 94. Binary Tree Inorder Traversal[Easy]
+
+```TypeScript
+function inorderTraversal(root: TreeNode | null): number[] {
+    function traverse(root: TreeNode | null): void {
+        if (root === null) {
+            return
+        }
+        traverse(root.left);
+        ans.push(root.val);
+        traverse(root.right);
+    }
+    const ans: number[] = [];
+    traverse(root);
+    return ans;
+};
+```
+
+#### 145. Binary Tree Postorder Traversal[Easy]
+
+```TypeScript
+function postorderTraversal(root: TreeNode | null): number[] {
+    function traverse(root: TreeNode | null): void {
+        if (root === null) {
+            return
+        }
+        traverse(root.left);
+        traverse(root.right);
+        ans.push(root.val);
+    }
+    const ans: number[] = [];
+    traverse(root);
+    return ans;
+}
+```
+
+#### 104.Maximum Depth of Binary Tree[Easy]
+
+**Solution:** The depth of the tree is determined by taking the maximum of the depths of the left and right branches and adding 1.
+
+```TypeScript
+function maxDepth(root: TreeNode | null): number {
+    if (root === null) return 0;
+    const leftMaxDepth = maxDepth(root.left);
+    const rightMaxDepth = maxDepth(root.right);
+    return Math.max(leftMaxDepth, rightMaxDepth) + 1;
+};
+```
+
+#### 101. Symmetric Tree[Easy]
+
+**Solution:** We can use a helper function called `isSameTree` to check if two branches are identical.
+
+```TypeScript
+function isSymmetric(root: TreeNode | null): boolean {
+    if (root === null) return true;
+    function isSameTree(left: TreeNode | null, right: TreeNode | null): boolean {
+        if (left === null && right === null) return true;
+        if (left === null || right === null) return false;
+        if (left.val !== right.val) return false;
+        return isSameTree(left.left, right.right) && isSameTree(left.right, right.left);
+    }
+    return isSameTree(root.left, root.right);
+};
+```
+
+#### 250. Count Univalue Subtrees[Medium]
+
+Given the root of a binary tree, return the number of uni-value subtrees
+
+A uni-value subtree means all nodes of the subtree have the same value.
+
+**Solution:** We can create a helper function to determine whether each node is part of a uni-value subtree. When a uni-value subtree is detected, we increment the final result.
+
+```TypeScript
+function countUnivalSubtrees(root: TreeNode | null): number {
+    let ans = 0;
+    function isUnivalSubTree(root: TreeNode): number | null {
+        if (root.left === null && root.right === null) {
+            ans += 1;
+            return root.val;
+        }
+        if (root.left === null) {
+            const right = isUnivalSubTree(root.right);
+            if (root.val === right) {
+                ans += 1;
+                return root.val;
+            } else {
+                return null;
+            }
+        }
+
+        if (root.right === null) {
+            const left = isUnivalSubTree(root.left);
+            if (root.val === left) {
+                ans += 1;
+                return root.val;
+            } else {
+                return null;
+            }
+        }
+        const right = isUnivalSubTree(root.right);
+        const left = isUnivalSubTree(root.left);
+        if (right === root.val && left === root.val) {
+            ans += 1;
+            return root.val;
+        }
+        return null;
+    }
+    if (root === null) return 0;
+    isUnivalSubTree(root);
+    return ans;
+};
+```
+
+#### 105. Construct Binary Tree from Preorder and Inorder Traversal[Medium]
+
+Given two integer arrays preorder and inorder where preorder is the preorder traversal of a binary tree and inorder is the inorder traversal of the same tree, construct and return the binary tree.
+
+preorder and inorder consist of unique values.
+Each value of inorder also appears in preorder.
+preorder is guaranteed to be the preorder traversal of the tree.
+inorder is guaranteed to be the inorder traversal of the tree.
+
+**Solution:** We use the root value to find the index that separates the left and right branches. Then, we recursively call the function to construct the left and right branches.
+
+```TypeScript
+function buildTree(preorder: number[], inorder: number[]): TreeNode | null {
+    const n = inorder.length;
+    if (n === 0) return null;
+    const rootVal = preorder[0];
+    const rootIndex = inorder.indexOf(rootVal);
+    const inorderLeft = inorder.slice(0, rootIndex);
+    const inorderRight = inorder.slice(rootIndex + 1, inorder.length);
+    const preorderLeft = preorder.slice(1, rootIndex + 1);
+    const preorderRight = preorder.slice(rootIndex + 1, inorder.length);
+    const left = buildTree(preorderLeft, inorderLeft);
+    const right = buildTree(preorderRight, inorderRight);
+    const root = new TreeNode(rootVal, left, right);
+    return root;
+};
+```
+
+#### 106. Construct Binary Tree from Inorder and Postorder Traversal
+
+Given two integer arrays inorder and postorder where inorder is the inorder traversal of a binary tree and postorder is the postorder traversal of the same tree, construct and return the binary tree.
+
+inorder and postorder consist of unique values.
+Each value of postorder also appears in inorder.
+inorder is guaranteed to be the inorder traversal of the tree.
+postorder is guaranteed to be the postorder traversal of the tree.
+
+**Solution:** Similar to 105. Construct Binary Tree from Preorder and Inorder Traversal[Medium], we use the root value to find the index that separates the left and right branches. Then, we recursively call the function to construct the left and right branches.
+
+```TypeScript
+function buildTree(inorder: number[], postorder: number[]): TreeNode | null {
+    const n = inorder.length;
+    if (n === 0) return null;
+    const rootVal = postorder[n - 1];
+    const rootIndex = inorder.indexOf(rootVal);
+    const inorderLeft = inorder.slice(0, rootIndex);
+    const inorderRight = inorder.slice(rootIndex + 1, inorder.length);
+    const postorderLeft = postorder.slice(0, rootIndex);
+    const postorderRight = postorder.slice(rootIndex, inorder.length - 1);
+    const left = buildTree(inorderLeft, postorderLeft);
+    const right = buildTree(inorderRight, postorderRight);
+    const root = new TreeNode(rootVal, left, right);
+    return root;
+};
+```
+
+#### 297. Serialize and Deserialize Binary Tree
+
+Serialization is the process of converting a data structure or object into a sequence of bits so that it can be stored in a file or memory buffer, or transmitted across a network connection link to be reconstructed later in the same or another computer environment.
+
+Design an algorithm to serialize and deserialize a binary tree. There is no restriction on how your serialization/deserialization algorithm should work. You just need to ensure that a binary tree can be serialized to a string and this string can be deserialized to the original tree structure.
+
+Clarification: The input/output format is the same as how LeetCode serializes a binary tree. You do not necessarily need to follow this format, so please be creative and come up with different approaches yourself.
+
+**Solution:** We use "()" to wrap the serialized result of a tree leaf node and recursively serialize the entire tree. A null tree is serialized as "()".
+
+For deserialization, we count the left and right parentheses to identify the boundary between the left and right branches. Then, we recursively call the same function to deserialize the left and right branches.
+
+```TypeScript
+function serialize(root: TreeNode | null): string {
+    if (root === null) {
+        return "()";
+    }
+    return `(${root.val}${serialize(root.left)}${serialize(root.right)})`;
+};
+
+function deserialize(data: string): TreeNode | null {
+    data = data.slice(1, data.length - 1);
+    if (data === "") return null;
+    const index = data.indexOf("(");
+    const val = Number.parseInt(data.slice(0, index));
+    const root = new TreeNode(val);
+    if (data.endsWith("()()")) {
+        return root;
+    }
+    if (data.endsWith("()")) {
+        root.left = deserialize(data.slice(index, data.length - 2));
+        return root;
+    }
+    if (data.startsWith("()")) {
+        root.right = deserialize(data.slice(index + 2, data.length));
+        return root;
+    }
+
+    const findLeftRightBorder = (index: number): number => {
+        let i = index + 1;
+        let count = 1;
+        while (count > 0) {
+            if (data[i] === "(") {
+                count += 1;
+            }
+            if (data[i] === ")") {
+                count -= 1;
+            }
+            i += 1;
+        }
+        return i;
+    };
+    const border = findLeftRightBorder(index);
+    root.left = deserialize(data.slice(index, border));
+    root.right = deserialize(data.slice(border, data.length));
+    return root;
+};
+```
