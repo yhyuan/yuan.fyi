@@ -1,0 +1,368 @@
+---
+title: Pattern 6 Two Heaps
+date: "2024-05-07"
+tags: ["leetcode", "pattern"]
+draft: false
+---
+
+### Introduction
+
+This pattern aims to quickly calculate the median value of a data stream. To achieve this, we use two heaps: a Min Heap and a Max Heap. The Min Heap stores the larger half of the values, while the Max Heap stores the smaller half. If the total number of elements is odd, the Min Heap will contain one more element than the Max Heap.
+
+With these two heaps properly maintained, calculating the median becomes straightforward. If the count of elements is even, we take the minimum value from the Min Heap and the maximum value from the Max Heap, and compute their average as the median. If the count is odd, the median is simply the top element of the Min Heap.
+
+Here's how we maintain these two heaps:
+
+1. **Insertion:** Compare the new number with the top of the Min Heap. If it's larger or if the heaps are empty, push it to the Min Heap. Otherwise, push the number to the Max Heap.
+2. **Balancing:** We then balance the elements between the two heaps. If the difference in size between the heaps is 0 or 1, we leave them as is. However, if the Min Heap has fewer elements than the Max Heap, we pop an element from the Max Heap and push it into the Min Heap. Conversely, if the Min Heap has more elements than the Max Heap, we pop an element from the Min Heap and push it into the Max Heap.
+
+By following these steps, we can efficiently maintain the heaps and calculate the median value of the data stream.
+
+Python Code:
+
+```Python
+import heapq
+
+class MedianFinder:
+
+    def __init__(self):
+        self.maxHeap = []
+        self.minHeap = []
+        self.count = 0
+
+    def balance(self):
+        if len(self.minHeap) == len(self.maxHeap) or len(self.minHeap) == len(self.maxHeap) + 1:
+            return
+        if len(self.minHeap) < len(self.maxHeap):
+            val = heappop(self.maxHeap)
+            heappush(self.minHeap, -val)
+        if len(self.minHeap) > len(self.maxHeap) + 1:
+            val = heappop(self.minHeap)
+            heappush(self.maxHeap, -val)
+        return
+
+    def addNum(self, num: int) -> None:
+        if len(self.minHeap) == 0 or num > self.minHeap[0]: # larger value
+            heappush(self.minHeap, num)
+        else:
+            heappush(self.maxHeap, -num)
+        self.count += 1
+        self.balance()
+
+    def findMedian(self) -> float:
+        if self.count % 2 == 0:
+            return (self.minHeap[0] + (-self.maxHeap[0])) * 0.5
+        return self.minHeap[0]
+```
+
+TypeScript Code
+```TypeScript
+class Heap<T> {
+  private heap: T[];
+  private compare: (a: T, b: T) => number;
+
+  constructor(compare: (a: T, b: T) => number) {
+    this.heap = [];
+    this.compare = compare;
+  }
+
+  private swap(i: number, j: number): void {
+    [this.heap[i], this.heap[j]] = [this.heap[j], this.heap[i]];
+  }
+
+  private heapifyUp(index: number): void {
+    if (index === 0) return;
+    const parentIndex = Math.floor((index - 1) / 2);
+    const comparison = this.compare(this.heap[index], this.heap[parentIndex]);
+    if (comparison < 0) {
+      this.swap(index, parentIndex);
+      this.heapifyUp(parentIndex);
+    }
+  }
+
+  private heapifyDown(parent: number): void {
+    const left = 2 * parent + 1;
+    const right = 2 * parent + 2;
+    let index = parent;
+    const heapSize = this.size();
+    let comparison = 0;
+    [left, right].forEach((child) => {
+      if (child < heapSize) {
+        comparison = this.compare(this.heap[child], this.heap[index]);
+        if (comparison < 0) {
+          index = child;
+        }
+      }
+    });
+    if (index !== parent) {
+      this.swap(parent, index);
+      this.heapifyDown(index);
+    }
+  }
+
+  insert(value: T): void {
+    this.heap.push(value);
+    this.heapifyUp(this.heap.length - 1);
+  }
+
+  extract(): T | undefined {
+    if (this.heap.length === 0) {
+      return undefined;
+    }
+    if (this.heap.length === 1) {
+      const value = this.heap.pop();
+      return value;
+    }
+    this.swap(0, this.heap.length - 1);
+    const value = this.heap.pop()!;
+    this.heapifyDown(0);
+    return value;
+  }
+
+  delete(value: T): boolean {
+    const index = this.heap.findIndex((element) => element === value);
+    if (index === -1) {
+      return false;
+    }
+    if (index === this.heap.length - 1) {
+      this.heap.pop();
+      return true;
+    }
+    // use the number in the last value to replace the index.
+    this.heap[index] = this.heap.pop()!;
+    if (index < this.heap.length) {
+      this.heapifyDown(index);
+      this.heapifyUp(index);
+    }
+    return true;
+  }
+
+  peek(): T | undefined {
+    return this.heap.length > 0 ? this.heap[0] : undefined;
+  }
+
+  size(): number {
+    return this.heap.length;
+  }
+
+  isEmpty(): boolean {
+    return this.heap.length === 0;
+  }
+}
+```
+```TypeScript
+class MedianFinder {
+  private minHeap: Heap;
+  private maxHeap: Heap;
+  constructor() {
+    this.minHeap = new Heap(HeapType.MIN);
+    this.maxHeap = new Heap(HeapType.MAX);
+  }
+
+  private balance(): void {
+    if (this.minHeap.size() < this.maxHeap.size()) {
+      const val = this.maxHeap.extract();
+      this.minHeap.insert(val!);
+    }
+    if (this.minHeap.size() > this.maxHeap.size() + 1) {
+      const val = this.minHeap.extract();
+      this.maxHeap.insert(val!);
+    }
+  }
+
+  addNum(num: number): void {
+    if (this.minHeap.size() === 0 || num > this.minHeap.peek()!) {
+      this.minHeap.insert(num);
+    } else {
+      this.maxHeap.insert(num);
+    }
+    this.balance();
+  }
+
+  deleteNum(num: number): void {
+    if (num >= this.minHeap.peek()!) {
+      this.minHeap.delete(num);
+    } else {
+      this.maxHeap.delete(num);
+    }
+    this.balance();
+  }
+
+  findMedian(): number {
+    const count = this.minHeap.size() + this.maxHeap.size();
+    if (count % 2 == 0) {
+      return 0.5 * (this.minHeap.peek()! + this.maxHeap.peek()!);
+    }
+    return this.minHeap.peek()!;
+  }
+}
+```
+
+<TOCInline toc={props.toc} exclude="Introduction" />
+
+### Two Heaps Problems
+
+#### 295. Find Median from Data Stream[Hard]
+
+The median is the middle value in an ordered integer list. If the size of the list is even, there is no middle value, and the median is the mean of the two middle values.
+
+For example, for arr = [2,3,4], the median is 3.
+For example, for arr = [2,3], the median is (2 + 3) / 2 = 2.5.
+Implement the MedianFinder class:
+
+MedianFinder() initializes the MedianFinder object.
+void addNum(int num) adds the integer num from the data stream to the data structure.
+double findMedian() returns the median of all elements so far. Answers within 10-5 of the actual answer will be accepted.
+
+Follow up:
+
+If all integer numbers from the stream are in the range [0, 100], how would you optimize your solution?
+If 99% of all integer numbers from the stream are in the range [0, 100], how would you optimize your solution?
+
+```TypeScript
+// Check Introduction section
+```
+
+Follow up Solution:
+If all integer numbers from the stream are in the range [0, 100], how would you optimize your solution?
+If 99% of all integer numbers from the stream are in the range [0, 100], how would you optimize your solution?
+use freq to count the number frequency. It will decrease the time of the calculation of mean to O(1).
+
+```TypeScript
+class MedianFinder {
+    private freq: number[];
+    private smallCount: number;
+    private largeCount: number;
+    constructor() {
+        this.freq = Array(101).fill(0);
+        this.smallCount = 0;
+        this.largeCount = 0;
+    }
+
+    addNum(num: number): void {
+        if (num >= 0 && num <= 100) {
+            this.freq[num] += 1;
+            return;
+        }
+        if (num < 0) {
+            this.smallCount += 1;
+            return;
+        }
+        this.largeCount += 1;
+    }
+
+    findMedian(): number {
+        const totalCount = this.smallCount + this.largeCount + this.freq.reduce((acc, cur) => acc + cur, 0);
+        const middlePosition = Math.floor(totalCount / 2);
+
+        let count = this.smallCount;
+        for (let i = 0; i < this.freq.length; i++) {
+            count += this.freq[i];
+            if (count > middlePosition) {
+                return i;
+            } else if (count === middlePosition && totalCount % 2 === 0) {
+                // If total count is even and we're exactly at the middle,
+                // we need to find the next non-zero frequency
+                for (let j = i + 1; j < this.freq.length; j++) {
+                    if (this.freq[j] > 0) {
+                        return (i + j) / 2;
+                    }
+                }
+            }
+        }
+
+        // This should never happen if the input is valid
+        throw new Error("Invalid input: unable to calculate median");
+    }
+}
+```
+
+#### 480. Sliding Window Median[Hard]
+
+The median is the middle value in an ordered integer list. If the size of the list is even, there is no middle value. So the median is the mean of the two middle values.
+
+For examples, if arr = [2,3,4], the median is 3.
+For examples, if arr = [1,2,3,4], the median is (2 + 3) / 2 = 2.5.
+You are given an integer array nums and an integer k. There is a sliding window of size k which is moving from the very left of the array to the very right. You can only see the k numbers in the window. Each time the sliding window moves right by one position.
+
+Return the median array for each window in the original array. Answers within 10-5 of the actual value will be accepted.
+
+**Solution:** Similar to problem 295, *Find Median from Data Stream*, we can use two heaps to solve this problem. The key difference is that we also need to handle the removal of elements from the left side of the sliding window.
+
+```TypeScript
+function medianSlidingWindow(nums: number[], k: number): number[] {
+  if (k === 1) {
+    return nums;
+  }
+  const n = nums.length;
+  const ans = [];
+  const medianFinder: MedianFinder = new MedianFinder();
+  Array(k)
+    .fill(0)
+    .forEach((_, i) => medianFinder.addNum(nums[i]));
+  ans.push(medianFinder.findMedian());
+  nums.forEach((num, i) => {
+    if (i + k < n) {
+      medianFinder.addNum(nums[i + k]);
+      medianFinder.deleteNum(nums[i]);
+      ans.push(medianFinder.findMedian());
+    }
+  });
+  return ans;
+}
+```
+
+#### 502. IPO[Hard]
+
+Suppose LeetCode will start its IPO soon. In order to sell a good price of its shares to Venture Capital, LeetCode would like to work on some projects to increase its capital before the IPO. Since it has limited resources, it can only finish at most k distinct projects before the IPO. Help LeetCode design the best way to maximize its total capital after finishing at most k distinct projects.
+
+You are given n projects where the ith project has a pure profit profits[i] and a minimum capital of capital[i] is needed to start it.
+
+Initially, you have w capital. When you finish a project, you will obtain its pure profit and the profit will be added to your total capital.
+
+Pick a list of at most k distinct projects from given projects to maximize your final capital, and return the final maximized capital.
+
+The answer is guaranteed to fit in a 32-bit signed integer.
+
+**Solution:** We start by sorting the capital array along with its indices. Concurrently, we create a max heap for the profits, also indexed.
+
+We then add all projects where `capital[i] <= w` to the max heap. From this heap, we extract the project with the maximum profit and update the current capital with this profit.
+
+This process is repeated until we have completed `k` projects.
+
+This solution uses only one heap.
+
+```TypeScript
+function findMaximizedCapital(k: number, w: number, profits: number[], capital: number[]): number {
+    const n = capital.length;
+    const capitalIndices: [number, number][] = capital.map((cap, index) => [cap, index]);
+    capitalIndices.sort((a, b) => {
+        if (a[0] !== b[0]) return a[0] - b[0];
+        return a[1] - b[1];
+    }); // sort it with capital and index
+
+    const profitsIndices: Heap<[number, number]> = new Heap<[number, number]>((a: [number, number], b: [number, number]) => {
+        if (a[0] !== b[0]) {
+            return b[0] - a[0]; // Max Heap
+        }
+        return a[1] - b[1];
+    });
+
+    let j = 0;
+    for (let i = 0; i < k; i++) {
+        // Add all project with less than w capital to the profitsIndices
+        while (j < n && capitalIndices[j][0] <= w) {
+            const projectIndex = capitalIndices[j][1];
+            profitsIndices.insert([profits[projectIndex], projectIndex]);
+            j += 1;
+        }
+        if (profitsIndices.size() === 0) {
+            return w;
+        }
+        // Pick the one with largest profit.
+        const [profit, _] = profitsIndices.extract()!
+        w += profit;
+    }
+    return w;
+}
+```
