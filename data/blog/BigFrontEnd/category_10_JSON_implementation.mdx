@@ -1,0 +1,702 @@
+---
+title: BigFrontEnd Category 10 JSON Implementation Questions
+date: "2024-06-07"
+tags: ["BigFrontEnd", "category"]
+draft: false
+---
+### Introduction
+
+This blog post summarizes the JSON implementation related questions found on BigFrontEnd.Dev.
+
+<TOCInline toc={props.toc} exclude="Introduction" />
+
+### 1.implement `JSON.stringify()`
+
+#### 1.1 implement `JSON.stringify()`
+
+21.https://bigfrontend.dev/problem/implement-JSON-stringify
+I believe you've used JSON.stringify() before, do you know the details of how it handles arbitrary data?
+
+Please have a guess on the details and then take a look at the explanation on MDN, it is actually pretty complex.
+
+In this problem, you are asked to implement your own version of JSON.stringify().
+
+In a real interview, you are not expected to cover all the cases, just decide the scope with interviewer. But for a goal of practicing, your code here will be tested against a lot of data types. Please try to cover as much as you can.
+
+Attention to the circular reference.
+
+note
+
+`JSON.stringify()` support two more parameters which is not required here.
+
+Don't use `JSON.stringify()` in your code here, it doesn't help you practicing coding skills.
+
+```js
+/**
+ * @param {any} data
+ * @return {string}
+ */
+function stringify(data) {
+  const typeOfData = detectDataType(data);
+
+  if (typeOfData === "array") {
+    return stringifyArr(data);
+  }
+
+  if (typeOfData === "object" || typeOfData === "map") {
+    return stringifyObj(data);
+  }
+
+  return _stringify(typeOfData, data);
+}
+
+function stringifyObj(data) {
+  let stringifiedData = [];
+
+  for (const key of Object.keys(data)) {
+    const val = data[key];
+    const typeOfVal = detectDataType(val);
+
+    if (
+      typeOfVal === "symbol" ||
+      typeOfVal === "function" ||
+      typeOfVal === "undefined"
+    ) {
+      continue;
+    }
+
+    let stringifiedKey = `\"${key}\":`;
+
+    switch (typeOfVal) {
+      case "array":
+        stringifiedKey += stringifyArr(val);
+        break;
+      case "object":
+      case "map":
+        stringifiedKey += stringifyObj(val);
+        break;
+      default:
+        stringifiedKey += _stringify(typeOfVal, val);
+    }
+
+    stringifiedData.push(stringifiedKey);
+  }
+
+  return `{${stringifiedData.join(",")}}`;
+}
+
+function stringifyArr(data) {
+  let stringifiedData = [];
+
+  for (const [index, val] of data.entries()) {
+    if (isNaN(index)) {
+      continue;
+    }
+
+    const typeOfVal = detectDataType(val);
+
+    switch (typeOfVal) {
+      case "array":
+        stringifiedData.push(stringifyArr(val));
+        break;
+      case "object":
+      case "map":
+        stringifiedData.push(stringifyObj(val));
+        break;
+      default:
+        stringifiedData.push(_stringify(typeOfVal, val));
+    }
+  }
+
+  return `[${stringifiedData.join(",")}]`;
+}
+
+function _stringify(typeOfData, data) {
+  switch (typeOfData) {
+    case "string":
+      return `\"${data}\"`;
+    case "number":
+    case "boolean":
+      return String(data);
+    case "function":
+      return undefined;
+    case "date":
+      return `"${data.toISOString()}"`;
+    case "set":
+    case "map":
+    case "weakSet":
+    case "weakMap":
+      return "{}";
+    case "bigint":
+      throw new Error("TypeError: BigInt value can't be serialized in JSON");
+    default:
+      return "null";
+  }
+}
+
+function detectDataType(data) {
+  if (typeof data === "number" && isNaN(data)) {
+    return "NaN";
+  }
+
+  if (data === Infinity) {
+    return "infinity";
+  }
+
+  if (typeof data !== "object") {
+    return typeof data;
+  }
+
+  if (data === null) {
+    return "null";
+  }
+  const dataTypes = new Map([
+    [Number, "number"],
+    [String, "string"],
+    [Boolean, "boolean"],
+    [Array, "array"],
+    [ArrayBuffer, "arraybuffer"],
+    [Date, "date"],
+    [Set, "set"],
+    [Map, "map"],
+    [WeakSet, "weakSet"],
+    [WeakMap, "weakMap"],
+  ]);
+  for (const [type, name] of dataTypes.entries()) {
+    if (data instanceof type) {
+      return name;
+    }
+  }
+
+  return "object";
+}
+```
+
+#### 1.2 `JSON.stringify()` Implementation 2633. Convert JSON to string
+
+1. Array
+2. Object (except `null`)
+3. String
+4. Other: null, boolean, number.
+
+```TypeScript
+type JSONValue = null | boolean | number | string | JSONValue[] | { [key: string]: JSONValue };
+
+function jsonStringify(object: JSONValue): string {
+    if (Array.isArray(object)) {
+        return "[" + object.map(item => jsonStringify(item)).join(",") + "]";
+    }
+    if (typeof object === 'object' && object !== null) {
+        return "{" + Object.entries(object).map(([key, val]) => `"${key}":${jsonStringify(val)}`).join(",") + "}";
+    }
+    if (typeof object === 'string') {
+        return `"${object}"`
+    }
+    return String(object);
+};
+```
+
+### 2.implement `JSON.parse()`
+
+22.https://bigfrontend.dev/problem/implement-JSON-parse
+
+```js
+/**
+ * @param {string} str
+ * @return {object | Array | string | number | boolean | null}
+ */
+function parse(str) {
+  const dataType = detectDataType(str);
+
+  if (dataType === "object") return parseObj(str);
+
+  if (dataType === "array") return parseArr(str);
+
+  return parsePrimitive(str);
+}
+
+function parseObj(str) {
+  const obj = {};
+
+  str = str.slice(1, -1);
+  if (str.endsWith(":")) throw new Error();
+
+  while (str.length > 0) {
+    str = skipLeadingSpace(str);
+
+    const regex = /^"(.+?)"\s?:/;
+    const matchedKey = str.match(regex);
+    if (!matchedKey) throw new Error();
+
+    const key = matchedKey[1];
+
+    let rest = str.slice(matchedKey[0].length);
+    rest = skipLeadingSpace(rest);
+
+    let matchedVal;
+    let val;
+    if ((matchedVal = rest.match(/^({.+})\s?,?/))) {
+      val = matchedVal[1];
+      obj[key] = parseObj(val);
+    } else if ((matchedVal = rest.match(/^(\[.+\])\s?,?/))) {
+      val = matchedVal[1];
+      obj[key] = parseArr(val);
+    } else if ((matchedVal = rest.match(/^(\w+)\s?,?/u))) {
+      val = matchedVal[1];
+      obj[key] = parsePrimitive(val);
+    } else if (
+      (matchedVal = rest.match(/^("[\p{Emoji}\p{Alpha}]+.?")\s?,?/u))
+    ) {
+      val = matchedVal[1];
+      obj[key] = parsePrimitive(val);
+    } else {
+      throw new Error();
+    }
+
+    str = rest.slice(matchedVal[0].length);
+  }
+
+  return obj;
+}
+
+function parseArr(str) {
+  const arr = [];
+
+  str = str.slice(1, -1);
+  if (str.endsWith(",")) throw new Error();
+
+  while (str.length > 0) {
+    let item = str.match(/.+?,(?!"\w+":)/);
+    if (!item) {
+      item = str;
+    } else {
+      item = item[0].slice(0, -1);
+    }
+    const dataType = detectDataType(item);
+
+    switch (dataType) {
+      case "object":
+        arr.push(parseObj(item));
+        break;
+      case "array":
+        arr.push(parseArr(item));
+        break;
+      default:
+        arr.push(parsePrimitive(item));
+    }
+
+    str = str.slice(item.length + 1);
+  }
+
+  return arr;
+}
+
+function parsePrimitive(str) {
+  if (str.startsWith('"')) return str.slice(1, -1);
+
+  if (!isNaN(str)) return Number(str);
+
+  if (str === "true") return true;
+
+  if (str === "false") return false;
+
+  if (str === "undefined") return undefined;
+
+  return null;
+}
+
+function detectDataType(str) {
+  if (str.startsWith("{") && str.endsWith("}")) {
+    return "object";
+  }
+
+  if (str.startsWith("[") && str.endsWith("]")) {
+    return "array";
+  }
+
+  return "primitive";
+}
+
+function skipLeadingSpace(str) {
+  const firstNonSpaceCharIdx = str.search(/\S/);
+  if (firstNonSpaceCharIdx === -1) return "";
+  return str.slice(firstNonSpaceCharIdx);
+}
+```
+
+This solution will fail at test case.
+
+```js
+expect(parse('[{"a":{"b":{"c":[1],"d":"BFE,dev"}}},null,"str"]')).toEqual(
+  JSON.parse('[{"a":{"b":{"c":[1],"d":"BFE,dev"}}},null,"str"]'),
+);
+```
+
+### 3.`JSON.parse()` Implementation
+
+```
+value       ::= object | array | string | number | "true" | "false" | "null"
+object      ::= "{" [ pair ("," pair)* ] "}"
+pair        ::= string ":" value
+array       ::= "[" [ value ("," value)* ] "]"
+string      ::= '"' characters '"'
+characters  ::= "" | character characters
+character   ::= "any Unicode character, except for \", \, and control characters" | escape
+escape      ::= "\" ("\"" | "\\" | "/" | "b" | "f" | "n" | "r" | "t" | "u" hex hex hex hex)
+number      ::= ["-"] int [frac] [exp]
+int         ::= "0" | digit1-9 digits
+frac        ::= "." digits
+exp         ::= ("e" | "E") ["+" | "-"] digits
+digit       ::= "0" | digit1-9
+digits      ::= digit | digit digits
+```
+
+```JavaScript
+// https://medium.com/@anchen.li/writing-a-json-parser-in-typescript-72c90fe6df8c
+
+type JSONValue = string | number | boolean | null | JSONObject | JSONArray;
+type JSONObject = { [key: string]: JSONValue };
+type JSONArray = JSONValue[];
+
+export class JSONParser {
+  private pos = 0;
+  private input: string;
+
+  constructor(input: string) {
+    this.input = input;
+  }
+
+  public parse(): JSONValue {
+    this.consumeWhitespace();
+
+    const result = this.parseValue();
+
+    this.consumeWhitespace();
+
+    if (this.hasNext()) {
+      throw new Error(
+        `Unexpected token at position ${this.pos}-${this.currentToken()}`,
+      );
+    }
+
+    return result;
+  }
+
+  private consumeWhitespace(): void {
+    while (/\s/.test(this.currentToken())) {
+      this.consume();
+    }
+  }
+
+  private hasNext(): boolean {
+    return this.currentToken() !== "";
+  }
+
+  private currentToken(): string {
+    return this.input.charAt(this.pos);
+  }
+
+  private consume(expected?: string): void {
+    if (expected && this.currentToken() !== expected) {
+      throw new Error(`Expected ${expected} at position ${this.pos}`);
+    }
+
+    this.pos++;
+
+    // Skip over any whitespace characters
+    while (
+      this.currentToken() === " " ||
+      this.currentToken() === "\t" ||
+      this.currentToken() === "\n" ||
+      this.currentToken() === "\r"
+    ) {
+      this.pos++;
+    }
+  }
+
+  private optionalConsume(expected: string): boolean {
+    if (this.currentToken() === expected) {
+      this.pos++;
+      // Skip over any whitespace characters
+      while (
+        this.currentToken() === " " ||
+        this.currentToken() === "\t" ||
+        this.currentToken() === "\n" ||
+        this.currentToken() === "\r"
+      ) {
+        this.pos++;
+      }
+
+      return true;
+    }
+
+    return false;
+  }
+
+  private parseValue(): JSONValue {
+    switch (this.currentToken()) {
+      // If the current token is an opening brace, parse an object
+      case "{":
+        return this.parseObject();
+      // If the current token is an opening bracket, parse an array
+      case "[":
+        return this.parseArray();
+      // If the current token is a string literal, parse a string
+      case '"':
+        return this.parseString();
+      // If the current token is a minus sign or a digit, parse a number
+      case "-":
+      case "0":
+      case "1":
+      case "2":
+      case "3":
+      case "4":
+      case "5":
+      case "6":
+      case "7":
+      case "8":
+      case "9":
+        return this.parseNumber();
+      // If the current token is the 'true' literal, return true
+      case "t":
+        return this.parseTrue();
+      // If the current token is the 'false' literal, return false
+      case "f":
+        return this.parseFalse();
+      // If the current token is the 'null' literal, return null
+      case "n":
+        return this.parseNull();
+      // Otherwise, the JSON value is invalid
+      default:
+        throw new Error(`Invalid JSON value at position ${this.pos}`);
+    }
+  }
+
+  private parseObject(): JSONObject {
+    const obj: JSONObject = {};
+
+    // Consume opening curly brace
+    this.consume("{");
+
+    // Parse key-value pairs
+    while (this.currentToken() !== "}") {
+      const pair = this.parsePair();
+      obj[pair.key] = pair.value;
+
+      // Check if there is another pair
+      if (this.currentToken() === ",") {
+        this.consume(",");
+      } else if (this.currentToken() !== "}") {
+        throw new Error(`Invalid object at position ${this.pos}`);
+      }
+    }
+
+    // Consume closing curly brace
+    this.consume("}");
+
+    return obj;
+  }
+
+  private parsePair(): { key: string; value: JSONValue } {
+    const key = this.parseString();
+
+    // Consume colon
+    this.consume(":");
+
+    const value = this.parseValue();
+
+    return { key, value };
+  }
+
+  private parseArray(): JSONArray {
+    const arr: JSONArray = [];
+
+    // Consume opening square bracket
+    this.consume("[");
+
+    // Parse values
+    while (this.currentToken() !== "]") {
+      const value = this.parseValue();
+      arr.push(value);
+
+      // Check if there is another value
+      if (this.currentToken() === ",") {
+        this.consume(",");
+      } else if (this.currentToken() !== "]") {
+        throw new Error(`Invalid array at position ${this.pos}`);
+      }
+    }
+
+    // Consume closing square bracket
+    this.consume("]");
+
+    return arr;
+  }
+  private parseString(): string {
+    let str = "";
+
+    // Consume opening quote
+    this.consume('"');
+
+    // Parse string characters
+    while (this.currentToken() !== '"') {
+      if (this.currentToken() === "\\") {
+        str += this.parseEscape();
+      } else {
+        str += this.currentToken();
+        this.pos++;
+      }
+    }
+
+    // Consume closing quote
+    this.consume('"');
+
+    return str;
+  }
+
+  private parseNumber(): number {
+    let str = "";
+
+    // If the number is negative, add the minus sign to the string and consume the token
+    if (this.currentToken() === "-") {
+      str += "-";
+      this.consume("-");
+    }
+
+    // Parse the integer part of the number
+    str += this.parseDigits();
+
+    // If the number has a fractional part, parse it
+    if (this.currentToken() === ".") {
+      str += ".";
+      this.consume(".");
+      str += this.parseDigits();
+    }
+
+    // If the number has an exponent, parse it
+    if (this.currentToken() === "e" || this.currentToken() === "E") {
+      str += this.currentToken();
+      this.consume();
+
+      if (this.currentToken() === "+" || this.currentToken() === "-") {
+        str += this.currentToken();
+        this.consume();
+      }
+
+      str += this.parseDigits();
+    }
+
+    // Convert the parsed string to a number and return it
+    return parseFloat(str);
+  }
+
+  private parseDigits(): string {
+    let str = "";
+
+    // If the first digit is zero, add it to the string and consume the token
+    if (this.currentToken() === "0") {
+      str += this.currentToken();
+      this.consume();
+    }
+    // If the first digit is between 1 and 9, parse the rest of the digits
+    else if (this.currentToken() >= "1" && this.currentToken() <= "9") {
+      str += this.currentToken();
+      this.consume();
+
+      while (this.currentToken() >= "0" && this.currentToken() <= "9") {
+        str += this.currentToken();
+        this.consume();
+      }
+    }
+    // Otherwise, the JSON number is invalid
+    else {
+      throw new Error(`Invalid JSON number at position ${this.pos}`);
+    }
+
+    // Return the parsed string of digits
+    return str;
+  }
+
+  private parseEscape(): string {
+    // Consume the backslash
+    this.consume("\\");
+
+    switch (this.currentToken()) {
+      // If the escape sequence is a double quote, backslash, or forward slash, return the corresponding character
+      case '"':
+      case "\\":
+      case "/":
+        const c = this.currentToken();
+        this.consume();
+        return c;
+      // If the escape sequence is a backspace, return the corresponding character
+      case "b":
+        this.consume();
+        return "\b";
+      // If the escape sequence is a form feed, return the corresponding character
+      case "f":
+        this.consume();
+        return "\f";
+      // If the escape sequence is a newline, return the corresponding character
+      case "n":
+        this.consume();
+        return "\n";
+      // If the escape sequence is a carriage return, return the corresponding character
+      case "r":
+        this.consume();
+        return "\r";
+      // If the escape sequence is a tab, return the corresponding character
+      case "t":
+        this.consume();
+        return "\t";
+      // If the escape sequence is a Unicode code point, parse it and return the corresponding character
+      case "u":
+        this.consume();
+        const code = parseInt(this.input.substr(this.pos, 4), 16);
+
+        if (isNaN(code)) {
+          throw new Error(
+            `Invalid Unicode escape sequence at position ${this.pos}`,
+          );
+        }
+
+        this.pos += 4;
+
+        return String.fromCharCode(code);
+      // Otherwise, the JSON escape sequence is invalid
+      default:
+        throw new Error(`Invalid escape sequence at position ${this.pos}`);
+    }
+  }
+
+  private parseTrue(): true {
+    this.consume("t");
+    this.consume("r");
+    this.consume("u");
+    this.consume("e");
+    return true;
+  }
+
+  private parseFalse(): false {
+    this.consume("f");
+    this.consume("a");
+    this.consume("l");
+    this.consume("s");
+    this.consume("e");
+    return false;
+  }
+
+  private parseNull(): null {
+    this.consume("n");
+    this.consume("u");
+    this.consume("l");
+    this.consume("l");
+    return null;
+  }
+}
+
+const parser = new JSONParser(
+  '{"name": "John John", "age": 30, "test": {"test": 1}}',
+);
+console.log(parser.parse());
+```

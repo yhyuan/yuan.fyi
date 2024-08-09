@@ -1,0 +1,567 @@
+---
+title: BigFrontEnd Category 15 Promise Implementation Questions
+date: "2024-06-12"
+tags: ["BigFrontEnd", "category"]
+draft: false
+---
+
+### Introduction
+
+This blog post summarizes the Promise implementation related questions found on BigFrontEnd.Dev.
+
+<TOCInline toc={props.toc} exclude="Introduction" />
+
+### 1.Implement `Promise.all()`
+
+If any promise fails (i.e., rejects), the entire `Promise.all()` operation fails immediately, and the returned promise is rejected with the reason of the first rejected promise.
+
+#### 1.1.Implement `Promise.all()`
+
+32 https://bigfrontend.dev/problem/implement-Promise-all
+
+```js
+/**
+ * @param {Array<any>} promises - notice input might have non-Promises
+ * @return {Promise<any[]>}
+ */
+function all(promises) {
+  return new Promise((resolve, reject) => {
+    const n = promises.length;
+    if (n === 0) {
+      resolve([]);
+    }
+    const results = Array(n);
+    let count = 0;
+    promises.forEach((prom, index) => {
+      const promise =
+        prom instanceof Promise ? prom : new Promise((res, rej) => res(prom));
+      promise
+        .then((data) => {
+          results[index] = data;
+          count += 1;
+          if (count === n) {
+            resolve(results);
+          }
+        })
+        .catch((e) => {
+          reject(e);
+        });
+    });
+  });
+}
+```
+
+#### 1.2.Implement `Promise.all()`
+
+```TypeScript
+// 2721. Execute Asynchronous Functions in Parallel
+type Fn<T> = () => Promise<T>
+function promiseAll<T>(functions: Fn<T>[]): Promise<T[]> {
+    return new Promise<T[]>((resolve, reject) => {
+        const result: T[] = Array(functions.length);
+        let count = 0;
+        functions.forEach((func, i) => {
+            func().then(val => {
+                result[i] = val;
+                count += 1;
+                if (count === functions.length) {
+                    resolve(result);
+                }
+            }).catch(e => {
+                reject(e);
+            });
+        });
+    });
+};
+
+const promises = [
+  Promise.resolve('fulfilled value 1'),
+  Promise.resolve('fulfilled value 2'),
+  new Promise(resolve => setTimeout(() => resolve('fulfilled value 3'), 1000))
+];
+
+all(promises)
+  .then(results => {
+    console.log(results);
+    // Output: ['fulfilled value 1', 'fulfilled value 2', 'fulfilled value 3']
+  })
+  .catch(error => {
+    console.error(error);
+  });
+```
+
+### 2.Implement `Promise.allSettled()`
+
+33 https://bigfrontend.dev/problem/implement-Promise-allSettled
+Use `Promise.allSettled()` when you want to wait for all promises to complete, regardless of whether they fulfill or reject, and you need to know the outcome of each individual promise.
+
+```JavaScript
+/**
+ * @param {Array<any>} promises - notice that input might contains non-promises
+ * @return {Promise<Array<{status: 'fulfilled', value: any} | {status: 'rejected', reason: any}>>}
+ */
+function allSettled(promises) {
+  const n = promises.length;
+  if (n === 0) {
+    return new Promise((resolve) => resolve([]));
+  }
+  const results = Array(n);
+  let count = 0;
+  return new Promise((resolve, reject) => {
+    const checkCompleted = () => {
+          count += 1;
+          if (count === n) {
+            resolve(results);
+          }
+    };
+    promises.forEach((prom, index) => {
+      const promise =
+        prom instanceof Promise
+          ? prom
+          : new Promise((resolve) => resolve(prom));
+      promise
+        .then((data) => {
+          results[index] = { status: "fulfilled", value: data };
+          checkCompleted();
+        })
+        .catch((error) => {
+          results[index] = { status: "rejected", reason: error };
+          checkCompleted();
+        });
+    });
+  });
+}
+```
+
+### 3.Implement `Promise.any()`
+
+34 https://bigfrontend.dev/problem/implement-Promise-any
+Waits for any of the promises in the iterable to be fulfilled. Returns a single Promise that resolves with the value of the first fulfilled promise, or rejects with an `AggregateError` if all input promises are rejected.
+
+```js
+/**
+ * @param {Array<Promise>} promises
+ * @return {Promise}
+ */
+function any(promises) {
+  const n = promises.length;
+  if (n === 0) {
+    return Promise.resolve();
+  }
+
+  let isFulfilled = false;
+  const errors = Array(n);
+  let numOfErrors = 0;
+
+  return new Promise((resolve, reject) => {
+    promises.forEach((prom, i) => {
+      const promise =
+        prom instanceof Promise
+          ? prom
+          : new Promise((resolve) => resolve(prom));
+
+      promise
+        .then((value) => {
+          if (!isFulfilled) {
+            resolve(value);
+            isFulfilled = true;
+          }
+        })
+        .catch((reason) => {
+          errors[i] = reason;
+          numOfErrors++;
+          if (numOfErrors === n) {
+            reject(
+              new AggregateError(
+                "No Promise in Promise.any was resolved",
+                errors,
+              ),
+            );
+          }
+        });
+    });
+  });
+}
+```
+
+### 4.Implement `Promise.race()`
+
+35 https://bigfrontend.dev/problem/implement-Promise-race
+Waits for the first promise in the iterable to be settled (fulfilled or rejected).
+
+```js
+/**
+ * @param {Array<Promise>} promises
+ * @return {Promise}
+ */
+function race(promises) {
+  const n = promises.length;
+  if (n === 0) {
+    return new Promise((resolve) => resolve());
+  }
+  return new Promise((resolve, reject) => {
+    promises.forEach((promise) => {
+      if (!(promise instanceof Promise)) {
+        promise = new Promise((resolve) => resolve(promise));
+      }
+      promise
+        .then((data) => {
+          resolve(data);
+        })
+        .catch((error) => {
+          reject(error);
+        });
+    });
+  });
+}
+```
+
+### 5.auto-retry Promise on rejection
+
+64.https://bigfrontend.dev/problem/retry-promise-on-rejection
+
+```js
+/**
+ * @param {() => Promise<any>} fetcher
+ * @param {number} maximumRetryCount
+ * @return {Promise<any>}
+ */
+function fetchWithAutoRetry(fetcher, maximumRetryCount) {
+  return new Promise((resolve, reject) => {
+    function attempt(n) {
+      fetcher()
+        .then(resolve)
+        .catch((error) => {
+          if (n === 1) {
+            reject(error);
+          } else {
+            attempt(n - 1);
+          }
+        });
+    }
+
+    attempt(maximumRetryCount);
+  });
+}
+```
+
+### 6.create your own Promise
+
+67.https://bigfrontend.dev/problem/create-your-own-Promise
+
+### 7.throttle Promises
+
+92.https://bigfrontend.dev/problem/throttle-Promises
+
+```js
+/**
+ * @param {() => Promise<any>} func
+ * @param {number} max
+ * @return {Promise}
+ */
+function throttlePromises(tasks, maxConcurrent) {
+  return new Promise((resolve, reject) => {
+    const results = [];
+    let runningCount = 0;
+    let index = 0;
+
+    function runNext() {
+      // If all tasks are completed, resolve the final results
+      if (index === tasks.length && runningCount === 0) {
+        resolve(results);
+        return;
+      }
+
+      // If the number of currently running tasks is less than maxConcurrent
+      while (runningCount < maxConcurrent && index < tasks.length) {
+        const currentIndex = index++;
+        const task = tasks[currentIndex];
+
+        runningCount++;
+        task()
+          .then((result) => {
+            results[currentIndex] = result;
+          })
+          .catch((err) => {
+            reject(err);
+          })
+          .finally(() => {
+            runningCount--;
+            runNext(); // Run the next task when the current one completes
+          });
+      }
+    }
+
+    runNext();
+  });
+}
+```
+
+### 8.implement Promise.prototype.finally()
+
+123.https://bigfrontend.dev/problem/implement-Promise-prototype-finally
+
+```js
+/**
+ * @param {Promise<any>} promise
+ * @param {() => void} onFinally
+ * @returns {Promise<any>}
+ */
+function myFinally(promise, onFinally) {
+  return new Promise((resolve, reject) => {
+    promise
+      .then(async (result) => {
+        // Add async to support the case that onFinally() return a promise.
+        try {
+          await onFinally();
+          resolve(result);
+        } catch (err) {
+          reject(err);
+        }
+      })
+      .catch(async (error) => {
+        try {
+          await onFinally();
+          reject(error);
+        } catch (err) {
+          reject(err);
+        }
+      });
+  });
+}
+```
+
+### 9.Add Two Promises (2723)
+
+```TypeScript
+type P = Promise<number>
+
+async function addTwoPromises(promise1: P, promise2: P): P {
+    try {
+        const [val1, val2] = await Promise.all([promise1, promise2]);
+        return val1 + val2;
+    } catch {
+        throw new Error("promise error");
+    }
+};
+```
+
+### 10.Sleep (2621)
+
+```TypeScript
+async function sleep(millis: number): Promise<void> {
+    return new Promise((resolve, reject) => {
+        setTimeout(() => resolve(), millis);
+    });
+}
+```
+
+### 11.Promise Time Limit (2637)
+
+```TypeScript
+type Fn = (...params: any[]) => Promise<any>;
+
+function timeLimit(fn: Fn, t: number): Fn {
+    return async function(...args) {
+        return Promise.race([
+            fn(...args),
+            new Promise<any>((resolve, reject) => {
+                setTimeout(() => {
+                    reject("Time Limit Exceeded");
+                }, t);
+            }),
+        ]);
+    }
+};
+```
+
+### 12.Implement `promisify()`
+
+159.https://bigfrontend.dev/problem/promisify
+
+```JavaScript
+function promisify(func) {
+  return function (...args) {
+    return new Promise((resolve, reject) => {
+      // Invoke the original function with the provided arguments
+      func(...args, (err, result) => {
+        if (err) {
+          reject(err); // If an error occurs, reject the Promise with the error
+        } else {
+          resolve(result); // If successful, resolve the Promise with the result
+        }
+      });
+    });
+  };
+}
+const fs = require('fs');
+// Example: promisify the fs.readFile function
+const readFilePromise = promisify(fs.readFile);
+readFilePromise('example.txt', 'utf8')
+  .then(data => {
+    console.log(data);
+  })
+  .catch(error => {
+    console.error(error);
+  });
+```
+
+### 13.Promise Pool (2636)
+
+```TypeScript
+// https://dev.to/endeavourmonk/promise-pool-javascript-leetcode-2636-598k
+type F = () => Promise<any>;
+
+function promisePool(functions: F[], n: number): Promise<any> {
+    return new Promise<any>((resolve) => {
+        let inProgress = 0, index = 0;
+        const results: any[] = [];
+        function helper() {
+            // base case
+            if (index >= functions.length) {
+                if (inProgress === 0) resolve(results);
+                return;
+            }
+
+            while (inProgress < n && index < functions.length) {
+                inProgress++;
+                functions[index]().then((val) => {
+                    results[index] = val;
+                    inProgress--;
+                    helper();
+                });
+                index += 1;
+            }
+        }
+        helper();
+  });
+}
+```
+
+### 14.call APIs with pagination
+
+56.https://bigfrontend.dev/problem/call-APIs-with-pagination
+
+#### 14.1
+
+```js
+// fetchList is provided for you
+// const fetchList = (since?: number) =>
+//   Promise<{items: Array<{id: number}>}>
+
+// you can change this to generator function if you want
+const fetchListWithAmount = async (amount = 5) => {
+  const allItems = [];
+  let lastItemId = undefined;
+  while (allItems.length < amount) {
+    const response = await fetchList(lastItemId);
+    const items = response.items;
+    if (items.length === 0) {
+      break;
+    }
+    allItems.push(...items);
+    lastItemId = items[items.length - 1].id;
+    if (allItems.length >= amount) {
+      break;
+    }
+  }
+  return allItems.slice(0, amount);
+};
+```
+
+#### 14.2 Solution with async iterators
+
+```js
+// fetchList is provided for you
+// const fetchList = (since?: number) =>
+//   Promise<{items: Array<{id: number}>}>
+
+// you can change this to generator function if you want
+const fetchListWithAmount = async (amount = 5) => {
+  const items = [];
+
+  for await (const newItems of fetchPaginated(amount)) {
+    items.push(...newItems);
+  }
+
+  return items.slice(0, amount);
+};
+
+function fetchPaginated(amount) {
+  const iterator = {
+    amount,
+    itemsAmount: 0,
+    lastItemId: null,
+    async next() {
+      if (this.itemsAmount > this.amount) {
+        return { done: true };
+      }
+
+      const response = this.lastItemId
+        ? await fetchList(this.lastItemId)
+        : await fetchList();
+      if (!response || !response.items.length) {
+        return { done: true };
+      }
+
+      const result = response.items;
+      this.itemsAmount += result.length;
+      this.lastItemId = result[result.length - 1].id;
+
+      return {
+        done: false,
+        value: result,
+      };
+    },
+  };
+
+  return {
+    [Symbol.asyncIterator]() {
+      return iterator;
+    },
+  };
+}
+```
+
+#### 14.3 Solution with async generators
+
+```js
+// fetchList is provided for you
+// const fetchList = (since?: number) =>
+//   Promise<{items: Array<{id: number}>}>
+
+// you can change this to generator function if you want
+const fetchListAsyncGenerator = async function* () {
+  let lastItemId = undefined;
+
+  while (true) {
+    const response = await fetchList(lastItemId);
+    const items = response.items;
+
+    if (items.length === 0) {
+      break;
+    }
+
+    yield* items;
+
+    lastItemId = items[items.length - 1].id;
+  }
+};
+
+const fetchListWithAmount = async (amount = 5) => {
+  const allItems = [];
+  const generator = fetchListAsyncGenerator();
+
+  for await (const item of generator) {
+    allItems.push(item);
+    if (allItems.length >= amount) {
+      break;
+    }
+  }
+
+  return allItems.slice(0, amount);
+};
+
+// Usage
+fetchListWithAmount(12).then(console.log);
+```

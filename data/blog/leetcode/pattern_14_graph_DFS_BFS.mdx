@@ -1,0 +1,715 @@
+---
+title: Leetcode Pattern 14 Graph DFS and BFS
+date: "2024-05-22"
+tags: ["leetcode", "pattern"]
+draft: false
+---
+
+### Introduction
+
+Graphs are fundamental data structures used in computer science to represent networks, relationships, and connections. Traversing a graph efficiently is crucial for many applications, including search algorithms, network routing, and solving puzzles. Two primary methods for graph traversal are Breadth-First Search (BFS) and Depth-First Search (DFS).
+
+Graph traversal is the process of visiting all the nodes (vertices) in a graph in a systematic way. The two main approaches are:
+
+1. **Breadth-First Search (BFS)**: Explores the graph level by level, visiting all neighbors of a node before moving to the next level.
+2. **Depth-First Search (DFS)**: Explores as far as possible along each branch before backtracking, following a path from the starting node to a leaf before considering other paths.
+
+**Breadth-First Search (BFS)**
+
+BFS is an algorithm that starts at a given node (often referred to as the root in a tree) and explores all its neighboring nodes at the present depth level before moving on to nodes at the next depth level. BFS is particularly useful for finding the shortest path in unweighted graphs.
+
+BFS can be implemented using a queue data structure. Here’s a step-by-step guide to implementing BFS:
+
+1. **Initialization**:
+   - Create a queue and enqueue the starting node.
+   - Mark the starting node as visited.
+
+2. **Traversal**:
+   - While the queue is not empty:
+     - Dequeue a node from the front of the queue.
+     - For each unvisited neighbor of the dequeued node:
+       - Mark the neighbor as visited.
+       - Enqueue the neighbor.
+
+Here’s a simple implementation in Python:
+
+```python
+from collections import deque
+
+def bfs(graph, start):
+    visited = set()
+    queue = deque([start])
+    visited.add(start)
+
+    while queue:
+        node = queue.popleft()
+        print(node, end=' ')
+
+        for neighbor in graph[node]:
+            if neighbor not in visited:
+                visited.add(neighbor)
+                queue.append(neighbor)
+```
+
+**Depth-First Search (DFS)**
+
+DFS is an algorithm that starts at a given node and explores as far along each branch as possible before backtracking. DFS can be implemented using either recursion (implicitly using the call stack) or an explicit stack.
+
+Here’s a step-by-step guide to implementing DFS using both recursive and iterative approaches:
+
+1. **Recursive DFS**:
+   - Define a helper function to perform the DFS.
+   - Mark the current node as visited.
+   - Recursively visit all unvisited neighbors.
+
+Here’s a simple recursive implementation in Python:
+
+```python
+def dfs_recursive(graph, node, visited=set()):
+    if node not in visited:
+        print(node, end=' ')
+        visited.add(node)
+
+        for neighbor in graph[node]:
+            dfs_recursive(graph, neighbor, visited)
+```
+
+2. **Iterative DFS**:
+   - Use a stack data structure to keep track of nodes.
+   - Push the starting node onto the stack.
+   - While the stack is not empty:
+     - Pop a node from the stack.
+     - If the node has not been visited:
+       - Mark it as visited.
+       - Push all unvisited neighbors onto the stack.
+
+Here’s an iterative implementation in Python:
+
+```python
+def dfs_iterative(graph, start):
+    visited = set()
+    stack = [start]
+
+    while stack:
+        node = stack.pop()
+
+        if node not in visited:
+            print(node, end=' ')
+            visited.add(node)
+
+            for neighbor in graph[node]:
+                if neighbor not in visited:
+                    stack.append(neighbor)
+```
+
+<TOCInline toc={props.toc} exclude="Introduction" />
+
+### Graph DFS Questions
+
+#### 1971. Find if Path Exists in Graph
+
+There is a bi-directional graph with n vertices, where each vertex is labeled from 0 to n - 1 (inclusive). The edges in the graph are represented as a 2D integer array edges, where each edges[i] = [ui, vi] denotes a bi-directional edge between vertex ui and vertex vi. Every vertex pair is connected by at most one edge, and no vertex has an edge to itself.
+
+You want to determine if there is a valid path that exists from vertex source to vertex destination.
+
+Given edges and the integers n, source, and destination, return true if there is a valid path from source to destination, or false otherwise.
+
+Example 1:
+
+Input: n = 3, edges = [[0,1],[1,2],[2,0]], source = 0, destination = 2
+Output: true
+Explanation: There are two paths from vertex 0 to vertex 2:
+
+- 0 → 1 → 2
+- 0 → 2
+  Example 2:
+
+Input: n = 6, edges = [[0,1],[0,2],[3,5],[5,4],[4,3]], source = 0, destination = 5
+Output: false
+Explanation: There is no path from vertex 0 to vertex 5.
+
+Constraints:
+
+`1 <= n <= 2 _ 105`
+`0 <= edges.length <= 2 _ 105`
+edges[i].length == 2
+`0 <= ui, vi <= n - 1`
+ui != vi
+`0 <= source, destination <= n - 1`
+There are no duplicate edges.
+There are no self edges.
+
+```python
+from collections import defaultdict
+
+class Solution:
+    def validPath(self, n: int, edges: List[List[int]], source: int, destination: int) -> bool:
+        graph = defaultdict(list)
+        for edge in edges:
+            graph[edge[0]].append(edge[1])
+            graph[edge[1]].append(edge[0])
+        visited = set()
+        def dfs(start):
+            if start == destination:
+                return True
+            visited.add(start)
+            for neighbor in graph[start]:
+                if not neighbor in visited:
+                    if dfs(neighbor):
+                        return True
+            return False
+
+        return dfs(source)
+```
+
+#### 797. All Paths From Source to Target
+
+Given a directed acyclic graph (DAG) of n nodes labeled from 0 to n - 1, find all possible paths from node 0 to node n - 1 and return them in any order.
+
+The graph is given as follows: graph[i] is a list of all nodes you can visit from node i (i.e., there is a directed edge from node i to node graph[i][j]).
+
+Example 1:
+
+Input: graph = [[1,2],[3],[3],[]]
+Output: [[0,1,3],[0,2,3]]
+Explanation: There are two paths: 0 -> 1 -> 3 and 0 -> 2 -> 3.
+Example 2:
+
+Input: graph = [[4,3,1],[3,2,4],[3],[4],[]]
+Output: [[0,4],[0,3,4],[0,1,3,4],[0,1,2,3,4],[0,1,4]]
+
+Constraints:
+
+n == graph.length
+`2 <= n <= 15`
+`0 <= graph[i][j] < n`
+graph[i][j] != i (i.e., there will be no self-loops).
+All the elements of graph[i] are unique.
+The input graph is guaranteed to be a DAG.
+
+```python
+from collections import defaultdict
+
+class Solution:
+    def allPathsSourceTarget(self, graph: List[List[int]]) -> List[List[int]]:
+        n = len(graph)
+        g = defaultdict(list)
+        for idx, neighbors in enumerate(graph):
+            for neighbor in neighbors:
+                g[idx].append(neighbor)
+        # visited = set()
+        path = []
+        paths = []
+        def dfs(u):
+            path.append(u)
+            if u == n - 1:
+                paths.append(path.copy())
+            else:
+                for neighbor in g[u]:
+                    dfs(neighbor)
+            path.pop()
+        dfs(0)
+        return paths
+```
+
+#### 133. Clone Graph
+
+Given a reference of a node in a connected undirected graph.
+
+Return a deep copy (clone) of the graph.
+
+Each node in the graph contains a value (int) and a list (List[Node]) of its neighbors.
+
+```javascript
+class Node {
+    public int val;
+    public List<Node> neighbors;
+}
+```
+
+Test case format:
+
+For simplicity, each node's value is the same as the node's index (1-indexed). For example, the first node with val == 1, the second node with val == 2, and so on. The graph is represented in the test case using an adjacency list.
+
+An adjacency list is a collection of unordered lists used to represent a finite graph. Each list describes the set of neighbors of a node in the graph.
+
+The given node will always be the first node with val = 1. You must return the copy of the given node as a reference to the cloned graph.
+
+Example 1:
+
+Input: adjList = [[2,4],[1,3],[2,4],[1,3]]
+Output: [[2,4],[1,3],[2,4],[1,3]]
+Explanation: There are 4 nodes in the graph.
+1st node (val = 1)'s neighbors are 2nd node (val = 2) and 4th node (val = 4).
+2nd node (val = 2)'s neighbors are 1st node (val = 1) and 3rd node (val = 3).
+3rd node (val = 3)'s neighbors are 2nd node (val = 2) and 4th node (val = 4).
+4th node (val = 4)'s neighbors are 1st node (val = 1) and 3rd node (val = 3).
+Example 2:
+
+Input: adjList = [[]]
+Output: [[]]
+Explanation: Note that the input contains one empty list. The graph consists of only one node with val = 1 and it does not have any neighbors.
+Example 3:
+
+Input: adjList = []
+Output: []
+Explanation: This an empty graph, it does not have any nodes.
+
+Constraints:
+
+The number of nodes in the graph is in the range [0, 100].
+`1 <= Node.val <= 100`
+Node.val is unique for each node.
+There are no repeated edges and no self-loops in the graph.
+The Graph is connected and all nodes can be visited starting from the given node.
+
+```python
+from typing import Optional
+class Solution:
+    def cloneGraph(self, node: Optional['Node']) -> Optional['Node']:
+        if not node:
+            return None
+
+        def dfs(node):
+            if node in seen:
+                return seen[node]
+
+            # Create a clone for the current node
+            clone = Node(node.val)
+            seen[node] = clone
+
+            # Recursively clone all the neighbors
+            for neighbor in node.neighbors:
+                neighborClone = dfs(neighbor)
+                clone.neighbors.append(neighborClone)
+
+            return clone
+        # Dictionary to save the visited nodes and their respective clones
+        seen = {}
+        return dfs(node)
+```
+
+#### 332. Reconstruct Itinerary
+
+You are given a list of airline tickets where tickets[i] = [fromi, toi] represent the departure and the arrival airports of one flight. Reconstruct the itinerary in order and return it.
+
+All of the tickets belong to a man who departs from "JFK", thus, the itinerary must begin with "JFK". If there are multiple valid itineraries, you should return the itinerary that has the smallest lexical order when read as a single string.
+
+For example, the itinerary ["JFK", "LGA"] has a smaller lexical order than ["JFK", "LGB"].
+You may assume all tickets form at least one valid itinerary. You must use all the tickets once and only once.
+
+Example 1:
+
+Input: tickets = [["MUC","LHR"],["JFK","MUC"],["SFO","SJC"],["LHR","SFO"]]
+Output: ["JFK","MUC","LHR","SFO","SJC"]
+Example 2:
+
+Input: tickets = [["JFK","SFO"],["JFK","ATL"],["SFO","ATL"],["ATL","JFK"],["ATL","SFO"]]
+Output: ["JFK","ATL","JFK","SFO","ATL","SFO"]
+Explanation: Another possible reconstruction is ["JFK","SFO","ATL","JFK","ATL","SFO"] but it is larger in lexical order.
+
+Constraints:
+
+`1 <= tickets.length <= 300`
+tickets[i].length == 2
+fromi.length == 3
+toi.length == 3
+fromi and toi consist of uppercase English letters.
+fromi != toi
+
+```python
+from collections import defaultdict, deque
+
+class Solution:
+    def findItinerary(self, tickets: List[List[str]]) -> List[str]:
+        # Step 1: Build the graph
+        # We build the adjacency list such that each starting point (airport) points to a deque
+        # of destinations, sorted in reverse order. This ensures that during DFS, we can pop
+        # the smallest lexical destination efficiently.
+        graph = defaultdict(deque)
+        for start, end in sorted(tickets, reverse=True):
+            graph[start].appendleft(end)
+
+        # Step 2: Use DFS to build the itinerary
+        itinerary = []
+
+        # nodes are added to the itinerary list after all their edges have been explored,
+        # ensuring that we capture the entire path correctly.
+        def dfs(node):
+            while graph[node]:
+                dfs(graph[node].popleft())
+            itinerary.append(node)
+
+        dfs("JFK")
+
+        # Step 3: The itinerary is built in reverse order
+        return itinerary[::-1]
+```
+
+#### 1059. All Paths from Source Lead to Destination
+
+Given the edges of a directed graph where edges[i] = [ai, bi] indicates there is an edge between nodes ai and bi, and two nodes source and destination of this graph, determine whether or not all paths starting from source eventually, end at destination, that is:
+
+At least one path exists from the source node to the destination node
+If a path exists from the source node to a node with no outgoing edges, then that node is equal to destination.
+The number of possible paths from source to destination is a finite number.
+Return true if and only if all roads from source lead to destination.
+
+Example 1:
+
+Input: n = 3, edges = [[0,1],[0,2]], source = 0, destination = 2
+Output: false
+Explanation: It is possible to reach and get stuck on both node 1 and node 2.
+Example 2:
+
+Input: n = 4, edges = [[0,1],[0,3],[1,2],[2,1]], source = 0, destination = 3
+Output: false
+Explanation: We have two possibilities: to end at node 3, or to loop over node 1 and node 2 indefinitely.
+Example 3:
+
+Input: n = 4, edges = [[0,1],[0,2],[1,3],[2,3]], source = 0, destination = 3
+Output: true
+
+Constraints:
+
+`1 <= n <= 104`
+`0 <= edges.length <= 104`
+edges.length == 2
+`0 <= ai, bi <= n - 1`
+`0 <= source <= n - 1`
+`0 <= destination <= n - 1`
+The given graph may have self-loops and parallel edges.
+
+```python
+from collections import defaultdict
+
+class Solution:
+    def leadsToDestination(self, n: int, edges: List[List[int]], source: int, destination: int) -> bool:
+        graph = defaultdict(list)
+        for u, v in edges:
+            graph[u].append(v)
+
+        # State definitions for DFS
+        UNVISITED = 0
+        VISITING = 1
+        VISITED = 2
+
+        state = [UNVISITED] * n
+
+        def dfs(node):
+            if state[node] != UNVISITED:
+                return state[node] == VISITED
+
+            if not graph[node]:  # No outgoing edges
+                return node == destination
+
+            state[node] = VISITING
+
+            for neighbor in graph[node]:
+                if not dfs(neighbor):
+                    return False
+
+            state[node] = VISITED
+            return True
+
+        return dfs(source)
+```
+
+### Graph BFS Questions
+
+#### 1971. Find if Path Exists in Graph
+
+```python
+from collections import defaultdict, deque
+
+class Solution:
+    def validPath(self, n: int, edges: List[List[int]], source: int, destination: int) -> bool:
+        graph = defaultdict(list)
+        for edge in edges:
+            graph[edge[0]].append(edge[1])
+            graph[edge[1]].append(edge[0])
+        seen = set()
+        queue = deque([source])
+
+        while queue:
+            node = queue.popleft()
+            if node == destination:
+                return True
+            for neighbor in graph[node]:
+                if neighbor not in seen:
+                    seen.add(neighbor)
+                    queue.append(neighbor)
+
+        return False
+```
+
+#### 797. All Paths From Source to Target
+
+```python
+from collections import deque
+
+class Solution:
+    def allPathsSourceTarget(self, graph: List[List[int]]) -> List[List[int]]:
+        n = len(graph)
+        destination = n - 1
+        result = []
+        queue = deque([[0]])  # Start with a path containing only the source node
+
+        while queue:
+            path = queue.popleft()
+            last_node = path[-1]
+
+            if last_node == destination:
+                result.append(path)
+            else:
+                for neighbor in graph[last_node]:
+                    new_path = list(path)
+                    new_path.append(neighbor)
+                    queue.append(new_path)
+
+        return result
+```
+
+#### 116. Populating Next Right Pointers in Each Node
+
+You are given a perfect binary tree where all leaves are on the same level, and every parent has two children. The binary tree has the following definition:
+```Java
+struct Node {
+  int val;
+  Node *left;
+  Node *right;
+  Node \*next;
+}
+```
+Populate each next pointer to point to its next right node. If there is no next right node, the next pointer should be set to NULL.
+
+Initially, all next pointers are set to NULL.
+
+Example 1:
+
+Input: root = [1,2,3,4,5,6,7]
+Output: [1,#,2,3,#,4,5,6,7,#]
+Explanation: Given the above perfect binary tree (Figure A), your function should populate each next pointer to point to its next right node, just like in Figure B. The serialized output is in level order as connected by the next pointers, with '#' signifying the end of each level.
+Example 2:
+
+Input: root = []
+Output: []
+
+Constraints:
+
+The number of nodes in the tree is in the range [0, 212 - 1].
+`-1000 <= Node.val <= 1000`
+
+Follow-up:
+
+You may only use constant extra space.
+The recursive approach is fine. You may assume implicit stack space does not count as extra space for this problem.
+
+```python
+from collections import deque
+class Solution:
+    def connect(self, root: 'Optional[Node]') -> 'Optional[Node]':
+        if not root:
+            return root
+
+        queue = deque([root])
+
+        while queue:
+            level_size = len(queue)
+
+            for i in range(level_size):
+                node = queue.popleft()
+
+                if i < level_size - 1:
+                    node.next = queue[0]
+
+                if node.left:
+                    queue.append(node.left)
+                if node.right:
+                    queue.append(node.right)
+
+        return root
+```
+
+#### 1091. Shortest Path in Binary Matrix
+
+Given an n x n binary matrix grid, return the length of the shortest clear path in the matrix. If there is no clear path, return -1.
+
+A clear path in a binary matrix is a path from the top-left cell (i.e., (0, 0)) to the bottom-right cell (i.e., (n - 1, n - 1)) such that:
+
+All the visited cells of the path are 0.
+All the adjacent cells of the path are 8-directionally connected (i.e., they are different and they share an edge or a corner).
+The length of a clear path is the number of visited cells of this path.
+
+Example 1:
+
+Input: grid = [[0,1],[1,0]]
+Output: 2
+Example 2:
+
+Input: grid = [[0,0,0],[1,1,0],[1,1,0]]
+Output: 4
+Example 3:
+
+Input: grid = [[1,0,0],[1,1,0],[1,1,0]]
+Output: -1
+
+Constraints:
+
+n == grid.length
+n == grid[i].length
+`1 <= n <= 100`
+grid[i][j] is 0 or 1
+
+```python
+from collections import deque
+
+class Solution:
+    def shortestPathBinaryMatrix(self, grid: List[List[int]]) -> int:
+        if grid[0][0] == 1:
+            return -1
+        n = len(grid)
+        def getNeighbors(node):
+            [x, y, step] = node
+            ans = []
+            diffs = [(1, 1), (1, 0), (1, -1), (0, -1), (-1, -1), (-1, 0), (-1, 1), (0, 1)]
+            for diff in diffs:
+                (dx, dy) = diff
+                nx = x + dx
+                ny = y + dy
+                if nx >= 0 and nx < n and ny >= 0 and ny < n and grid[nx][ny] == 0:
+                    ans.append((nx, ny))
+            return ans
+
+        queue = deque([(0, 0, 1)])
+        seen = set([(0, 0)])
+        while queue:
+            node = queue.popleft()
+            if node[0] == n - 1 and node[1] == n - 1:
+                return node[2]
+            for neighbor in getNeighbors(node):
+                if neighbor not in seen:
+                    seen.add(neighbor)
+                    queue.append((neighbor[0], neighbor[1], node[2] + 1))
+
+        return -1
+```
+
+#### 429. N-ary Tree Level Order Traversal
+
+Given an n-ary tree, return the level order traversal of its nodes' values.
+
+Nary-Tree input serialization is represented in their level order traversal, each group of children is separated by the null value (See examples).
+
+Example 1:
+
+Input: root = [1,null,3,2,4,null,5,6]
+Output: [[1],[3,2,4],[5,6]]
+Example 2:
+
+Input: root = [1,null,2,3,4,5,null,null,6,7,null,8,null,9,10,null,null,11,null,12,null,13,null,null,14]
+Output: [[1],[2,3,4,5],[6,7,8,9,10],[11,12,13],[14]]
+
+Constraints:
+
+The height of the n-ary tree is less than or equal to 1000
+The total number of nodes is between [0, 104]
+
+```python
+from collections import deque
+
+class Solution:
+    def levelOrder(self, root: 'Node') -> List[List[int]]:
+        if not root:
+            return []
+        queue = deque([(root, 0)])
+        # seen = {START_NODE}
+        ans = []
+        while queue:
+            (node, step) = queue.popleft()
+            if len(ans) == step:
+                ans.append([])
+            ans[-1].append(node.val)
+            for neighbor in node.children:
+                # if neighbor not in seen:
+                #    seen.add(neighbor)
+                queue.append((neighbor, step + 1))
+
+        return ans
+```
+
+#### 994. Rotting Oranges
+
+You are given an m x n grid where each cell can have one of three values:
+
+0 representing an empty cell,
+1 representing a fresh orange, or
+2 representing a rotten orange.
+Every minute, any fresh orange that is 4-directionally adjacent to a rotten orange becomes rotten.
+
+Return the minimum number of minutes that must elapse until no cell has a fresh orange. If this is impossible, return -1.
+
+Example 1:
+
+Input: grid = [[2,1,1],[1,1,0],[0,1,1]]
+Output: 4
+Example 2:
+
+Input: grid = [[2,1,1],[0,1,1],[1,0,1]]
+Output: -1
+Explanation: The orange in the bottom left corner (row 2, column 0) is never rotten, because rotting only happens 4-directionally.
+Example 3:
+
+Input: grid = [[0,2]]
+Output: 0
+Explanation: Since there are already no fresh oranges at minute 0, the answer is just 0.
+
+Constraints:
+
+m == grid.length
+n == grid[i].length
+`1 <= m, n <= 10`
+grid[i][j] is 0, 1, or 2.
+
+```python
+from collections import deque
+
+class Solution:
+    def orangesRotting(self, grid: List[List[int]]) -> int:
+        m = len(grid)
+        n = len(grid[0])
+        rotten = []
+        fresh = 0
+        for i in range(m):
+            for j in range(n):
+                if grid[i][j] == 2:
+                    rotten.append((i, j))
+                if grid[i][j] == 1:
+                    fresh += 1
+
+        def getNeighbors(x, y):
+            diffs = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+            ans = []
+            for diff in diffs:
+                nx = x + diff[0]
+                ny = y + diff[1]
+                if nx >= 0 and nx < m and ny >=0 and ny < n and grid[nx][ny] == 1:
+                    ans.append((nx, ny))
+            return ans
+
+        queue = deque(list(map(lambda pos: (pos[0], pos[1], 0), rotten)))
+        # seen = set(rotten)
+        ans = 0
+
+        while queue:
+            (x, y, step) = queue.popleft()
+            ans = step
+            for neighbor in getNeighbors(x, y):
+                # if neighbor not in seen:
+                #    seen.add(neighbor)
+                grid[neighbor[0]][neighbor[1]] = 2
+                fresh -= 1
+                queue.append((neighbor[0], neighbor[1], step + 1))
+
+        return -1 if fresh > 0 else ans
+```

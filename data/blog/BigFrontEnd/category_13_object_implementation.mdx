@@ -1,0 +1,710 @@
+---
+title: BigFrontEnd Category 13 Object Implementation Questions
+date: "2024-06-10"
+tags: ["BigFrontEnd", "category"]
+draft: false
+---
+### Introduction
+
+This blog post summarizes the Object implementation related questions found on BigFrontEnd.Dev.
+
+<TOCInline toc={props.toc} exclude="Introduction" />
+
+### 1.Detect data type in JavaScript
+
+20.https://bigfrontend.dev/problem/detect-data-type-in-JavaScript
+This is an easy problem.
+
+For all the basic data types in JavaScript, how could you write a function to detect the type of arbitrary data?
+
+Besides basic types, you need to also handle also commonly used complex data type including Array, ArrayBuffer, Map, Set, Date and Function
+
+The goal is not to list up all the data types but to show us how to solve the problem when we need to.
+
+The type should be lowercase
+
+```js
+detectType(1); // 'number'
+detectType(new Map()); // 'map'
+detectType([]); // 'array'
+detectType(null); // 'null'
+// more in judging step
+```
+
+1. Use `typeof` for every type except `object`.
+2. Use `=== null` to test `null`.
+3. Use `instanceof` for `Number, String, Boolean, Array, ArrayBuffer, Date, Map, Set` to test.
+4. Finally, return `object`.
+
+```js
+function detectType(data) {
+  if (typeof data !== `object`) {
+    return typeof data;
+  }
+  if (data === null) {
+    return "null";
+  }
+  const types = [
+    [Number, "number"],
+    [String, "string"],
+    [Boolean, "boolean"],
+    [Array, "array"],
+    [ArrayBuffer, "arraybuffer"],
+    [Date, "date"],
+    [Map, "map"],
+    [Set, "set"],
+  ];
+  const type = types.find((type) => data instanceof type[0]);
+  if (type !== -1) {
+    return type[1];
+  }
+  return "object";
+}
+```
+
+### 2.Is Object Empty(2727)
+
+```TypeScript
+type JSONValue = null | boolean | number | string | JSONValue[] | { [key: string]: JSONValue };
+type Obj = Record<string, JSONValue> | JSONValue[]
+
+function isEmpty(obj: Obj): boolean {
+    return Object.keys(obj).length === 0;
+};
+```
+
+### 3.implement Object.assign()
+
+26.https://bigfrontend.dev/problem/implement-object-assign
+The Object.assign() method copies all enumerable own properties from one or more source objects to a target object. It returns the target object. (source: [MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/assign))
+
+It is widely used, Object Spread operator actually is internally the same as Object.assign() ([source](https://github.com/tc39/proposal-object-rest-spread/blob/master/Spread.md)). Following 2 lines of code are totally the same.
+
+```js
+let aClone = { ...a };
+let aClone = Object.assign({}, a);
+```
+
+This is an easy one, could you implement Object.assign() with your own implementation ?
+
+note
+
+Don't use Object.assign() in your code It doesn't help improve your skills
+
+```js
+/**
+ * @param {any} target
+ * @param {any[]} sources
+ * @return {object}
+ */
+function objectAssign(target, ...sources) {
+  if (!target) {
+    throw new Error();
+  }
+  // If the target is not an object (i.e., it's a primitive type like a number, string, or boolean),
+  // it creates a new instance of the same type using its constructor.
+  // This effectively converts the primitive target to an object wrapper (e.g., new Number(target) if target is a number).
+  if (typeof target !== "object") {
+    const constructor = Object.getPrototypeOf(target).constructor;
+    target = new constructor(target);
+  }
+
+  for (const source of sources) {
+    if (!source) {
+      continue;
+    }
+    // collects all enumerable property names and symbol properties using Object.keys and Object.getOwnPropertySymbols.
+    const keys = [
+      ...Object.keys(source),
+      ...Object.getOwnPropertySymbols(source),
+    ];
+    for (const key of keys) {
+      const descriptor = Object.getOwnPropertyDescriptor(target, key);
+      // If the property is non-configurable (i.e., it cannot be changed), the function throws an error to prevent modification of non-configurable properties.
+      if (descriptor && !descriptor.configurable) {
+        throw new Error();
+      }
+
+      target[key] = source[key];
+    }
+  }
+
+  return target;
+}
+```
+
+```js
+function objectAssign(target, ...sources) {
+  if (!target) {
+    throw new TypeError("Cannot convert undefined or null to object");
+  }
+  const to = Object(target);
+  for (const source of sources) {
+    if (source != null) {
+      // Get symbol properties
+      Object.keys(source)
+        .concat(Object.getOwnPropertySymbols(source))
+        .forEach((key) => {
+          to[key] = source[key];
+          // Make sure the copy is successful.
+          if (to[key] !== source[key]) {
+            throw new TypeError(`Cannot assign the property ${key}`);
+          }
+        });
+    }
+  }
+  return to;
+}
+```
+
+### 4.implement completeAssign()
+
+```js
+function completeAssign(target, ...sources) {
+  if (!target) {
+    throw new Error();
+  }
+  // If the target is not an object (i.e., it's a primitive type like a number, string, or boolean),
+  // it creates a new instance of the same type using its constructor.
+  // This effectively converts the primitive target to an object wrapper (e.g., new Number(target) if target is a number).
+  if (typeof target !== "object") {
+    const constructor = Object.getPrototypeOf(target).constructor;
+    target = new constructor(target);
+  }
+
+  for (const source of sources) {
+    if (!source) {
+      continue;
+    }
+
+    const descriptors = Object.getOwnPropertyDescriptors(source);
+    // collects all property names (including non-enumerable properties) and symbol properties
+    const keys = [
+      ...Object.getOwnPropertyNames(source),
+      ...Object.getOwnPropertySymbols(source),
+    ];
+    for (const key of keys) {
+      // defines the property on the target object using Object.defineProperty
+      Object.defineProperty(target, key, descriptors[key]);
+    }
+  }
+
+  return target;
+}
+```
+
+### 5.write your own `extends` in es5
+
+53.https://bigfrontend.dev/problem/write-your-own-extends-in-es5
+I believe you've used extends keyword in you JavaScript programs before.
+
+Could you implement a `myExtends()` function in ES5 to mimic the behavior of extends?
+
+`myExtends()` takes a `SubType` and `SuperType`, and return a new type.
+
+```js
+const InheritedSubType = myExtends(SuperType, SubType);
+const instance = new InheritedSubType();
+// above should work (almost) the same as follows
+class SubType extends SuperType {}
+const instance = new SubType();
+```
+
+To solve this problem, you need to fully understand what is Inheritance
+
+note
+
+Your code will be test against following SuperType and SubType
+
+```js
+function SuperType(name) {
+  this.name = name;
+  this.forSuper = [1, 2];
+  this.from = "super";
+}
+SuperType.prototype.superMethod = function () {};
+SuperType.prototype.method = function () {};
+SuperType.staticSuper = "staticSuper";
+
+function SubType(name) {
+  this.name = name;
+  this.forSub = [3, 4];
+  this.from = "sub";
+}
+
+SubType.prototype.subMethod = function () {};
+SubType.prototype.method = function () {};
+SubType.staticSub = "staticSub";
+```
+
+```js
+const InheritedSubType = myExtends(SuperType, SubType);
+const instance = new InheritedSubType();
+// above should work (almost) the same as follows
+class SubType extends SuperType {}
+const instance = new SubType();
+```
+
+```js
+// myExtends is a function that takes two arguments, SuperType and SubType, and returns a new constructor function.
+const myExtends = (SuperType, SubType) => {
+  const constructor = function (...args) {
+    // Call the original Constructors with the constructor
+    // instance as their context
+    // This ensures that any initialization code in SuperType is executed.
+    SuperType.apply(this, args);
+    // This ensures that any initialization code in SubType is also executed.
+    SubType.apply(this, args);
+    // This sets the prototype of the new instance to SubType.prototype, ensuring that instance methods from SubType are available on the instance.
+    Object.setPrototypeOf(this, SubType.prototype);
+  };
+
+  Object.setPrototypeOf(SubType.prototype, SuperType.prototype);
+  Object.setPrototypeOf(constructor.prototype, SubType.prototype);
+
+  // Inherit static properties
+  Object.setPrototypeOf(constructor, SuperType);
+  return constructor;
+};
+```
+
+### 6.create your own `new` operator
+
+60.https://bigfrontend.dev/problem/create-your-own-new-operator
+new [operator](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/new) is used to create new instance objects.
+
+Do you know exactly what new does?
+
+You are asked to implement `myNew()`, which should return an object just as what new does but without using new.
+
+Pay attention to the return type of constructor.
+
+```javascript
+function myNew(constructor, ...args) {
+  // Step 1: Create a new object
+  const obj = {};
+
+  // Step 2: Set the prototype of the new object to the constructor's prototype
+  // obj.__proto__ = constructor.prototype;
+  Object.setPrototypeOf(obj, constructor.prototype);
+
+  // Step 3: Execute the constructor with `this` bound to the new object
+  const result = constructor.apply(obj, args);
+
+  // Step 4: If the constructor returns an object, return that object
+  // Otherwise, return the newly created object
+  return result instanceof Object ? result : obj;
+}
+
+// Example usage:
+
+function Person(name, age) {
+  this.name = name;
+  this.age = age;
+}
+
+Person.prototype.greet = function () {
+  console.log(`Hello, my name is ${this.name} and I am ${this.age} years old.`);
+};
+
+const john = myNew(Person, "John", 30);
+john.greet(); // Hello, my name is John and I am 30 years old.
+
+console.log(john instanceof Person); // true
+console.log(john.name); // John
+console.log(john.age); // 30
+```
+
+### 7.write your own `instanceof`
+
+90.https://bigfrontend.dev/problem/write-your-own-instanceof
+Do you know how [instanceOf](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/instanceof) works ?
+
+If so, please write you own `myInstanceOf()`.
+
+```js
+class A {}
+class B extends A {}
+
+const b = new B();
+myInstanceOf(b, B); // true
+myInstanceOf(b, A); // true
+myInstanceOf(b, Object); // true
+
+function C() {}
+myInstanceOf(b, C); // false
+C.prototype = B.prototype;
+myInstanceOf(b, C); // true
+C.prototype = {};
+myInstanceOf(b, C); // false
+```
+
+Use `Object.getPrototypeOf` to go up the proto chain to find whether it matchs the `constructor.prototype.`
+
+```js
+/**
+ * @param {any} obj
+ * @param {target} target
+ * @return {boolean}
+ */
+function myInstanceOf(instance, constructor) {
+  if (
+    typeof instance !== "object" ||
+    instance === null ||
+    typeof constructor !== "function"
+  ) {
+    return false;
+  }
+  // Get the prototype of the instance
+  let proto = Object.getPrototypeOf(instance);
+
+  // Get the prototype property of the constructor
+  // const prototype = constructor.prototype;
+
+  // Traverse the prototype chain
+  while (proto) {
+    // If we find a match, return true
+    if (proto === constructor.prototype) {
+      return true;
+    }
+    // Move up the prototype chain
+    proto = Object.getPrototypeOf(proto);
+  }
+
+  // If we reach the end of the chain without finding a match, return false
+  return false;
+}
+```
+
+### 8.implement your own `Object.create`
+
+94.https://bigfrontend.dev/problem/implement-your-own-Object-create
+You can use [Object.create()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/create) to create a new object.
+
+Can you write your own `myObjectCreate()` to do the same(well for the basic usage) ?
+
+Note
+
+you don't need to support propertiesObject - 2nd parameter of Object.create
+throw an Error if non-object is passed in. ([why](https://stackoverflow.com/questions/18198178/null-prototype-object-prototype-and-object-create)?)
+`Object.create()` and `Object.setPrototypeOf()` should not be used.
+
+```js
+/**
+ * @param {any} proto
+ * @return {object}
+ */
+function myObjectCreate(proto) {
+  if (
+    (typeof proto !== "object" && typeof proto !== "function") ||
+    proto === null
+  ) {
+    throw new TypeError("Object prototype may only be an Object or null");
+  }
+
+  function F() {}
+  F.prototype = proto;
+  return new F();
+}
+```
+
+```JavaScript
+const animal = {
+  speak() {
+    console.log('Animal speaks');
+  }
+};
+
+const dog = myObjectCreate(animal);
+dog.speak(); // Output: 'Animal speaks'
+
+const labrador = myObjectCreate(dog);
+labrador.speak(); // Output: 'Animal speaks'
+```
+
+### 9.implement Object.is()
+
+116.https://bigfrontend.dev/problem/implement-Object.is
+
+[Object.is()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/is) is similar to === except following cases
+
+```js
+Object.is(0, -0); // false
+0 === -0; // true
+
+Object.is(NaN, NaN); // true
+NaN === NaN; // false
+```
+
+Here is the detailed spec, can you implement your own is()?
+
+```js
+/**
+ * @param {any} a
+ * @param {any} b
+ * @return {boolean}
+ */
+function is(a, b) {
+  // check NaN. Do not use isNaN.
+  if (Number.isNaN(a) && Number.isNaN(b)) {
+    return true;
+  }
+  // Convert a, b to Infinity
+  if (a === 0 && b === 0) {
+    return 1 / a === 1 / b;
+  }
+  return a === b;
+}
+```
+
+### 10.create a counter object
+
+148.https://bigfrontend.dev/problem/create-a-counter-object
+Create an object with property count, which increments every time count is accessed, initial value is 0.
+
+```js
+const counter = createCounter();
+counter.count; // 0, then it should increment
+counter.count; // 1
+counter.count; // 2
+counter.count = 100; // it cannot be altered
+counter.count; // 3
+```
+
+```js
+/**
+ * @returns { {count: number}}
+ */
+function createCounter() {
+  const counter = {
+    c: -1,
+    get count() {
+      this.c += 1;
+      return this.c;
+    },
+  };
+  return counter;
+}
+```
+
+### 11.create a count function
+
+155.https://bigfrontend.dev/problem/count-function
+Please create a function count(), when called it should return how many times it has been called, count.reset() should also implemented.
+
+```js
+count(); // 1
+count(); // 2
+count(); // 3
+
+count.reset();
+
+count(); // 1
+count(); // 2
+count(); // 3
+```
+
+```js
+let countTimes = 0;
+function count() {
+  countTimes += 1;
+  return countTimes;
+}
+count.reset = () => {
+  countTimes = 0;
+};
+```
+
+### 12.`undefined` to `null`
+
+176.https://bigfrontend.dev/problem/undefined-to-null
+One of the differences between null and undefined is how they are treated differently in `JSON.stringify()`.
+
+```js
+JSON.stringify({ a: null }); // '{"a":null}'
+JSON.stringify({ a: undefined }); // '{}'
+
+JSON.stringify([null]); // '[null]'
+JSON.stringify([undefined]); // '[null]'
+```
+
+This difference might create troubles if there are missing alignments between client and server. It might be helpful to enforce using only one of them.
+
+You are asked to implement `undefinedToNull()` to return a copy that has all undefined replaced with null.
+
+```js
+undefinedToNull({ a: undefined, b: "BFE.dev" });
+// {a: null, b: 'BFE.dev'}
+
+undefinedToNull({ a: ["BFE.dev", undefined, "bigfrontend.dev"] });
+// {a: ['BFE.dev', null, 'bigfrontend.dev']}
+```
+
+```js
+/**
+ * @param {any} arg
+ * @returns any
+ */
+function undefinedToNull(arg) {
+  if (Array.isArray(arg)) {
+    return arg.map(undefinedToNull);
+  }
+  if (typeof arg === "object" && arg !== null) {
+    const ans = {};
+    Object.keys(arg).forEach((key) => {
+      ans[key] = undefinedToNull(arg[key]);
+    });
+    return ans;
+  }
+  if (arg === undefined) {
+    return null;
+  }
+  return arg;
+}
+```
+
+### 13.Compact Object (2705)
+
+https://leetcode.com/problems/compact-object/description/
+
+Given an object or array obj, return a compact object.
+
+A compact object is the same as the original object, except with keys containing falsy values removed. This operation applies to the object and any nested objects. Arrays are considered objects where the indices are keys. A value is considered falsy when Boolean(value) returns false.
+
+You may assume the obj is the output of JSON.parse. In other words, it is valid JSON.
+
+Example 1:
+```js
+Input: obj = [null, 0, false, 1]
+Output: [1]
+Explanation: All falsy values have been removed from the array.
+Example 2:
+
+Input: obj = {"a": null, "b": [false, 1]}
+Output: {"b": [1]}
+Explanation: obj["a"] and obj["b"][0] had falsy values and were removed.
+Example 3:
+
+Input: obj = [null, 0, 5, [0], [false, 16]]
+Output: [5, [], [16]]
+Explanation: obj[0], obj[1], obj[3][0], and obj[4][0] were falsy and removed.
+```
+Constraints:
+
+obj is a valid JSON object
+`2 <= JSON.stringify(obj).length <= 106`
+
+```TypeScript
+type JSONValue = null | boolean | number | string | JSONValue[] | { [key: string]: JSONValue };
+type Obj = Record<string, JSONValue> | Array<JSONValue>;
+
+function compactObject(obj: Obj): Obj {
+    if (Array.isArray(obj)) {
+        const result: Array<JSONValue> = [];
+        Object.entries(obj).forEach(([key, val]: [string, JSONValue]) => {
+            if (typeof val === "object" && val !== null) {
+                const newVal = compactObject(val);
+                result.push(newVal);
+            } else if (Boolean(val)) {
+                result.push(val);
+            }
+        });
+        return result;
+    }
+
+    const result: Record<string, JSONValue> = {};
+    Object.entries(obj).forEach(([key, val]: [string, JSONValue]) => {
+        if (typeof val === "object" && val !== null) {
+            const newVal = compactObject(val);
+            result[key] = newVal;
+        } else if (Boolean(val)) {
+            result[key] = val;
+        }
+    });
+    return result;
+};
+```
+
+```js
+/**
+ * @param {Object|Array} obj
+ * @return {Object|Array}
+ */
+var compactObject = function (obj) {
+  if (Array.isArray(obj)) {
+    return obj.filter((item) => !!item).map(compactObject);
+  }
+  if (typeof obj === "object" && obj !== null) {
+    const ans = {};
+    Object.keys(obj)
+      .filter((key) => !!obj[key])
+      .forEach((key) => {
+        ans[key] = compactObject(obj[key]);
+      });
+    return ans;
+  }
+  return obj;
+};
+```
+
+### 14.Implement Object.groupBy()
+177. https://bigfrontend.dev/problem/implement-groupby
+`Object.groupBy()` allows us to easily group array items, please try to implement it by yourself.
+```JavaScript
+const items = [
+  {
+    id: 1,
+    kind: 'a',
+  },
+  {
+    id: 2,
+    kind: 'b',
+  },
+  {
+    id: 3,
+    kind: 'a',
+  }
+]
+const groups = Object.groupBy(items, ({kind}) => kind)
+// {
+//   a: [
+//     {
+//       id: 1,
+//       kind: 'a'
+//     },
+//     {
+//       id: 3,
+//       kind: 'a'
+//     }
+//   ],
+//   b: [
+//     {
+//       id: 2,
+//       kind: 'b'
+//     }
+//   ]
+// }
+```
+
+```js
+/**
+ * @template T
+ * @template { keyof any } K
+ * @param { Array<T> } items
+ * @param { (item: T) => K } callback
+ * @returns { Record<K, Array<T>> }
+ */
+function ObjectGroupBy(items, callback) {
+  // Your code here
+  // const ans = {};
+  const ans = Object.create(null);
+  items.forEach(item => {
+    const key = callback(item);
+    if (!ans[key]) {
+      ans[key] = [];
+    }
+    ans[key].push(item);
+  });
+  return ans;
+}
+```

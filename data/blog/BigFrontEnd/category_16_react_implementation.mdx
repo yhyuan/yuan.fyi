@@ -1,0 +1,714 @@
+---
+title: BigFrontEnd Category 16 React Implementation Questions
+date: "2024-06-13"
+tags: ["BigFrontEnd", "category"]
+draft: false
+---
+### Introduction
+
+This blog post summarizes the React implementation related questions found on BigFrontEnd.Dev.
+
+<TOCInline toc={props.toc} exclude="Introduction" />
+
+### 1.implement Immutability helper
+
+12.https://bigfrontend.dev/problem/implement-Immutability-helper
+
+```js
+/**
+ * @param {any} data
+ * @param {Object} command
+ */
+function update(data, command) {
+  if (typeof command !== "object" || command === null) {
+    throw new Error("Spec should be a non-null object");
+  }
+
+  if (Array.isArray(data)) {
+    return handleArray(data, command);
+  }
+
+  return handleObject(data, command);
+}
+// $push, $set, $apply
+function handleArray(target, spec) {
+  let newArray = target.slice();
+  for (let key in spec) {
+    if (!spec.hasOwnProperty(key)) continue;
+    if (key === "$push") {
+      newArray.push(...spec[key]);
+    } else if (key.match(/^\d+$/)) {
+      const index = parseInt(key, 10);
+      if (spec[key].$set !== undefined) {
+        newArray[index] = spec[key].$set;
+      } else if (spec[key].$apply !== undefined) {
+        newArray[index] = spec[key].$apply(newArray[index]);
+      } else {
+        newArray[index] = update(newArray[index], spec[key]);
+      }
+    } else {
+      throw new Error(`Invalid key for array update: ${key}`);
+    }
+  }
+  return newArray;
+}
+// $merge, $set, $apply
+function handleObject(target, spec) {
+  let newObject = { ...target };
+
+  for (let key in spec) {
+    if (!spec.hasOwnProperty(key)) continue;
+    if (key === "$set") {
+      return spec[key];
+    } else if (key === "$merge") {
+      if (Object.keys(newObject).length === 0) {
+        throw new Error(`Invalid spec`);
+      }
+      Object.assign(newObject, spec[key]);
+    } else if (key === "$apply") {
+      return spec[key](newObject);
+    } else {
+      newObject[key] = update(newObject[key], spec[key]);
+    }
+  }
+  return newObject;
+}
+```
+
+### 2.find corresponding node in two identical DOM tree
+
+19.https://bigfrontend.dev/problem/find-corresponding-node-in-two-identical-DOM-tree
+
+```js
+/**
+ * @param {HTMLElement} rootA
+ * @param {HTMLElement} rootB - rootA and rootB are clone of each other
+ * @param {HTMLElement} nodeA
+ */
+function findCorrespondingNode(rootA, rootB, targetA) {
+  // Stack to store nodes to visit
+  const stackA = [rootA];
+  const stackB = [rootB];
+
+  while (stackA.length > 0) {
+    const currentA = stackA.pop();
+    const currentB = stackB.pop();
+
+    // If we find the target in A, return the corresponding node in B
+    if (currentA === targetA) {
+      return currentB;
+    }
+
+    // Push children to the stacks
+    stackA.push(...currentA.children);
+    stackB.push(...currentB.children);
+  }
+
+  return null;
+}
+```
+
+```js
+function dfsTraverse(root, callback) {
+  if (root === null || root === undefined) {
+    return;
+  }
+  dfsTraverse(root.left, callback);
+  callback(root);
+  dfsTraverse(root.right, callback);
+}
+```
+
+### 3.Virtual DOM I
+
+113.https://bigfrontend.dev/problem/Virtual-DOM-I
+
+```js
+/**
+ * @param {HTMLElement}
+ * @return {object} object literal presentation
+ */
+function virtualize(element) {
+  if (element.nodeType === Node.TEXT_NODE) return element.nodeValue;
+
+  const result = {
+    type: element.nodeName.toLowerCase(),
+    props: {},
+  };
+
+  for (const attr of element.attributes) {
+    const name = attr.nodeName === "class" ? "className" : attr.nodeName;
+    result.props[name] = attr.nodeValue;
+  }
+
+  const children = [...element.childNodes].map(virtualize);
+  result.props.children = children.length === 1 ? children[0] : children;
+  return result;
+}
+
+/**
+ * @param {object} valid object literal presentation
+ * @return {HTMLElement}
+ */
+function render(obj) {
+  if (typeof obj === "string") {
+    return document.createTextNode(obj);
+  }
+
+  const {
+    type,
+    props: { children, ...attrs },
+  } = obj;
+  const element = document.createElement(type);
+
+  for (const attr in attrs) {
+    const attrName = attr === "className" ? "class" : attr;
+    element.setAttribute(attrName, attrs[attr]);
+  }
+
+  if (typeof children === "string") {
+    element.appendChild(render(children));
+    return element;
+  }
+
+  for (const child of children) {
+    element.appendChild(render(child));
+  }
+
+  return element;
+}
+```
+
+### 4.Virtual DOM II - createElement
+
+118.https://bigfrontend.dev/problem/virtual-dom-II-createElement
+
+```js
+/**
+ * MyElement is the type your implementation supports
+ *
+ * type MyNode = MyElement | string
+ */
+
+/**
+ * @param { string } type - valid HTML tag name
+ * @param { object } [props] - properties.
+ * @param { ...MyNode} [children] - elements as rest arguments
+ * @return { MyElement }
+ */
+function createElement(type, props, ...children) {
+  return {
+    type,
+    props: {
+      ...props,
+      children,
+    },
+  };
+}
+
+/**
+ * @param { MyElement }
+ * @returns { HTMLElement }
+ */
+function render(myElement) {
+  if (typeof myElement === "string") {
+    return document.createTextNode(myElement);
+  }
+
+  const {
+    type,
+    props: { children, ...attrs },
+  } = myElement;
+  const element = document.createElement(type);
+
+  for (const attrName in attrs) {
+    const _attrName = attrName === "className" ? "class" : attrName;
+    element.setAttribute(_attrName, attrs[attrName]);
+  }
+
+  for (const child of children) {
+    element.appendChild(render(child));
+  }
+
+  return element;
+}
+```
+
+### 5.implement `classNames()`
+
+125.https://bigfrontend.dev/problem/implement-classnames
+
+```js
+/**
+ * @param {any[]} args
+ * @returns {string}
+ */
+function classNames(...args) {
+  const convertArg = (arg) => {
+    if (typeof arg === "number" || typeof arg === "string") {
+      return String(arg);
+    }
+    if (Array.isArray(arg)) {
+      return arg.map(convertArg).join(" ");
+    }
+    return Object.keys(arg)
+      .filter((key) => arg[key])
+      .join(" ");
+  };
+  args = args.filter(
+    (arg) =>
+      typeof arg === "number" ||
+      typeof arg === "string" ||
+      (typeof arg === "object" && arg !== null),
+  );
+  return args.map(convertArg).join(" ");
+}
+```
+
+```js
+/**
+ * @param {any[]} args
+ * @returns {string}
+ */
+function classNames(...args) {
+  const result = [];
+
+  function processValue(value) {
+    if (typeof value === "string" || typeof value === "number") {
+      result.push(value);
+    } else if (Array.isArray(value)) {
+      value.forEach(processValue);
+    } else if (typeof value === "object" && value !== null) {
+      for (const key in value) {
+        if (value.hasOwnProperty(key) && value[key]) {
+          result.push(key);
+        }
+      }
+    }
+  }
+
+  args.forEach(processValue);
+
+  return result.join(" ");
+}
+```
+
+### 6.`useToggle()` Hook
+
+7.https://bigfrontend.dev/react/useToggle
+
+```ts
+import { useState } from "react";
+export function useToggle(on: boolean = false): [boolean, () => void] {
+  const [state, setState] = useState(on);
+  const toggle = () => {
+    setState((preState) => !preState);
+  };
+  return [state, toggle];
+}
+```
+
+### 7.`useEffectOnce()` Hook
+
+9.https://bigfrontend.dev/react/useEffectOnce
+
+```ts
+import { useEffect, EffectCallback } from "react";
+
+export function useEffectOnce(effect: EffectCallback) {
+  useEffect(effect, []); // Empty dependency array ensures the effect runs only once
+}
+```
+
+### 8.`useIsFirstRender()` Hook
+
+3.https://bigfrontend.dev/react/useIsFirstRender
+
+```ts
+import { useEffect, useRef } from "react";
+
+export function useIsFirstRender(): boolean {
+  const isFirstRender = useRef(true);
+
+  useEffect(() => {
+    isFirstRender.current = false;
+  }, []);
+
+  return isFirstRender.current;
+}
+```
+
+### 9.`usePrevious()` Hook
+
+5.https://bigfrontend.dev/react/usePrevious
+
+```ts
+import { useRef, useEffect } from "react";
+
+export function usePrevious<T>(value: T): T | undefined {
+  const previousValueRef = useRef<T | undefined>();
+
+  useEffect(() => {
+    /* This line runs after every render after the value is changed*/
+    previousValueRef.current = value;
+  }, [value]);
+  // It will return the value before each render.
+  return previousValueRef.current;
+}
+```
+
+### 10.`useClickOutside()` Hook
+
+15.https://bigfrontend.dev/react/useclickoutside
+
+```ts
+import { useEffect, useRef } from "react";
+
+export function useClickOutside(callback: () => void) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
+        callback();
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [callback]);
+
+  return ref;
+}
+```
+
+### 11.Create a Phone Number Component
+
+10.https://bigfrontend.dev/react/phone-number-input
+
+```js
+import React, { useState } from "react";
+
+export const PhoneNumberInput = () => {
+  const [phoneNumber, setPhoneNumber] = useState("");
+
+  const handleInputChange = (e) => {
+    const input = e.target.value.replace(/\D/g, ""); // Remove non-numeric characters
+    let formattedPhoneNumber = "";
+    // Format the phone number
+    if (input.length <= 3) {
+      formattedPhoneNumber = input;
+    } else if (input.length >= 4 && input.length <= 6) {
+      formattedPhoneNumber = `(${input.slice(0, 3)})${input.slice(3)}`;
+    } else if (input.length >= 7 && input.length <= 10) {
+      formattedPhoneNumber = `(${input.slice(0, 3)})${input.slice(3, 6)}-${input.slice(6)}`;
+    } else {
+      formattedPhoneNumber = `(${input.slice(0, 3)})${input.slice(3, 6)}-${input.slice(6, 10)}`;
+    }
+    setPhoneNumber(formattedPhoneNumber);
+  };
+
+  return (
+    <input
+      type="text"
+      data-testid="phone-number-input"
+      value={phoneNumber}
+      onChange={handleInputChange}
+    />
+  );
+};
+```
+
+### 12.`useTimeout()` Hook
+
+2.https://bigfrontend.dev/react/usetimeout
+
+```ts
+import { useEffect, useRef, useCallback } from "react";
+
+export function useTimeout(callback: () => void, delay: number) {
+  // useRef for Callback Storage:
+  const savedCallback = useRef(callback);
+
+  // Remember the latest callback if it changes
+  useEffect(() => {
+    savedCallback.current = callback;
+  }, [callback]);
+
+  useEffect(() => {
+    const id = setTimeout(() => savedCallback.current(), delay);
+
+    // Cleanup timeout on component unmount or when delay changes
+    return () => clearTimeout(id);
+  }, [delay]);
+}
+```
+
+### 13.`useDebounce()` Hook
+
+8.https://bigfrontend.dev/react/useDebounce
+
+```JavaScript
+import { useState, useEffect } from 'react';
+
+function useDebounce(value, delay) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    }; // clearup function which will be called when value or delay is changed.
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+
+export default useDebounce;
+```
+
+### 14.`useFocus()` Hook
+
+11.https://bigfrontend.dev/react/useFocus
+
+```ts
+import React, { Ref, useState, useRef, useEffect, RefObject } from "react";
+
+export function useFocus<T extends HTMLElement>(): [Ref<T>, boolean] {
+  const [isFocused, setIsFocused] = useState<boolean>(false);
+  const ref = useRef<T>(null);
+
+  useEffect(() => {
+    const handleFocusIn = () => setIsFocused(true);
+    const handleFocusOut = () => setIsFocused(false);
+
+    const element = ref.current;
+    // !!IMPORTANT!!
+    // initialize the focus state when currentElement changes.
+    setIsFocused(document.activeElement === element);
+    if (element) {
+      element.addEventListener("focus", handleFocusIn);
+      element.addEventListener("blur", handleFocusOut);
+    }
+
+    return () => {
+      if (element) {
+        element.removeEventListener("focus", handleFocusIn);
+        element.removeEventListener("blur", handleFocusOut);
+      }
+    };
+  }, [ref.current]);
+
+  return [ref, isFocused];
+}
+```
+
+### 15.`useIsMounted()` Hook
+
+14.https://bigfrontend.dev/react/implement-useismounted
+
+```ts
+import React, { useRef, useEffect } from "react";
+
+export function useIsMounted(): () => boolean {
+  // your code here
+  const isMountedRef = useRef(false);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  return () => isMountedRef.current;
+}
+```
+
+### 16.`useSWR` Hook
+
+4. https://bigfrontend.dev/react/useSWR-1
+
+```JavaScript
+import {useState, useEffect} from "react";
+
+export function useSWR<T = any, E = any>(
+  _key: string,
+  fetcher: () => T | Promise<T>
+): {
+  data?: T
+  error?: E
+} {
+  const prom = fetcher();
+  if (!(prom instanceof Promise)) {
+    return {data: prom};
+  }
+  const [data, setData] = useState<T>();
+  const [error, setError] = useState<E>();
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const newData = await prom;
+        setData(newData);
+      } catch(e) {
+        setError(e);
+      }
+    };
+    fetchData();
+  }, [_key]);
+
+  return {data, error};
+}
+```
+
+### 17.`useHover()` Hook
+
+6.https://bigfrontend.dev/react/useHover
+
+```tsx
+import { useRef, useState, useCallback } from "react";
+import type { Ref } from "react";
+
+export function useHover<T extends HTMLElement>(): [Ref<T>, boolean] {
+  const elRef = useRef<T | null>(null);
+  const [isHovered, setIsHovered] = useState(false);
+  const onMouseEnter = () => {
+    setIsHovered(true);
+  };
+  const onMouseLeave = () => {
+    setIsHovered(false);
+  };
+
+  const setRef = useCallback((node: T) => {
+    if (elRef.current) {
+      elRef.current.removeEventListener("mouseenter", onMouseEnter);
+      elRef.current.removeEventListener("mouseleave", onMouseLeave);
+    }
+
+    if (node) {
+      elRef.current = node;
+      elRef.current.addEventListener("mouseenter", onMouseEnter);
+      elRef.current.addEventListener("mouseleave", onMouseLeave);
+    }
+  }, []);
+
+  return [setRef, isHovered];
+}
+```
+
+### 18.`useUpdateEffect()` Hook
+
+16.https://bigfrontend.dev/react/useUpdateEffect
+
+```js
+import React, { useEffect, useRef, EffectCallback, DependencyList} from 'react';
+
+export function useUpdateEffect(effect: EffectCallback, deps?: DependencyList) {
+  const isMountedRef = useRef(false);
+
+  useEffect(() => {
+    if (!isMountedRef.current) {
+      isMountedRef.current = true;
+    } else {
+      return effect();
+    }
+  }, deps); // Only re-run effect if dependencies change
+}
+```
+
+### 19.proxy-state valtio
+
+13.https://bigfrontend.dev/react/proxy-state-valtio
+
+```ts
+import React, { useState, useEffect } from "react";
+
+export function proxy<T extends object>(initialValue: T): T {
+  const keys = new Set<string>();
+  let setState: React.Dispatch<React.SetStateAction<T>>;
+
+  const proxy = new Proxy<T>(
+    { ...initialValue },
+    {
+      get(target: T, key: string) {
+        keys.add(key);
+        return Reflect.get(target, key);
+      },
+      set(target: T, key: string, value) {
+        if (key === "setState") {
+          // This is just to update the dispatch reference in this method, won't be required
+          setState = value;
+          return false;
+        }
+
+        if (Reflect.get(target, key) === value) {
+          // no-change occured w.r.t prev value
+          return true;
+        }
+
+        const status = Reflect.set(target, key, value);
+
+        if (status && keys.has(key)) {
+          keys.clear();
+          setState((prev) => ({
+            ...prev,
+            [key]: value,
+          }));
+        }
+
+        return status;
+      },
+    },
+  );
+
+  return proxy;
+}
+
+export function useSnapshot<T extends object>(proxy: T): T {
+  const [_, setState] = useState(proxy);
+
+  // Pass dispatch handler to set interceptor in proxy method
+  Reflect.set(proxy, "setState", setState);
+
+  return proxy;
+}
+```
+
+### 20.useArray()
+
+12.https://bigfrontend.dev/react/useArray
+
+```ts
+import React, { useState } from "react";
+
+type UseArrayActions<T> = {
+  push: (item: T) => void;
+  removeByIndex: (index: number) => void;
+};
+
+export function useArray<T>(
+  initialValue: T[],
+): { value: T[] } & UseArrayActions<T> {
+  const [array, setArray] = useState(initialValue);
+
+  const push = (element: T) => {
+    setArray((prevArray) => [...prevArray, element]);
+  };
+
+  const removeByIndex = (index: number) => {
+    setArray((prevArray) => prevArray.filter((_, i) => i !== index));
+  };
+
+  return {
+    value: array,
+    push,
+    removeByIndex,
+  };
+}
+```

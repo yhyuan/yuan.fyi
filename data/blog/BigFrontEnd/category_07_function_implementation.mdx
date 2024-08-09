@@ -1,0 +1,649 @@
+---
+title: BigFrontEnd Category 7 Function Implementation Questions
+date: "2024-06-04"
+tags: ["BigFrontEnd", "category"]
+draft: false
+---
+
+### Introduction
+
+This blog post summarizes the function implementation related questions found on BigFrontEnd.Dev.
+
+<TOCInline toc={props.toc} exclude="Introduction" />
+
+### 1. implement `curry()`
+
+#### 1.1 `curry(fn)` Implementation
+
+1 https://bigfrontend.dev/problem/implement-curry
+`fn.length` represents the number of arguments of fn.
+
+```js
+// With Arrow function and avoid using apply and this
+function curry(fn) {
+  const curried = (...args) => {
+    // Check the number of args.
+    // If it has more than the required, call fn.
+    // Otherwise, use curried recurisivly call.
+    if (args.length >= fn.length) {
+      return fn(...args);
+    }
+    return (...nextArgs) => curried(...args, ...nextArgs);
+  };
+  return curried;
+}
+const join = (a, b, c) => {
+  return `${a}_${b}_${c}`;
+};
+const curriedJoin = curry(join);
+curriedJoin(1, 2, 3); // '1_2_3'
+curriedJoin(1)(2, 3); // '1_2_3'
+curriedJoin(1, 2)(3); // '1_2_3'
+```
+
+#### 1.2 `Function.prototype.curry()` Implementation
+
+```JavaScript
+// Define the curry method if it doesn't already exist
+if (!Function.prototype.curry) {
+  Function.prototype.curry = function (...args) {
+    // console.log(`args: ${args}`);
+    const fn = this; // 'this' refers to the function on which curry is called
+    // Return a curried version of the function
+    return function curried(...nextArgs) {
+      if (args.length + nextArgs.length >= fn.length) {
+        return fn.apply(this, args.concat(nextArgs));
+      } else {
+        // Otherwise, return a new curried function with accumulated arguments
+        return curried.bind(this, ...nextArgs);
+      }
+    };
+  };
+}
+// Example function to be curried
+function add(a, b, c, d) {
+  return a + b + c + d;
+}
+// Curry the add function
+const curriedAdd = add.curry(2); // Partially apply the first argument
+console.log(curriedAdd(3, 4, 5)); // Output: 9 (2 + 3 + 4)
+console.log(curriedAdd(3)(4)(5)); // Output: 9 (2 + 3 + 4)
+console.log(curriedAdd(3, 4)(5)); // Output: 9 (2 + 3 + 4)
+```
+
+### 2. implement curry() with placeholder support
+
+2 https://bigfrontend.dev/problem/implement-curry-with-placeholder
+
+```js
+/**
+ * @param { Function } func
+ */
+const curry = (fn) => {
+  const curried = (...args) => {
+    // Check if there are any placeholders in the arguments
+    const complete =
+      args.length >= fn.length &&
+      args.slice(0, fn.length).every((arg) => arg !== curry.placeholder);
+
+    if (complete) {
+      return fn(...args);
+    }
+
+    return (...nextArgs) => {
+      // Merge the current arguments with the next arguments, respecting placeholders
+      const newArgs = args
+        .map((arg) =>
+          arg === curry.placeholder && nextArgs.length ? nextArgs.shift() : arg,
+        )
+        .concat(nextArgs);
+      return curried(...newArgs);
+    };
+  };
+  return curried;
+};
+curry.placeholder = Symbol();
+```
+
+### 3.what is Composition? create a pipe()
+
+11 https://bigfrontend.dev/problem/what-is-composition-create-a-pipe
+
+```js
+/**
+ * @param {Array<(arg: any) => any>} funcs
+ * @return {(arg: any) => any}
+ */
+const pipe = (funcs) => (input) =>
+  funcs.reduce((result, func) => func(result), input);
+
+const addTwo = (x) => x + 2;
+const multiplyByThree = (x) => x * 3;
+const subtractFive = (x) => x - 5;
+// Create a pipeline of functions
+const pipeline = pipe(addTwo, multiplyByThree, subtractFive);
+// Call the pipeline function with an input
+const result = pipeline(10); // (10 + 2) * 3 - 5 = 31
+console.log(result); // Output: 31
+```
+
+### 4.Implement a General Memoization Function - `memo()`
+
+#### 4.1 `memo()`
+
+14 https://bigfrontend.dev/problem/implement-general-memoization-function
+
+```js
+/**
+ * @param {Function} func
+ * @param {(args:[]) => string }  [resolver] - cache key generator
+ */
+function memo(func, resolver) {
+  const cache = new Map();
+
+  return function (...args) {
+    const key = resolver ? resolver(...args) : JSON.stringify(args);
+
+    if (cache.has(key)) {
+      return cache.get(key);
+    } else {
+      const result = func.apply(this, args);
+      cache.set(key, result);
+      return result;
+    }
+  };
+}
+```
+
+#### 4.2 2623. Memoize
+
+```JavaScript
+function memo(func) {
+  const cache = new Map();
+
+  return function(...args) {
+    const key = JSON.stringify(args);
+
+    if (cache.has(key)) {
+      return cache.get(key);
+    } else {
+      const result = func.apply(this, args);
+      cache.set(key, result);
+      return result;
+    }
+  };
+}
+
+// Example function to be memoized
+function fibonacci(n) {
+  if (n <= 1) {
+    return n;
+  }
+  return fibonacci(n - 1) + fibonacci(n - 2);
+}
+
+// Memoize the fibonacci function
+const memoizedFibonacci = memo(fibonacci);
+// Call the memoized function
+console.log(memoizedFibonacci(10)); // Output: 55 (calculated)
+console.log(memoizedFibonacci(10)); // Output: 55 (cached)
+```
+
+### 5.Function Composition (2629)
+
+```TypeScript
+type F = (x: number) => number;
+
+function compose(functions: F[]): F {
+    return function(x) {
+        return functions.reduceRight((acc, cur) => cur(acc), x);
+    }
+};
+```
+
+### 6.Allow One Function call (2666)
+
+```TypeScript
+type JSONValue = null | boolean | number | string | JSONValue[] | { [key: string]: JSONValue };
+type OnceFn = (...args: JSONValue[]) => JSONValue | undefined
+
+function once(fn: Function): OnceFn {
+    let called = false;
+    return function (...args) {
+        if (!called) {
+            called = true;
+            return fn(...args);
+        } else {
+            return undefined;
+        }
+    };
+}
+/**
+ * let fn = (a,b,c) => (a + b + c)
+ * let onceFn = once(fn)
+ *
+ * onceFn(1,2,3); // 6
+ * onceFn(2,3,6); // returns undefined without calling fn
+ */
+```
+
+### 7.create-a-sum.md
+
+23.https://bigfrontend.dev/problem/create-a-sum
+
+```js
+/**
+ * @param {number} num
+ */
+function sum(num) {
+  // Inner function that takes the next argument
+  const innerSum = (b) => sum(num + b);
+
+  // Overriding the toString or valueOf method to return the accumulated sum
+  innerSum.valueOf = () => num;
+
+  return innerSum;
+}
+```
+
+```js
+const sum1 = sum(1);
+sum1(2) == 3; // true
+sum1(3) == 4; // true
+sum(1)(2)(3) == 6; // true
+sum(5)(-1)(2) == 6; // true
+```
+
+### 8.implement async helper - `sequence()`
+
+29.https://bigfrontend.dev/problem/implement-async-helper-sequence
+
+```js
+/**
+ * @param {AsyncFunc[]} funcs
+ * @return {(finalCallback: Callback) => void}
+ */
+function sequence(asyncFuncs) {
+  const promisify = (asyncFunc, currentData) =>
+    new Promise((resolve, reject) => {
+      asyncFunc((error, result) => {
+        if (error) {
+          return reject(error);
+        }
+        resolve(result);
+      }, currentData);
+    });
+  return async (finalCallback, initialData) => {
+    let currentData = initialData;
+
+    try {
+      for (const asyncFunc of asyncFuncs) {
+        currentData = await promisify(asyncFunc, currentData);
+      }
+      finalCallback(undefined, currentData);
+    } catch (error) {
+      finalCallback(error, undefined);
+    }
+  };
+}
+```
+
+### 9.implement async helper - `parallel()`
+
+30.https://bigfrontend.dev/problem/implement-async-helper-parallel
+
+```js
+/**
+ * @param {AsyncFunc[]} funcs
+ * @return {(callback: Callback) => void}
+ */
+function parallel(funcs) {
+  return (finalCallback, input) => {
+    const results = Array(funcs.length);
+    let count = 0;
+    let hasError = false;
+
+    funcs.forEach((func, i) => {
+      func((err, data) => {
+        if (hasError) {
+          return;
+        }
+
+        if (err) {
+          hasError = true;
+          finalCallback(err, undefined);
+          return;
+        }
+
+        results[i] = data;
+        count++;
+
+        if (count === funcs.length) {
+          finalCallback(undefined, results);
+        }
+      }, input);
+    });
+  };
+}
+```
+
+### 10.implement async helper - `race()`
+
+31.https://bigfrontend.dev/problem/implement-async-helper-race
+
+```js
+/**
+ * @param {AsyncFunc[]} funcs
+ * @return {(callback: Callback) => void}
+ */
+function race(funcs) {
+  return (finalCallback, data) => {
+    const n = funcs.length;
+    let isResolved = false;
+    for (let i = 0; i < n; i++) {
+      const func = funcs[i];
+      func((error, result) => {
+        if (!isResolved) {
+          if (error) {
+            finalCallback(error, undefined);
+          } else {
+            finalCallback(undefined, result);
+          }
+          isResolved = true;
+        }
+      }, data);
+    }
+  };
+}
+```
+
+### 11.implement `range()`
+
+39.https://bigfrontend.dev/problem/implement-range
+
+```js
+/**
+ * @param {integer} from
+ * @param {integer} to
+ */
+function range(from, to) {
+  // The iterator object that will be returned
+  // when calling the Symbol.iterator method of an object.
+  // The iterator object has a method named next which
+  // generates values for the iteration.
+  const iterator = {
+    from: from,
+    to: to,
+    next() {
+      if (this.from > this.to) {
+        return { done: true };
+      }
+
+      const value = { value: this.from, done: false };
+      this.from++;
+      return value;
+    },
+  };
+
+  // Return an object that has a method named
+  // Symbol.iterator for the for...of to work.
+  // When for..of starts, it calls that method once.
+  return {
+    [Symbol.iterator]() {
+      return iterator;
+    },
+  };
+}
+```
+
+```js
+function range(from, to) {
+  return Array(to - from + 1)
+    .fill(0) // Need to fill with 0. Otherwise, it will be undefined.
+    .map((_, index) => from + index);
+}
+```
+
+```js
+function* range(from, to) {
+  for (let i = from; i <= to; i++) {
+    yield i;
+  }
+}
+```
+
+### 12.flatten Thunk
+
+54.https://bigfrontend.dev/problem/flatten-Thunk
+In JavaScript, a _thunk_ is a function that encapsulates a computation or a value. Instead of performing the computation immediately, a thunk delays the computation until its result is needed.
+
+1. **Callback Type**: The `Callback` type is a function that takes an `error` and a `result`. If `result` is a thunk, the process should continue with the new thunk.
+2. **Thunk Type**: The `Thunk` type is a function that takes a `Callback`.
+3. **flattenThunk Function**: This function takes a thunk and returns a new thunk.
+   - It defines an internal `handleThunk` function to handle the result of each thunk.
+   - If an error occurs, `handleThunk` calls the original callback with the error.
+   - If the result is a thunk, `handleThunk` calls the new thunk with `handleThunk` to continue the chain.
+   - If the result is the final result, `handleThunk` calls the original callback with the result.
+   - The initial thunk is called with `handleThunk` to start the chain.
+
+```js
+type Callback = (error: Error | null, result: any) => void;
+type Thunk = (callback: Callback) => void;
+
+function flattenThunk(thunk) {
+  return (finalCallback) => {
+    const handleThunk = (error, result) => {
+      if (error) {
+        finalCallback(error, undefined);
+      } else if (typeof result === 'function') {
+        // If result is a thunk, call it with handleThunk
+        result(handleThunk);
+      } else {
+        // If result is the final result, call the original callback
+        finalCallback(undefined, result);
+      }
+    }
+    // Start the chain with the initial thunk
+    thunk(handleThunk);
+  };
+}
+
+// Example thunks
+const func1 = (cb: Callback) => {
+  setTimeout(() => cb(null, 'ok'), 10);
+};
+
+const func2 = (cb: Callback) => {
+  setTimeout(() => cb(null, func1), 10);
+};
+
+const func3 = (cb: Callback) => {
+  setTimeout(() => cb(null, func2), 10);
+};
+
+// Usage of flattenThunk
+flattenThunk(func3)((error, data) => {
+  if (error) {
+    console.error(error);
+  } else {
+    console.log(data); // 'ok'
+  }
+});
+```
+
+### 13.create your own `Function.prototype.call`
+
+61.https://bigfrontend.dev/problem/create-call-method
+
+```js
+Function.prototype.mycall = function (thisArg, ...args) {
+  // Step 1: Handle `thisArg`
+  // If `thisArg` is null or undefined, it should default to the global object (window in browsers, global in Node.js)
+  // Otherwise, it should be coerced to an object
+  if (thisArg === null || thisArg === undefined) {
+    thisArg = (function () {
+      return this;
+    })(); // non-strict mode global object
+  } else {
+    thisArg = Object(thisArg);
+  }
+
+  // Step 2: Create a unique property on `thisArg` to avoid overwriting existing properties
+  const fnSymbol = Symbol();
+
+  // Step 3: Assign the function (using `this`) to the `thisArg` object
+  thisArg[fnSymbol] = this;
+
+  // Step 4: Invoke the function with the provided arguments
+  const result = thisArg[fnSymbol](...args);
+
+  // Step 5: Remove the temporary property
+  delete thisArg[fnSymbol];
+
+  // Step 6: Return the result of the function call
+  return result;
+};
+
+// Example usage:
+
+function greet(greeting, punctuation) {
+  return `${greeting}, my name is ${this.name}${punctuation}`;
+}
+
+const person = { name: "John" };
+
+console.log(greet.mycall(person, "Hello", "!")); // "Hello, my name is John!"
+```
+
+### 14.Generate Fibonacci Number
+
+86.https://bigfrontend.dev/problem/fibonacci-number
+
+```js
+/**
+ * @param {number} n - non-negative integer
+ * @return {number}
+ */
+function fib(n) {
+  if (n === 0) return 0;
+  if (n === 1) return 1;
+  let pre_pre = 0;
+  let pre = 1;
+  let cur = null;
+  for (let i = 2; i <= n; i++) {
+    cur = pre + pre_pre;
+    pre_pre = pre;
+    pre = cur;
+  }
+  return cur;
+}
+```
+
+```js
+/**
+ * @param {number} n - non-negative integer
+ * @return {number}
+ */
+function fib(n) {
+  // your code here
+  const cache = new Map();
+  const helper = (i) => {
+    if (i === 0) return 0;
+    if (i === 1) return 1;
+    if (cache.has(i)) {
+      return cache.get(i);
+    }
+    const ans = helper(i - 1) + helper(i - 2);
+    cache.set(i, ans);
+    return ans;
+  };
+  return helper(n);
+}
+```
+
+### 15.Generate Fibonacci Number with recursion
+
+93.https://bigfrontend.dev/problem/Generate-Fibonacci-Number-with-recursion
+
+```js
+// please modify code below to make it work for large number like `fib(1000)`
+// recursion should still be used
+// const memo = new Map();
+function fib(n, memo = new Map()) {
+  if (n === 0) return 0;
+  if (n === 1) return 1;
+  if (memo.has(n)) {
+    return memo.get(n);
+  }
+  const ans = fib(n - 1, memo) + fib(n - 2, memo);
+  memo.set(n, ans);
+  return ans;
+}
+```
+
+### 16.implement memoizeOne()
+
+122.https://bigfrontend.dev/problem/implement-memoizeOne
+
+```js
+function shallowEqual(arr1, arr2) {
+  if (arr1.length !== arr2.length) return false;
+  for (let i = 0; i < arr1.length; i++) {
+    if (arr1[i] !== arr2[i]) return false;
+  }
+  return true;
+}
+
+/**
+ * @param {Function} func
+ * @param {(args: any[], newArgs: any[]) => boolean} [isEqual]
+ * @returns {any}
+ */
+function memoizeOne(func, isEqual = shallowEqual) {
+  let lastArgs = null;
+  let lastResult = null;
+  let lastThis = null;
+  let hasCache = false;
+
+  return function (...args) {
+    if (hasCache && isEqual(args, lastArgs) && lastThis === this) {
+      return lastResult;
+    }
+    lastResult = func.apply(this, args);
+    lastArgs = args;
+    lastThis = this;
+    hasCache = true;
+    return lastResult;
+  };
+}
+
+let callCount = 0;
+function funcThis(b) {
+  callCount += 1;
+  return `${this.a}_${b}`;
+}
+const memoed = memoizeOne(funcThis);
+const a = {
+  a: 1,
+  memoed,
+};
+
+const b = {
+  a: 2,
+  memoed,
+};
+console.log(a.memoed(2)); //.toBe('1_2')
+console.log(callCount); //.toBe(1)
+console.log(a.memoed(2)); //.toBe('1_2')
+console.log(callCount); //.toBe(1)
+console.log(a.memoed(3)); //.toBe('1_3')
+console.log(callCount); //.toBe(2)
+console.log(a.memoed(3)); //.toBe('1_3')
+console.log(callCount); //.toBe(2)
+console.log(`test: `);
+console.log(b.memoed(3)); //.toBe('2_3')
+console.log(`test1: `);
+console.log(callCount); //.toBe(3)
+console.log(a.memoed(3)); //.toBe('1_3')
+console.log(callCount); //.toBe(4)
+```

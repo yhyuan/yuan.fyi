@@ -1,0 +1,468 @@
+---
+title: BigFrontEnd Category 18 Time Implementation Questions
+date: "2024-06-15"
+tags: ["BigFrontEnd", "category"]
+draft: false
+---
+### Introduction
+
+This blog post summarizes the String implementation related questions found on BigFrontEnd.Dev.
+
+<TOCInline toc={props.toc} exclude="Introduction" />
+
+### 1.implement basic throttle()
+
+#### 1.1 implement basic throttle()
+
+4 https://bigfrontend.dev/problem/implement-basic-throttle
+
+```js
+/**
+ * @param {Function} func
+ * @param {number} wait
+ */
+function throttle(func, wait) {
+  // Track if we are waiting. Initially, we are not.
+  let isWaiting = false;
+  // Track arguments of last call
+  let lastCallArgs = null;
+  let timeId = null;
+  const later = () => {
+    // ...allow execution of 'func'
+    isWaiting = false;
+    // If arguments of last call exists,
+    if (lastCallArgs) {
+      // ...execute function throttled and pass last call's arguments
+      // to it. Since now we are not waiting, 'func' will be executed
+      // and isWaiting will be reset to true.
+      throttled(...lastCallArgs);
+      // ...reset arguments of last call to null.
+      lastCallArgs = null;
+    }
+  };
+  const throttled = (...args) => {
+    // If we are waiting,
+    if (isWaiting) {
+      // ...store arguments of last call
+      lastCallArgs = args;
+      return;
+    }
+    // If we are not waiting, execute 'func' with passed arguments
+    func(...args);
+    // Prevent future execution of 'func'
+    isWaiting = true;
+    if (timeId) {
+      clearTimeout(timeId);
+      timeId = null;
+    }
+    // After wait time,
+    timeId = setTimeout(later, wait);
+  };
+  return throttled;
+}
+```
+
+#### 1.2 Throttle (2676)
+
+```TypeScript
+type F = (...args: number[]) => void
+
+function throttle(fn: F, delay: number): F {
+    let lastExecuted = 0;
+    let timeId = null;
+    return (...args) => {
+        const now = Date.now();
+        const timeSinceLastExecuted = now - lastExecuted;
+        if (timeSinceLastExecuted >= delay) {
+            fn(...args);
+            lastExecuted = now;
+        } else {
+            if (timeId) {
+                clearTimeout(timeId);
+                timeId = null;
+            }
+            timeId = setTimeout(() => {
+                fn(...args);
+                lastExecuted = Date.now();
+            }, delay - timeSinceLastExecuted);
+        }
+    };
+};
+```
+
+### 2.implement throttle() with leading & trailing option
+
+5 https://bigfrontend.dev/problem/implement-throttle-with-leading-and-trailing-option
+
+```js
+/**
+ * @param {Function} func
+ * @param {number} wait
+ * @param {boolean} option.leading
+ * @param {boolean} option.trailing
+ */
+function throttle(func, wait, option = { leading: true, trailing: true }) {
+  let timeout = null;
+  let lastCallContext = null;
+  let lastCallArgs = null;
+
+  const later = () => {
+    if (option.trailing && lastCallArgs) {
+      func.apply(lastCallContext, lastCallArgs);
+      lastCallContext = null;
+      lastCallArgs = null;
+      // Set the timeout for trailing.
+      // The func will execute only if the event was triggered again after
+      // this execution, in other words, only if arguments of last function call
+      // is stored.
+      timeout = setTimeout(later, wait);
+    } else {
+      timeout = null;
+    }
+  };
+
+  return function (...args) {
+    if (timeout) {
+      lastCallContext = this;
+      lastCallArgs = args;
+      return;
+    }
+    if (option.leading) {
+      func.apply(this, args);
+    } else {
+      lastCallContext = this;
+      lastCallArgs = args;
+    }
+
+    timeout = setTimeout(later, wait);
+  };
+}
+```
+
+### 3.implement basic debounce()
+
+6 https://bigfrontend.dev/problem/implement-basic-debounce
+
+```js
+/**
+ * @param {Function} func
+ * @param {number} wait
+ */
+function debounce(func, wait) {
+  let timer;
+  return function debounced(...args) {
+    if (timer) {
+      clearTimeout(timer);
+    }
+    timer = setTimeout(() => {
+      func.apply(null, args);
+    }, wait);
+  };
+}
+```
+
+```typescript
+type F = (...args: number[]) => void;
+
+function debounce(fn: F, t: number): F {
+  let timeoutId: NodeJS.Timeout | null = null;
+  return (...args) => {
+    if (timeoutId !== null) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
+    timeoutId = setTimeout(() => {
+      fn(...args);
+      timeoutId = null;
+    }, t);
+  };
+}
+```
+
+### 4.implement debounce() with leading & trailing option
+
+7 https://bigfrontend.dev/problem/implement-debounce-with-leading-and-trailing-option
+
+```js
+/**
+ * @param {Function} func
+ * @param {number} wait
+ * @param {boolean} option.leading
+ * @param {boolean} option.trailing
+ */
+function debounce(func, wait, option = { leading: false, trailing: true }) {
+  let timeout = null;
+  // Flag to skip the trailing if leading is true
+  // and the debounced function isn't called again after the initial execution.
+  let isCalledForLeading = false;
+
+  return (...args) => {
+    if (timeout) {
+      clearTimeout(timeout);
+    }
+
+    if (option.leading && timeout === null) {
+      func.apply(null, args);
+      isCalledForLeading = true;
+    } else {
+      isCalledForLeading = false;
+    }
+
+    timeout = setTimeout(() => {
+      if (option.trailing && !isCalledForLeading) {
+        func.apply(null, args);
+      }
+      timeout = null;
+    }, wait);
+  };
+}
+```
+
+### 5.implement clearAllTimeout()
+
+28.https://bigfrontend.dev/problem/implement-clearAllTimeout
+
+```js
+// Store timeID
+const timerCache = new Set();
+const originalSetTimeout = window.setTimeout;
+
+window.setTimeout = (cb, delay) => {
+  const timeId = originalSetTimeout(cb, delay);
+  timerCache.add(timeId);
+  return timeId;
+};
+
+/**
+ * cancel all timer from window.setTimeout
+ */
+function clearAllTimeout() {
+  for (const timeId of timerCache) {
+    clearTimeout(timeId);
+  }
+}
+```
+
+### 6.create a fake timer(setTimeout)
+
+36.https://bigfrontend.dev/problem/create-a-fake-timer
+
+```js
+class FakeTimer {
+  constructor() {
+    this.currentTime = 0;
+    this.originalSetTimeout = null;
+    this.originalClearTimeout = null;
+    this.originalDateNow = null;
+    this.timers = [];
+    this.nextId = 1;
+  }
+
+  install() {
+    // Save the original implementations
+    this.originalSetTimeout = window.setTimeout;
+    this.originalClearTimeout = window.clearTimeout;
+    this.originalDateNow = Date.now;
+
+    // Override setTimeout
+    global.setTimeout = (callback, delay) => {
+      const id = this.nextId++;
+      this.timers.push({ id, callback, time: this.currentTime + delay });
+      this.timers.sort((a, b) => a.time - b.time); // Ensure timers are sorted by time
+      return id;
+    };
+
+    // Override clearTimeout
+    global.clearTimeout = (id) => {
+      this.timers = this.timers.filter((timer) => timer.id !== id);
+    };
+
+    // Override Date.now
+    Date.now = () => this.currentTime;
+  }
+
+  uninstall() {
+    // Restore the original implementations
+    window.setTimeout = this.originalSetTimeout;
+    window.clearTimeout = this.originalClearTimeout;
+    Date.now = this.originalDateNow;
+
+    // Reset internal state
+    this.currentTime = 0;
+    this.timers = [];
+    this.nextId = 1;
+  }
+
+  tick() {
+    while (this.timers.length > 0) {
+      const nextTimer = this.timers.shift();
+      this.currentTime = nextTimer.time;
+      nextTimer.callback();
+    }
+  }
+}
+```
+
+### 7.create an interval
+
+83.https://bigfrontend.dev/problem/create-an-interval
+
+```js
+/**
+ * @param {Function} func
+ * @param {number} delay
+ * @param {number} period
+ * @return {number}
+ */
+const intervals = new Map();
+let idCounter = 0;
+
+function mySetInterval(func, delay, period) {
+  let count = 0;
+  const id = idCounter++;
+
+  function scheduleNext() {
+    const nextDelay = delay + period * count;
+    const timeoutId = setTimeout(() => {
+      func();
+      count++;
+      scheduleNext();
+    }, nextDelay);
+    intervals.set(id, timeoutId);
+  }
+
+  scheduleNext();
+  return id;
+}
+
+/**
+ * @param { number } id
+ */
+function myClearInterval(id) {
+  const timeoutId = intervals.get(id);
+  if (timeoutId !== undefined) {
+    clearTimeout(timeoutId);
+    intervals.delete(id);
+  }
+}
+```
+
+### 8.create a fake timer (setInterval)
+
+84.https://bigfrontend.dev/problem/create-a-fake-timer-setInterval
+
+```js
+class FakeTimer {
+  constructor() {
+    this.origSetInterval = window.setInterval;
+    this.origClearInterval = window.clearInterval;
+    this.origDateNow = Date.now;
+
+    this.taskQueue = [];
+    this.currTime = 0;
+  }
+
+  install() {
+    window.setInterval = (fn, delay) => {
+      const id = this.taskQueue.length;
+      this.taskQueue.push({
+        id,
+        fn,
+        delay,
+      });
+      return id;
+    };
+
+    window.clearInterval = (id) => {
+      this.taskQueue = this.taskQueue.filter((task) => task.id !== id);
+    };
+
+    Date.now = () => this.currTime;
+  }
+
+  uninstall() {
+    window.setInterval = this.origSetInterval;
+    window.clearInterval = this.origClearInterval;
+    Date.now = this.origDateNow;
+  }
+
+  tick() {
+    while (this.taskQueue.length > 0) {
+      const task = this.taskQueue.shift();
+      this.currTime = task.delay;
+      this.taskQueue.push({
+        ...task,
+        delay: this.currTime + task.delay,
+      });
+      task.fn();
+    }
+  }
+}
+```
+
+### 9.create LazyMan()
+
+130.https://bigfrontend.dev/problem/create-lazyman
+
+```js
+// interface Laziness {
+//   sleep: (time: number) => Laziness
+//   sleepFirst: (time: number) => Laziness
+//   eat: (food: string) => Laziness
+// }
+
+/**
+ * @param {string} name
+ * @param {(log: string) => void} logFn
+ * @returns {Laziness}
+ */
+function LazyMan(name, logFn) {
+  const tasks = [{ type: "hi", name }];
+  const createLaziness = () => {
+    return {
+      sleep: (time) => {
+        tasks.push({ type: "sleep", time });
+        console.log(tasks);
+        return createLaziness();
+      },
+      sleepFirst: (time) => {
+        tasks.unshift({ type: "sleep", time });
+        return createLaziness();
+      },
+      eat: (food) => {
+        tasks.push({ type: "eat", food });
+        console.log(tasks);
+        return createLaziness();
+      },
+    };
+  };
+  const delay = (delayInSeconds) =>
+    new Promise((resolve, reject) => {
+      setTimeout(() => {
+        resolve();
+      }, delayInSeconds * 1000);
+    });
+
+  setTimeout(async () => {
+    for (let i = 0; i < tasks.length; i++) {
+      const task = tasks[i];
+      if (task.type === "hi") {
+        logFn(`Hi, I'm ${task.name}.`);
+      } else if (task.type === "sleep") {
+        await delay(task.time);
+        logFn(
+          `Wake up after ${task.time === 1 ? `1 second` : `${task.time} seconds`}.`,
+        );
+      } else if (task.type === "eat") {
+        logFn(`Eat ${task.food}.`);
+      } else {
+        throw new Error(`unexisted task type: ${task.type}`);
+      }
+    }
+  });
+
+  return createLaziness();
+}
+
+LazyMan("Jack", console.log).eat("banana").sleepFirst(10).eat("apple").sleep(1);
+```

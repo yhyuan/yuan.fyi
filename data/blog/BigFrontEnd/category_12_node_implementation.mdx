@@ -1,0 +1,316 @@
+---
+title: BigFrontEnd Category 12 node Implementation Questions
+date: "2024-06-09"
+tags: ["BigFrontEnd", "category"]
+draft: false
+---
+
+### Introduction
+
+This blog post summarizes the node implementation related questions found on BigFrontEnd.Dev.
+
+<TOCInline toc={props.toc} exclude="Introduction" />
+
+### 1.create an Event Emitter
+
+16.https://bigfrontend.dev/problem/create-an-Event-Emitter
+There is Event Emitter in Node.js, Facebook once had its own implementation but now it is archived.
+
+You are asked to create an Event Emitter Class
+
+```js
+const emitter = new Emitter();
+```
+
+It should support event subscribing
+
+```js
+const sub1 = emitter.subscribe("event1", callback1);
+const sub2 = emitter.subscribe("event2", callback2);
+
+// same callback could subscribe
+// on same event multiple times
+const sub3 = emitter.subscribe("event1", callback1);
+```
+
+emit(eventName, ...args) is used to trigger the callbacks, with args relayed
+
+```js
+emitter.emit("event1", 1, 2);
+// callback1 will be called twice
+```
+
+Subscription returned by subscribe() has a release() method that could be used to unsubscribe
+
+```js
+sub1.release();
+sub3.release();
+// now even if we emit 'event1' again,
+// callback1 is not called anymore
+```
+
+```js
+// Add this to access the class property
+// callbacks.splice(index, 1); delete the number of elements after index.
+class EventEmitter {
+  #eventHandlers = new Map();
+  subscribe(eventName, callback) {
+    if (this.#eventHandlers.has(eventName)) {
+      this.#eventHandlers.get(eventName).push(callback);
+    } else {
+      this.#eventHandlers.set(eventName, [callback]);
+    }
+    return {
+      release: () => {
+        const callbacks = this.#eventHandlers.get(eventName);
+        const index = callbacks.indexOf(callback);
+        if (index === -1) {
+          return;
+        }
+        callbacks.splice(index, 1);
+      },
+    };
+  }
+
+  emit(eventName, ...args) {
+    if (this.#eventHandlers.has(eventName)) {
+      this.#eventHandlers.get(eventName).forEach((callback) => {
+        callback(...args);
+      });
+    }
+  }
+}
+```
+
+```js
+const emitter = new Emitter();
+const sub1 = emitter.subscribe("event1", callback1);
+const sub2 = emitter.subscribe("event2", callback2);
+// same callback could subscribe
+// on same event multiple times
+const sub3 = emitter.subscribe("event1", callback1);
+emitter.emit("event1", 1, 2);
+// callback1 will be called twice
+sub1.release();
+sub3.release();
+// now even if we emit 'event1' again,
+// callback1 is not called anymore
+```
+
+### 2.create a simple store for DOM element
+
+17.https://bigfrontend.dev/problem/create-a-simple-store-for-DOM-node
+We have Map in es6, so we could use any data as key, such as DOM element.
+
+```js
+const map = new Map();
+map.set(domNode, somedata);
+```
+
+What if we need to support old JavaScript env like es5, how would you create your own Node Store as above?
+
+You are asked to implement a Node Store, which supports DOM element as key.
+
+```js
+class NodeStore {
+  set(node, value) {}
+  get(node) {}
+  has(node) {}
+}
+```
+
+note
+
+Map is disabled when judging your code, it is against the goal of practicing.
+
+You can create a simple general Map polyfill. Or since you are asked to support specially for DOM element, what is special about DOM element?
+
+What is the Time / Space cost of your solution?
+
+```js
+class NodeStore {
+  constructor() {
+    this.nodes = {};
+  }
+  /**
+   * @param {Node} node
+   * @param {any} value
+   */
+  set(node, value) {
+    node.__id__ = Symbol();
+    this.nodes[node.__id__] = value;
+  }
+  /**
+   * @param {Node} node
+   * @return {any}
+   */
+  get(node) {
+    return this.nodes[node.__id__];
+  }
+
+  /**
+   * @param {Node} node
+   * @return {Boolean}
+   */
+  has(node) {
+    // coerce to boolean value
+    return !!this.nodes[node.__id__];
+  }
+}
+```
+
+### 3.create a middleware system
+
+52.https://bigfrontend.dev/problem/create-a-middleware-system
+
+Have you ever used [Express Middleware](https://expressjs.com/en/guide/using-middleware.html#using-middleware) before?
+
+Middleware functions are functions with fixed interface that could be chained up like following two functions.
+
+```js
+app.use(
+  "/user/:id",
+  function (req, res, next) {
+    next();
+  },
+  function (req, res, next) {
+    next(new Error("sth wrong"));
+  },
+);
+```
+
+You are asked to create simplified Middleware system:
+
+```js
+type Request = object
+
+type NextFunc =  (error?: any) => void
+
+type MiddlewareFunc =
+  (req: Request, next: NextFunc) => void
+
+type ErrorHandler =
+  (error: Error, req: Request, next: NextFunc) => void
+
+class Middleware {
+  use(func: MiddlewareFunc | ErrorHandler) {
+    // do any async operations
+    // call next() to trigger next function
+  }
+  start(req: Request) {
+    // trigger all functions with a req object
+  }
+}
+```
+
+Now we can do something similar with Express
+
+```js
+const middleware = new Middleware();
+
+middleware.use((req, next) => {
+  req.a = 1;
+  next();
+});
+
+middleware.use((req, next) => {
+  req.b = 2;
+  next();
+});
+
+middleware.use((req, next) => {
+  console.log(req);
+});
+
+middleware.start({});
+// {a: 1, b: 2}
+```
+
+Notice that use() could also accept an ErrorHandler which has 3 arguments. The error handler is triggered if next() is called with an extra argument or uncaught error happens, like following.
+
+```js
+const middleware = new Middleware();
+
+// throw an error at first function
+middleware.use((req, next) => {
+  req.a = 1;
+  throw new Error("sth wrong");
+  // or `next(new Error('sth wrong'))`
+});
+
+// since error occurs, this is skipped
+middleware.use((req, next) => {
+  req.b = 2;
+});
+
+// since error occurs, this is skipped
+middleware.use((req, next) => {
+  console.log(req);
+});
+
+// since error occurs, this is called
+middleware.use((error, req, next) => {
+  console.log(error);
+  console.log(req);
+});
+
+middleware.start({});
+// Error: sth wrong
+// {a: 1}
+```
+
+Solution:
+
+```js
+class Middleware {
+  constructor() {
+    this.middlewareFuncs = [];
+    this.errorHandlerFuncs = [];
+  }
+
+  use(func) {
+    // func.length returns the number of function parameters.
+    if (func.length < 3) {
+      // (req, next)
+      this.middlewareFuncs.push(func);
+    } else {
+      // (error, req, next)
+      this.errorHandlerFuncs.push(func);
+    }
+  }
+
+  start(req) {
+    let middlewareIndex = 0;
+    let errorHandlerIndex = 0;
+    const next = (error) => {
+      if (error) {
+        // If an error is passed, find the next error handler
+        if (errorHandlerIndex >= this.errorHandlerFuncs.length) {
+          return;
+        }
+        const fn = this.errorHandlerFuncs[errorHandlerIndex];
+        errorHandlerIndex += 1;
+        try {
+          fn(error, req, next);
+        } catch (e) {
+          next(e);
+        }
+      } else {
+        // Otherwise, execute the next middleware function
+        if (middlewareIndex >= this.middlewareFuncs.length) {
+          return;
+        }
+        const fn = this.middlewareFuncs[middlewareIndex];
+        middlewareIndex += 1;
+        try {
+          fn(req, next);
+        } catch (e) {
+          next(e);
+        }
+      }
+    };
+
+    next();
+  }
+}
+```
