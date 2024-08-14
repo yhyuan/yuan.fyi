@@ -647,3 +647,143 @@ console.log(callCount); //.toBe(3)
 console.log(a.memoed(3)); //.toBe('1_3')
 console.log(callCount); //.toBe(4)
 ```
+
+### 17.merge identical API calls
+101.https://bigfrontend.dev/problem/merge-identical-API-calls
+Suppose we have a utility function getAPI() which fetches data.
+```js
+const getAPI = (path, config) => { ... }
+const list1 = await getAPI('/list', { keyword: 'bfe'})
+const list2 = await getAPI('/list', { keyword: 'dev'})
+```
+It works great. Util the UI become so complicated that same API might be called for multiple time within a relatively short period of time.
+
+You want to avoid the unnecessary API calls, based on following assumption:
+
+GET API call response hardly changes within 1000ms.
+
+So identical GET API calls should return the same response within 1000ms. By identical, it means path and config are deeply equal.
+
+You create createGetAPIWithMerging(getAPI), which works like following.
+```js
+const getAPIWithMerging = createGetAPIWithMerging(getAPI)
+getAPIWithMerging('/list', { keyword: 'bfe'}).then(...)
+// 1st call,  this will call getAPI
+getAPIWithMerging('/list', { keyword: 'bfe'}).then(...)
+// 2nd call is identical to 1st call,
+// so getAPI is not called,
+// it resolves when 1st call resolves
+getAPIWithMerging('/list', { keyword: 'dev'}).then(...)
+// 3rd call is not identical, so getAPI is called
+// after 1000ms
+getAPIWithMerging('/list', {keyword: 'bfe'}).then(...)
+// 4th call is identical to 1st call,
+// but since after 1000ms, getAPI is called.
+```
+Attention for memory leak!
+Your cache system should not bloat. For this problem, you should have 5 cache entries at maximum, which means:
+```js
+getAPIWithMerging('/list1', { keyword: 'bfe'}).then(...)
+// 1st call, call callAPI(), add a cache entry
+getAPIWithMerging('/list2', { keyword: 'bfe'}).then(...)
+// 2nd call, call callAPI(), add a cache entry
+getAPIWithMerging('/list3', { keyword: 'bfe'}).then(...)
+// 3rd call, call callAPI(), add a cache entry
+getAPIWithMerging('/list4', { keyword: 'bfe'}).then(...)
+// 4th call, call callAPI(), add a cache entry
+getAPIWithMerging('/list5', { keyword: 'bfe'}).then(...)
+// 5th call, call callAPI(), add a cache entry
+getAPIWithMerging('/list6', { keyword: 'bfe'}).then(...)
+// 6th call, call callAPI(), add a cache entry
+// cache of 1st call is removed
+getAPIWithMerging('/list1', { keyword: 'bfe'}).then(...)
+// identical with 1st call, but cache of 1st call is removed
+// new cache of entry is added
+clear()
+```
+For test purpose, please provide a clear method to clear all cache.
+```js
+getAPIWithMerging.clearCache()
+```
+
+Solution:
+Here's an implementation of `createGetAPIWithMerging` that meets the requirements:
+
+```javascript
+function createGetAPIWithMerging(getAPI) {
+  const cache = new Map();
+  const cacheOrder = [];
+
+  function hash(path, config) {
+    //Sort the keys to avoid "property order in config object should not matter"
+    const keys = Object.keys(config).sort();
+    const configure = keys.map(key => `${key}:${JSON.stringify(config[key])}`).join(",");
+    return JSON.stringify({ path, configure });
+  }
+
+  function addToCache(key, promise) {
+    if (cacheOrder.length >= 5) {
+      const oldestKey = cacheOrder.shift();
+      cache.delete(oldestKey);
+    }
+    cache.set(key, { promise, timestamp: Date.now() });
+    cacheOrder.push(key);
+  }
+
+  function getAPIWithMerging(path, config) {
+    const key = hash(path, config);
+    const cachedData = cache.get(key);
+
+    if (cachedData && Date.now() - cachedData.timestamp < 1000) {
+      return cachedData.promise;
+    }
+
+    const promise = getAPI(path, config);
+    addToCache(key, promise);
+    return promise;
+  }
+
+  getAPIWithMerging.clearCache = () => {
+    cache.clear();
+    cacheOrder.length = 0;
+  };
+
+  return getAPIWithMerging;
+}
+```
+
+Let's break down this implementation:
+
+1. We use a `Map` called `cache` to store the API call promises and their timestamps.
+
+2. We also maintain a `cacheOrder` array to keep track of the order of cache entries for the LRU (Least Recently Used) eviction policy.
+
+3. The `hash` function creates a unique key for each API call based on its path and config.
+
+4. The `addToCache` function adds a new entry to the cache. If the cache size reaches 5, it removes the oldest entry before adding the new one.
+
+5. In the `getAPIWithMerging` function:
+   - We first check if an identical call exists in the cache and is less than 1000ms old.
+   - If it exists and is recent, we return the cached promise.
+   - If not, we make a new API call, cache the promise, and return it.
+
+6. The `clearCache` method is added to `getAPIWithMerging` to clear all cache entries.
+
+This implementation ensures that:
+- Identical API calls within 1000ms return the same promise.
+- The cache size is limited to 5 entries, evicting the least recently used entry when necessary.
+- A `clearCache` method is provided to clear all cache entries.
+
+You can use it like this:
+
+```javascript
+const getAPIWithMerging = createGetAPIWithMerging(getAPI);
+
+// Use getAPIWithMerging as shown in your examples
+getAPIWithMerging('/list', { keyword: 'bfe' }).then(...)
+
+// To clear the cache
+getAPIWithMerging.clearCache();
+```
+
+This implementation should handle all the cases you described, including the memory leak prevention by limiting the cache to 5 entries.

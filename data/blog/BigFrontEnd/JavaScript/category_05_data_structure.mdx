@@ -765,3 +765,82 @@ function deserialize(data) {
     return root;
 }
 ```
+
+### 10.binary tree vertical traversal
+137.https://bigfrontend.dev/problem/binary-tree-vertical-traversal
+Traverse a binary tree vertically from left to right, from top to bottom, the binary tree contains positive integers as node values.
+
+For above binary tree, vertical traversal should return
+```js
+[6,4,2,7,1,9,10,3,8,5]
+```
+
+**Solution:** We can create a new class named `TreeNodeWrapper` to wrap the tree node, along with its `x` and `y` positions and its parent node. Then, we can run a DFS (Depth-First Search) to build a `TreeNodeWrapper` for every tree node. After that, we sort the `TreeNodeWrapper` array based on the `x` and `y` positions and the parent node's position. Finally, we extract the values of the tree nodes and return the result.
+
+```JavaScript
+// This is the class for the node
+// you can use this directly as it is bundled with your code
+
+// class Node {
+//   value: number
+//   left: null | Node
+//   right: null | Node
+//   constructor(val) {
+//     this.value = val
+//     this.left = null
+//     this.right = null
+//   }
+// }
+class TreeNodeWrapper {
+  constructor(treeNode, x = null, y = null, parentNode = null) {
+    this.treeNode = treeNode
+    this.x = x
+    this.y = y
+    this.parentNode = parentNode
+  }
+}
+/**
+ * @param {Node} root
+ * @returns {number[]}
+ */
+function traverse(root) {
+  const rootWrapper = new TreeNodeWrapper(root, 0, 0, null)
+  const stack = [rootWrapper]
+  const results = []
+  while (stack.length > 0) {
+    const rootWrapper = stack.pop()
+    results.push(rootWrapper)
+    if (rootWrapper.treeNode.right !== null) {
+      stack.push(
+        new TreeNodeWrapper(
+          rootWrapper.treeNode.right,
+          rootWrapper.x + 1,
+          rootWrapper.y + 1,
+          rootWrapper
+        )
+      )
+    }
+    if (rootWrapper.treeNode.left !== null) {
+      stack.push(
+        new TreeNodeWrapper(
+          rootWrapper.treeNode.left,
+          rootWrapper.x - 1,
+          rootWrapper.y + 1,
+          rootWrapper
+        )
+      )
+    }
+  }
+  results.sort((a, b) => {
+    if (a.x !== b.x) return a.x - b.x
+    if (a.y !== b.y) return a.y - b.y
+    while (a.x === b.x && a.y === b.y) {
+      a = a.parentNode
+      b = b.parentNode
+    }
+    if (a.x !== b.x) return a.x - b.x
+    if (a.y !== b.y) return a.y - b.y
+  })
+  return results.map((result) => result.treeNode.value)
+}
+```

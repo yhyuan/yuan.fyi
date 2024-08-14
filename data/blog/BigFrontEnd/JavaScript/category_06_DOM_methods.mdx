@@ -455,3 +455,173 @@ function previousLeftSibling(root, target) {
   return null;
 }
 ```
+
+### 9.implement your own URLSearchParams
+80.https://bigfrontend.dev/problem/implement-your-own-URLSearchParams
+When we want to extract parameters from query string, `URLSearchParams` could be very handy.
+
+Can you implement `MyURLSearchParams` which works the same ?
+```JavaScript
+const params = new MyURLSearchParams('?a=1&a=2&b=2')
+params.get('a') // '1'
+params.getAll('a') // ['1', '2']
+params.get('b') // '2'
+params.getAll('b') // ['2']
+params.append('a', 3)
+params.set('b', '3')
+params.toString() // 'a=1&a=2&b=3&a=3'
+```
+There are a few methods on `URLSearchParams`, please implement them all.
+
+Constructor
+`URLSearchParams()`: Returns a URLSearchParams object instance.
+
+Instance properties
+`size` Read only: Indicates the total number of search parameter entries.
+
+Instance methods
+`URLSearchParams[Symbol.iterator]()`: Returns an iterator allowing iteration through all key/value pairs contained in this object in the same order as they appear in the query string.
+
+`URLSearchParams.append()`: Appends a specified key/value pair as a new search parameter.
+
+`URLSearchParams.delete()`: Deletes search parameters that match a name, and optional value, from the list of all search parameters.
+
+`URLSearchParams.entries()`: Returns an iterator allowing iteration through all key/value pairs contained in this object in the same order as they appear in the query string.
+
+`URLSearchParams.forEach()`: Allows iteration through all values contained in this object via a callback function.
+
+`URLSearchParams.get()`: Returns the first value associated with the given search parameter.
+
+`URLSearchParams.getAll()`: Returns all the values associated with a given search parameter.
+
+`URLSearchParams.has()`: Returns a boolean value indicating if a given parameter, or parameter and value pair, exists.
+
+`URLSearchParams.keys()`: Returns an iterator allowing iteration through all keys of the key/value pairs contained in this object.
+
+`URLSearchParams.set()`: Sets the value associated with a given search parameter to the given value. If there are several values, the others are deleted.
+
+`URLSearchParams.sort()`: Sorts all key/value pairs, if any, by their keys.
+
+`URLSearchParams.toString()`: Returns a string containing a query string suitable for use in a URL.
+
+`URLSearchParams.values()`: Returns an iterator allowing iteration through all values of the key/value pairs contained in this object.
+
+Solution:
+```JavaScript
+class MyURLSearchParams {
+ constructor(init = '') {
+   this.params = new Map();
+
+   if (typeof init === 'string') {
+     init = init.startsWith('?') ? init.slice(1) : init;
+     const pairs = init.split('&');
+     for (const pair of pairs) {
+       const [key, value] = pair.split('=');
+       this.append(decodeURIComponent(key), decodeURIComponent(value));
+     }
+   } else if (init instanceof MyURLSearchParams) {
+     init.forEach((value, key) => this.append(key, value));
+   } else if (Array.isArray(init)) {
+     for (const [key, value] of init) {
+       this.append(key, value);
+     }
+   } else if (typeof init === 'object' && init !== null) {
+     for (const [key, value] of Object.entries(init)) {
+       this.append(key, value);
+     }
+   }
+ }
+
+ get size() {
+   return [...this.params.values()].reduce((acc, arr) => acc + arr.length, 0);
+ }
+
+ [Symbol.iterator]() {
+   return this.entries();
+ }
+
+ append(name, value) {
+   if (!this.params.has(name)) {
+     this.params.set(name, []);
+   }
+   this.params.get(name).push(String(value));
+ }
+
+ delete(name, value) {
+   if (value === undefined) {
+     this.params.delete(name);
+   } else {
+     const values = this.params.get(name);
+     if (values) {
+       const index = values.indexOf(String(value));
+       if (index !== -1) {
+         values.splice(index, 1);
+       }
+       if (values.length === 0) {
+         this.params.delete(name);
+       }
+     }
+   }
+ }
+
+ *entries() {
+   for (const [key, values] of this.params) {
+     for (const value of values) {
+       yield [key, value];
+     }
+   }
+ }
+
+ forEach(callback, thisArg) {
+   for (const [key, value] of this) {
+     callback.call(thisArg, value, key, this);
+   }
+ }
+
+ get(name) {
+   const values = this.params.get(name);
+   return values ? values[0] : null;
+ }
+
+ getAll(name) {
+   return this.params.get(name) || [];
+ }
+
+ has(name, value) {
+   const values = this.params.get(name);
+   if (value === undefined) {
+     return values !== undefined && values.length > 0;
+   }
+   return values !== undefined && values.includes(String(value));
+ }
+
+ *keys() {
+   for (const [key] of this) {
+     yield key;
+   }
+ }
+
+ set(name, value) {
+   this.params.set(name, [String(value)]);
+ }
+
+ sort() {
+   this.params = new Map([...this.params].sort());
+   for (const [key, values] of this.params) {
+     this.params.set(key, values);
+   }
+ }
+
+ toString() {
+   return [...this].map(([key, value]) =>
+     `${encodeURIComponent(key)}=${encodeURIComponent(value)}`
+   ).join('&');
+ }
+
+ *values() {
+   for (const [, value] of this) {
+     yield value;
+   }
+ }
+}
+```

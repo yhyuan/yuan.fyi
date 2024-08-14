@@ -200,136 +200,139 @@ function jsonStringify(object: JSONValue): string {
 
 22.https://bigfrontend.dev/problem/implement-JSON-parse
 
-```js
+Believe you are already familiar with JSON.parse(), could you implement your own version?
+
+In case you are not sure about the spec, MDN here might help.
+
+JSON.parse() support a second parameter reviver, you can ignore that.
+
+note
+
+Don't use JSON.parse() in your code here It doesn't help you practicing your skills.
+
+Solution:
+
+```JavaScript
 /**
  * @param {string} str
  * @return {object | Array | string | number | boolean | null}
  */
 function parse(str) {
-  const dataType = detectDataType(str);
+    let i = 0;
 
-  if (dataType === "object") return parseObj(str);
+    function parseValue() {
+        skipWhitespace();
+        const char = str[i];
 
-  if (dataType === "array") return parseArr(str);
-
-  return parsePrimitive(str);
-}
-
-function parseObj(str) {
-  const obj = {};
-
-  str = str.slice(1, -1);
-  if (str.endsWith(":")) throw new Error();
-
-  while (str.length > 0) {
-    str = skipLeadingSpace(str);
-
-    const regex = /^"(.+?)"\s?:/;
-    const matchedKey = str.match(regex);
-    if (!matchedKey) throw new Error();
-
-    const key = matchedKey[1];
-
-    let rest = str.slice(matchedKey[0].length);
-    rest = skipLeadingSpace(rest);
-
-    let matchedVal;
-    let val;
-    if ((matchedVal = rest.match(/^({.+})\s?,?/))) {
-      val = matchedVal[1];
-      obj[key] = parseObj(val);
-    } else if ((matchedVal = rest.match(/^(\[.+\])\s?,?/))) {
-      val = matchedVal[1];
-      obj[key] = parseArr(val);
-    } else if ((matchedVal = rest.match(/^(\w+)\s?,?/u))) {
-      val = matchedVal[1];
-      obj[key] = parsePrimitive(val);
-    } else if (
-      (matchedVal = rest.match(/^("[\p{Emoji}\p{Alpha}]+.?")\s?,?/u))
-    ) {
-      val = matchedVal[1];
-      obj[key] = parsePrimitive(val);
-    } else {
-      throw new Error();
+        if (char === '{') return parseObject();
+        if (char === '[') return parseArray();
+        if (char === '"') return parseString();
+        if (char === 't') return parseTrue();
+        if (char === 'f') return parseFalse();
+        if (char === 'n') return parseNull();
+        return parseNumber();
     }
 
-    str = rest.slice(matchedVal[0].length);
-  }
-
-  return obj;
-}
-
-function parseArr(str) {
-  const arr = [];
-
-  str = str.slice(1, -1);
-  if (str.endsWith(",")) throw new Error();
-
-  while (str.length > 0) {
-    let item = str.match(/.+?,(?!"\w+":)/);
-    if (!item) {
-      item = str;
-    } else {
-      item = item[0].slice(0, -1);
-    }
-    const dataType = detectDataType(item);
-
-    switch (dataType) {
-      case "object":
-        arr.push(parseObj(item));
-        break;
-      case "array":
-        arr.push(parseArr(item));
-        break;
-      default:
-        arr.push(parsePrimitive(item));
+    function skipWhitespace() {
+        while (i < str.length && /\s/.test(str[i])) i++;
     }
 
-    str = str.slice(item.length + 1);
-  }
+    function parseObject() {
+        const obj = {};
+        i++; // Skip opening brace
+        skipWhitespace();
+        while (i < str.length && str[i] !== '}') {
+            const key = parseString();
+            skipWhitespace();
+            i++; // Skip colon
+            skipWhitespace();
+            const value = parseValue();
+            if (Number.isNaN(value)) {
+              throw new Error("Fail to parse Object!");
+            }
+            obj[key] = value;
+            skipWhitespace();
+            if (str[i] === ',') {
+              i++;
+            }
 
-  return arr;
+            skipWhitespace();
+        }
+
+        i++; // Skip closing brace
+        return obj;
+    }
+
+    function parseArray() {
+        const arr = [];
+        i++; // Skip opening bracket
+        skipWhitespace();
+        let startNumber = true;
+        while (i < str.length && str[i] !== ']') {
+            const value = parseValue();
+            arr.push(value);
+            startNumber = false;
+            skipWhitespace();
+            if (str[i] === ',') {
+              startNumber = true;
+              i++;
+            }
+            skipWhitespace();
+        }
+        if (startNumber) {
+          throw new Error("End with comma");
+        }
+        i++; // Skip closing bracket
+        return arr;
+    }
+
+    function parseString() {
+        let result = '';
+        i++; // Skip opening quote
+
+        while (i < str.length && str[i] !== '"') {
+            if (str[i] === '\\') {
+                i++;
+                if (str[i] === 'n') result += '\n';
+                else if (str[i] === 'r') result += '\r';
+                else if (str[i] === 't') result += '\t';
+                else result += str[i];
+            } else {
+                result += str[i];
+            }
+            i++;
+        }
+
+        i++; // Skip closing quote
+        return result;
+    }
+
+    function parseNumber() {
+        let numStr = '';
+        while (i < str.length && /[-0-9.eE+]/.test(str[i])) {
+            numStr += str[i];
+            i++;
+        }
+        return parseFloat(numStr);
+    }
+
+    function parseTrue() {
+        i += 4; // Skip 'true'
+        return true;
+    }
+
+    function parseFalse() {
+        i += 5; // Skip 'false'
+        return false;
+    }
+
+    function parseNull() {
+        i += 4; // Skip 'null'
+        return null;
+    }
+
+    return parseValue();
 }
-
-function parsePrimitive(str) {
-  if (str.startsWith('"')) return str.slice(1, -1);
-
-  if (!isNaN(str)) return Number(str);
-
-  if (str === "true") return true;
-
-  if (str === "false") return false;
-
-  if (str === "undefined") return undefined;
-
-  return null;
-}
-
-function detectDataType(str) {
-  if (str.startsWith("{") && str.endsWith("}")) {
-    return "object";
-  }
-
-  if (str.startsWith("[") && str.endsWith("]")) {
-    return "array";
-  }
-
-  return "primitive";
-}
-
-function skipLeadingSpace(str) {
-  const firstNonSpaceCharIdx = str.search(/\S/);
-  if (firstNonSpaceCharIdx === -1) return "";
-  return str.slice(firstNonSpaceCharIdx);
-}
-```
-
-This solution will fail at test case.
-
-```js
-expect(parse('[{"a":{"b":{"c":[1],"d":"BFE,dev"}}},null,"str"]')).toEqual(
-  JSON.parse('[{"a":{"b":{"c":[1],"d":"BFE,dev"}}},null,"str"]'),
-);
 ```
 
 ### 3.`JSON.parse()` Implementation
