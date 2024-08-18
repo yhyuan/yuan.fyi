@@ -625,3 +625,194 @@ class MyURLSearchParams {
  }
 }
 ```
+
+### 10.Two-way binding
+
+153.https://bigfrontend.dev/problem/two-way-binding
+
+Let's do some simple two-way binding.
+
+Please create a function `model(state, element)`, to bind state.value to the `HTMLInputElement` element.
+```js
+const input = document.createElement('input')
+const state = { value: 'BFE' }
+model(state, input)
+
+console.log(input.value) // 'BFE'
+state.value = 'dev'
+console.log(input.value) // 'dev'
+input.value = 'BFE.dev'
+input.dispatchEvent(new Event('change'))
+console.log(state.value) // 'BFE.dev'
+```
+
+**Solution:**
+
+1. First, we check if the provided element is indeed an HTMLInputElement. If not, we throw an error.
+
+2. We set the initial value of the input element to match the state's value.
+
+3. We use `Object.defineProperty()` to create a custom getter and setter for `state.value`:
+   - The getter returns the current value of the input element.
+   - The setter updates the input element's value when `state.value` is assigned.
+
+4. We add an event listener to the input element for the 'input' event. This event fires whenever the user types or modifies the input's value. When this happens, we update `state.value`, which triggers the setter we defined.
+
+This implementation creates a two-way binding:
+- When `state.value` is changed programmatically, it updates the input element's value.
+- When the user types in the input element, it updates `state.value`.
+
+```JavaScript
+/**
+ * @param {{value: string}} state
+ * @param {HTMLInputElement} element
+ */
+function model(state, element) {
+  if (!(element instanceof HTMLInputElement)) {
+    throw new Error('Element must be an HTMLInputElement');
+  }
+
+  // Initial set of input value from state
+  element.value = state.value;
+
+  // Define a getter and setter for state.value
+  Object.defineProperty(state, 'value', {
+    get() {
+      return element.value;
+    },
+    set(newValue) {
+      element.value = newValue;
+    }
+  });
+
+  // Listen for changes on the input element
+  element.addEventListener('input', function() {
+    // This will trigger the setter defined above
+    state.value = element.value;
+  });
+}
+```
+
+### 11.Generate CSS Selector for target element
+
+170.https://bigfrontend.dev/problem/generate-selector
+
+Given a DOM tree and a target element, generate a valid selector to target it.
+
+For example, for a DOM tree like below
+```html
+<div>
+  <p>BFE.dev</p>
+  <div>
+    is
+    <p>
+      <span>great. <button>click me!</button></span>
+    </p>
+  </div>
+</div>
+```
+There could be more than 1 answer.
+```js
+let selector = generateSelector(root, target) // 'button'
+expect(root.querySelector(selector)).toBe(target)
+selector = generateSelector(root, target) // 'div > div > p > button'
+expect(root.querySelector(selector)).toBe(target)
+```
+
+Solution:
+
+To generate a valid selector for a target element within a DOM tree, we can create a function that traverses up the DOM tree from the target element, building a selector string as it goes.
+
+```javascript
+function generateSelector(root, target) {
+  if (!root.contains(target)) {
+    throw new Error('Target element is not a descendant of root');
+  }
+
+  let path = [];
+  let element = target;
+
+  while (element !== root) {
+    let selector = element.tagName.toLowerCase();
+
+    // Add id if present
+    if (element.id) {
+      selector += '#' + element.id;
+      path.unshift(selector);
+      break; // ID is unique, so we can stop here
+    }
+
+    // Add classes if present
+    if (element.className) {
+      selector += '.' + element.className.trim().replace(/\s+/g, '.');
+    }
+
+    // Add nth-child if needed
+    let siblings = element.parentNode.children;
+    if (siblings.length > 1) {
+      let index = Array.from(siblings).indexOf(element) + 1;
+      selector += `:nth-child(${index})`;
+    }
+
+    path.unshift(selector);
+    element = element.parentNode;
+  }
+
+  return path.join(' > ');
+}
+```
+
+This function does the following:
+
+1. First, it checks if the target is actually a descendant of the root. If not, it throws an error.
+
+2. It initializes an empty array `path` to store the selector parts, and sets `element` to the target.
+
+3. It then enters a loop that continues until we reach the root element:
+
+   a. It starts building the selector with the element's tag name.
+
+   b. If the element has an ID, it adds it to the selector and breaks the loop, as IDs should be unique.
+
+   c. If the element has classes, it adds them to the selector.
+
+   d. To ensure uniqueness, it adds an `:nth-child()` pseudo-class if the element has siblings.
+
+   e. It adds this selector to the beginning of the `path` array.
+
+   f. It moves up to the parent element.
+
+4. Finally, it joins the selector parts with ' > ' to create a child combinator selector.
+
+This function will generate a unique selector in most cases. Here are some examples of how it works:
+
+```javascript
+// For the given HTML:
+// <div>
+//   <p>BFE.dev</p>
+//   <div>
+//     is
+//     <p>
+//       <span>great. <button>click me!</button></span>
+//     </p>
+//   </div>
+// </div>
+
+let root = document.querySelector('div');
+let target = document.querySelector('button');
+
+let selector = generateSelector(root, target);
+console.log(selector); // 'div:nth-child(2) > p > span > button'
+
+// If we add an id to the button:
+target.id = 'myButton';
+selector = generateSelector(root, target);
+console.log(selector); // 'button#myButton'
+
+// If we add a class to the span:
+target.parentNode.className = 'highlight';
+selector = generateSelector(root, target);
+console.log(selector); // 'span.highlight > button#myButton'
+```
+
+This implementation provides a balance between specificity and brevity. It uses IDs when available for brevity, includes classes for more specific targeting, and falls back to structural selectors (tag names and nth-child) when needed for uniqueness.

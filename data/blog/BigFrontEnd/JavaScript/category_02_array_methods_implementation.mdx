@@ -667,3 +667,213 @@ function wrap(arr) {
   return new Proxy(arr, handler);
 }
 ```
+
+### 12.implement Immer produce()
+
+164.https://bigfrontend.dev/problem/immerjs
+
+In [12. implement Immutability helper](https://bigfrontend.dev/problem/implement-Immutability-helper), we are asked to implement immutability helpers.
+
+These helpers requires extra effort for us to remember how to use them, while Immer takes another approach which might be easier to use.
+
+For example, we have a base state as below.
+```js
+const state = [
+  {
+    name: 'BFE',
+  },
+  {
+    name: '.',
+  }
+]
+```
+We can use `produce()` to patch our modification and get a new state.
+```js
+const newState = produce(state, draft => {
+  draft.push({name: 'dev'})
+  draft[0].name = 'bigfrontend'
+  draft[1].name = '.' // set with the same value
+})
+```
+Unchanged parts are not cloned.
+```js
+expect(newState).not.toBe(state);
+expect(newState).toEqual(
+  [
+    {
+      name: 'bigfrontend',
+    },
+    {
+      name: '.',
+    },
+    {
+      name: 'dev'
+    }
+  ]
+);
+expect(newState[0]).not.toBe(state[0])
+expect(newState[1]).toBe(state[1])
+expect(newState[2]).not.toBe(state[2])
+```
+Please implement your `produce()`.
+
+This is not to recreate Immer, test cases only cover the basic usage.
+You only need to support basic usage on plain object and array, things like Map/Set, Auto freezing .etc are out of scope.
+You need to make sure unchanged parts are not cloned.
+
+**Initial Solution:** We create a proxy to wrap the access to the base object.
+
+```JavaScript
+/**
+ * @param {any} base
+ * @param {(draft: any) => any} recipe
+ * @returns {any}
+ */
+function produce(base, recipe) {
+    // Use a flag to determine if any changes were made
+    let isModified = false;
+
+    // Create a proxy to track changes
+    const proxy = (function createProxy(value) {
+        // Handle objects and arrays separately
+        if (typeof value === 'object' && value !== null) {
+            return new Proxy(value, {
+                get(target, key) {
+                    // Return a proxied version of nested objects or arrays
+                    return createProxy(target[key]);
+                },
+                set(target, key, newValue) {
+                    if (target[key] !== newValue) {
+                        if (!isModified) {
+                            // Clone the base state when the first modification is detected
+                            isModified = true;
+                        }
+                        target[key] = newValue;
+                    }
+                    return true;
+                }
+            });
+        } else {
+            // Return primitive values directly
+            return value;
+        }
+    })(Array.isArray(base) ? [...base] : { ...base });
+
+    // Apply the recipe function to the draft
+    recipe(proxy);
+
+    // If no changes were made, return the original state
+    if (!isModified) {
+        return base;
+    }
+
+    // If changes were made, return the modified draft
+    return proxy;
+}
+```
+
+Checking Solution at https://bigfrontend.dev/problem/immerjs/discuss
+This code implements a recursive proxy-based system for creating an immutable data structure with efficient updates. Let's break it down:
+
+1. `proxify` function:
+   This function takes two arguments: `data` (the object to be proxied) and `updaters` (an array of update functions).
+
+2. Proxy creation:
+   It returns a new `Proxy` object wrapping the `data`.
+
+3. Get trap:
+   - If the accessed property is an object or array (but not a function), it creates a clone.
+   - For arrays, it uses spread syntax (`[...val]`), and for objects, it uses object spread (`{...val}`).
+   - It creates an `updater` function that will be used to propagate changes up the object tree.
+   - It recursively calls `proxify` on the clone, adding the new `updater` to the `updaters` array.
+   - For primitive values, it returns the value as-is.
+
+4. Set trap:
+   - If the new value is different from the current value, it updates the target.
+   - It then calls all the `updaters` in reverse order, propagating the change up the object tree.
+
+5. DeleteProperty trap:
+   - If a property is successfully deleted, it calls all the `updaters` in reverse order, similar to the set trap.
+
+Key points:
+
+- Lazy cloning: Objects are only cloned when accessed, not immediately.
+- Change propagation: When a change occurs, it's propagated up the object tree using the `updaters`.
+- Immutability: The original data structure is not modified; instead, new objects are created as needed.
+
+This implementation allows for efficient immutable updates to nested data structures. When you modify a deeply nested property, only the path to that property is cloned, leaving the rest of the structure untouched.
+
+The use of `updaters` ensures that changes at any level of the object tree are reflected in all parent objects, maintaining consistency throughout the structure.
+
+```JavaScript
+/**
+ * @param {any} base
+ * @param {(draft: any) => any} recipe
+ * @returns {any}
+ */
+const proxify = (data, updaters) => {
+  return new Proxy(data, {
+    // create clones in get, as only needed
+    // but only link them in set traps, in order to avoid unnecessary cloning.
+    get: function (target, key) {
+      const val = Reflect.get(target, key)
+      // if function met, meaning prototype functions on Array here in our scope
+      if (Object(val) === val && !(val instanceof Function)) {
+        console.log(`get key: ${key}`)
+        // object
+        const clone = Array.isArray(val) ? [...val] : { ...val }
+        const updater = (newVal) => {
+          console.log('updater', key)
+          target[key] = newVal
+          return target
+        }
+        const proxy = proxify(clone, [...updaters, updater])
+        return proxy
+      } else {
+        // primitive
+        return val
+      }
+    },
+    // when data changes, link clones up
+    set: function (target, key, value) {
+      const prevVal = Reflect.get(target, key)
+      if (prevVal !== value) {
+        target[key] = value
+        updaters.reduceRight((result, updater) => updater(result), target)
+      }
+      return true
+    },
+    // when data changes, link clones up
+    deleteProperty: function (target, key) {
+      const deleted = Reflect.deleteProperty(target, key)
+      if (deleted) {
+        updaters.reduceRight((result, updater) => updater(result), target)
+      }
+      return deleted
+    },
+  })
+}
+
+const produce = (base, recipe) => {
+  // proxy
+  // resurisve proxify the properties
+  // {a:{e: {}, b:{c: {d: 0}}}}
+  // a.b.c.d = 1
+  // a proxy - clone - {b:{c: {d: 0}}},  [(clone) => parent.a = clone]
+  // a.b proxy - clone - {c: {d: 0}} [(clone) => parent.a = clone, (clone) => a.b = clone]
+  // a.b.c proxy - clone - {d: 0}
+  // a.b.c.d = 1
+  // clone as needed in get trap on proxy
+  // in set trap, we chain the clone up if data changed
+  // {d: 1}
+  // {c: {d: 1}}
+  // {b:{c: {d: 1}}
+  // {a:{e: {}, b:{c: {d: 1}}}}
+  const root = {
+    result: base,
+  }
+  const proxy = proxify(root, [])
+  recipe(proxy.result)
+  return root.result
+}
+```

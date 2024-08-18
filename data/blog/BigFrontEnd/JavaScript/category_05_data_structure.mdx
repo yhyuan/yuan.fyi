@@ -844,3 +844,317 @@ function traverse(root) {
   return results.map((result) => result.treeNode.value)
 }
 ```
+
+### 11.LRU - Chrome storage automatic eviction
+
+169.https://bigfrontend.dev/problem/lru-chrome-storage-eviction
+
+Chrome uses LRU algorithm to evict data when it has to.
+
+Watch [this Youtube video](https://youtu.be/NNuTV-gjlZQ?t=387) for detail explanation, starting from 6:25 to 7:38.
+
+
+Now you are asked to implement similar - Implement a class LRUStorage.
+
+This is of course not to reflect the true implementation in Chrome.
+getData and setData should both be treated as data being 'used'.
+considering time precision issue, your class needs to accept getTimestamp as second argument of constructor function for our tests.
+```js
+interface OriginData {
+  origin: string
+  lastUsed: number
+  size: number
+  persistent: boolean
+}
+interface LRUStorage {
+  capacity: number
+  // to use the data for origin
+  // return size of the data or undefined if not exist
+  getData(origin: string): OriginData | undefined
+
+  // updating data for origin
+  // return boolean to indicate success or failure
+  // If the total size exceeds capacity,
+  // Least Recently Used non-persistent origin data other than itself should be evicted.
+  setData(origin: string, size: number): boolean
+  // manually clear data for origin
+  clearData(origin: string): void
+  // change data for origin to be persistent
+  // it only handles existing data not the data added later
+  // persistent data cannot be evicted unless manually clear it
+  makePersistent(origin: string): void
+}
+```
+
+**Solution:**
+
+This implementation will use a Map to store the data and maintain the order of usage, along with methods to handle the LRU eviction policy and persistence.
+
+Let's break down the implementation:
+
+1. Constructor:
+   - Initializes the storage with the given capacity.
+   - Uses a Map (`this.store`) to store the data, which maintains insertion order.
+   - Accepts a custom `getTimestamp` function for testing purposes.
+
+2. `getData`:
+   - Retrieves data for the given origin.
+   - Updates the `lastUsed` timestamp and moves the item to the end of the Map (most recently used).
+
+3. `setData`:
+   - Adds or updates data for the given origin.
+   - If the new size exceeds capacity, it returns false.
+   - Evicts least recently used non-persistent data if necessary to make room.
+   - Updates the current size and stores the new data.
+
+4. `clearData`:
+   - Removes data for the given origin and updates the current size.
+
+5. `makePersistent`:
+   - Marks the data for the given origin as persistent.
+
+6. `evictLRU`:
+   - Helper method to evict the least recently used non-persistent data.
+   - Excludes the origin that's currently being set (to avoid evicting itself).
+
+This implementation ensures that:
+- Data access and updates are treated as usage (updating `lastUsed`).
+- The LRU eviction policy is applied when necessary.
+- Persistent data is not evicted unless manually cleared.
+- The total size of stored data doesn't exceed the capacity.
+
+The use of a Map allows for efficient order maintenance and lookup, making it suitable for implementing the LRU cache behavior.
+
+
+```javascript
+class MyLRUStorage {
+  constructor(capacity, getTimestamp = () => Date.now()) {
+    this.capacity = capacity;
+    this.currentSize = 0;
+    this.store = new Map();
+    this.getTimestamp = getTimestamp;
+  }
+
+  getData(origin) {
+    const data = this.store.get(origin);
+    if (data) {
+      data.lastUsed = this.getTimestamp();
+      this.store.delete(origin);
+      this.store.set(origin, data);
+    }
+    return data;
+  }
+
+  setData(origin, size) {
+    let data = this.store.get(origin);
+    if (data) {
+      this.currentSize -= data.size;
+    }
+
+    if (size > this.capacity) {
+      return false;
+    }
+
+    while (this.currentSize + size > this.capacity) {
+      if (!this.evictLRU(origin)) {
+        return false;
+      }
+    }
+
+    data = {
+      origin,
+      lastUsed: this.getTimestamp(),
+      size,
+      persistent: data ? data.persistent : false
+    };
+
+    this.store.delete(origin);
+    this.store.set(origin, data);
+    this.currentSize += size;
+
+    return true;
+  }
+
+  clearData(origin) {
+    const data = this.store.get(origin);
+    if (data) {
+      this.currentSize -= data.size;
+      this.store.delete(origin);
+    }
+  }
+
+  makePersistent(origin) {
+    const data = this.store.get(origin);
+    if (data) {
+      data.persistent = true;
+      this.store.delete(origin);
+      this.store.set(origin, data);
+    }
+  }
+
+  evictLRU(excludeOrigin) {
+    let lruOrigin = null;
+    let lruTimestamp = Infinity;
+
+    for (const [origin, data] of this.store) {
+      if (!data.persistent && origin !== excludeOrigin && data.lastUsed < lruTimestamp) {
+        lruOrigin = origin;
+        lruTimestamp = data.lastUsed;
+      }
+    }
+
+    if (lruOrigin) {
+      this.clearData(lruOrigin);
+      return true;
+    }
+
+    return false;
+  }
+}
+```
+
+### 12. create callback on message channel
+
+171.https://bigfrontend.dev/problem/some-message-channel
+
+We have SomeChannel which allows us to send messages between 2 ports.
+```js
+const {port1, port2} = new SomeChannel()
+port2.onmessage = (message) => {
+  console.log(message) // hi
+}
+port1.postMessage('hi')
+```
+It looks like MessageChannel, but SomeChannel is not in good condition, it has random delay in sending the messages, which means the order messages are sent might be different from the order they are received.
+
+Now your job is to create a BetterChannel that enables communication between ports with callback and reply handle, but on top of SomeChannel.
+```js
+const {port1, port2} = new BetterChannel()
+port2.onmessage = (message, reply) => {
+  if (message === 'ping?') {
+    reply('pong!')
+  }
+  if (message === 'pong?') {
+    reply('ping!')
+  }
+}
+port1.postMessage('ping?', (data) => {
+  console.log(data) // 'pong!'
+})
+```
+1. you should avoid global state outside of the classes.
+2. internally SomeChannel must be used.
+3. though there might be delays, messages are guaranteed to be delivered through SomeChannel, but it is worthy for you to think about the case in which messages might be dropped.
+
+**Solution:**
+
+Let's implement a `BetterChannel` class that uses `SomeChannel` internally and provides a more reliable communication mechanism with callbacks and reply handling. Here's an implementation that meets the requirements:
+
+```javascript
+class BetterChannel {
+  constructor() {
+    const { port1, port2 } = new SomeChannel();
+    this.port1 = new BetterPort(port1);
+    this.port2 = new BetterPort(port2);
+  }
+}
+
+class BetterPort {
+  constructor(somePort) {
+    this.somePort = somePort;
+    this.messageQueue = [];
+    this.messageId = 0;
+    this.callbacks = new Map();
+    this.onmessage = null;
+
+    this.somePort.onmessage = (message) => this.handleMessage(message);
+  }
+
+  postMessage(message, callback) {
+    const id = this.messageId++;
+    const wrappedMessage = { id, type: 'message', content: message };
+
+    if (callback) {
+      this.callbacks.set(id, callback);
+    }
+
+    this.somePort.postMessage(JSON.stringify(wrappedMessage));
+  }
+
+  handleMessage(rawMessage) {
+    const message = JSON.parse(rawMessage);
+
+    if (message.type === 'message') {
+      const reply = (replyContent) => {
+        const replyMessage = { id: message.id, type: 'reply', content: replyContent };
+        this.somePort.postMessage(JSON.stringify(replyMessage));
+      };
+
+      if (this.onmessage) {
+        this.onmessage(message.content, reply);
+      }
+    } else if (message.type === 'reply') {
+      const callback = this.callbacks.get(message.id);
+      if (callback) {
+        callback(message.content);
+        this.callbacks.delete(message.id);
+      }
+    }
+  }
+}
+```
+
+Let's break down this implementation:
+
+1. `BetterChannel` class:
+   - Creates a new `SomeChannel` instance.
+   - Wraps each port from `SomeChannel` with a `BetterPort` instance.
+
+2. `BetterPort` class:
+   - Wraps a port from `SomeChannel`.
+   - Maintains a message queue, message ID counter, and a map of callbacks.
+   - Implements the `postMessage` method and message handling.
+
+3. `postMessage` method:
+   - Assigns a unique ID to each message.
+   - Wraps the message with metadata (ID and type).
+   - Stores the callback if provided.
+   - Sends the wrapped message through the `SomeChannel` port.
+
+4. Message handling:
+   - Parses incoming messages.
+   - For 'message' type:
+     - Creates a `reply` function that can be used to respond to the message.
+     - Calls the `onmessage` handler with the message content and reply function.
+   - For 'reply' type:
+     - Retrieves and calls the stored callback, then removes it from the map.
+
+This implementation addresses several key points:
+
+- It maintains the order of messages and their replies by using unique message IDs.
+- It handles the potential delay in `SomeChannel` by using callbacks instead of relying on message order.
+- It provides a `reply` function to easily respond to messages.
+- It wraps and unwraps messages to add necessary metadata for tracking.
+
+To use this `BetterChannel`:
+
+```javascript
+const { port1, port2 } = new BetterChannel();
+
+port2.onmessage = (message, reply) => {
+  if (message === 'ping?') {
+    reply('pong!');
+  }
+  if (message === 'pong?') {
+    reply('ping!');
+  }
+};
+
+port1.postMessage('ping?', (data) => {
+  console.log(data); // 'pong!'
+});
+```
+
+This implementation ensures that even if `SomeChannel` delivers messages out of order, the responses will be correctly matched to their original messages using the ID system. It also avoids global state by encapsulating all necessary data within the `BetterPort` instances.
+
+While this implementation doesn't explicitly handle dropped messages (as the problem statement guarantees delivery), you could add timeout mechanisms or retry logic in the `postMessage` method if needed to handle potential message drops in a real-world scenario.

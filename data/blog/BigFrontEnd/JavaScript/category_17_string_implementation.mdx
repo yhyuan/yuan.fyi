@@ -844,3 +844,171 @@ function uncompress(s) {
   return currStr;
 }
 ```
+
+### 22.interpolation
+149.https://bigfrontend.dev/problem/interpolation
+
+Have you ever added i18n support to your projects?
+
+Take [i18next](https://www.i18next.com/) as an example, generally the keys and translations are kept separately, like this JSON below.
+```js
+{
+  "evaluation": "BFE.dev is {{evaluation}}"
+}
+```
+At places where this key is used, we can then interpolate the string by passing a data object.
+```js
+t('evaluation', {evaluation: 'fantastic'});
+// "BFE.dev is fantastic"
+```
+Now, please create a similar t() function which accepts the translation directly.
+
+1. it supports `{{` and `}}` as delimiters
+Let's make it clearer and simpler, when a new pair `{{` is met, characters until the following `}}` are treated as the property name.
+
+For all the other cases, they should not be treated as delimiters.
+```js
+t('BFE.dev is {{{evaluation}', {evaluation: 'fantastic'});
+// "BFE.dev is {{{evaluation}"
+t('BFE.dev is {{{evaluation}}}', {'{evaluation': 'fantastic'});
+// "BFE.dev is fantastic}"
+t('BFE.dev is {{evalu ation}}', {'evalu ation': 'fantastic'});
+// "BFE.dev is fantastic"
+```
+2. if no data is passed or no property exists, just leave it empty
+```js
+t('BFE.dev is {{evaluation}}');
+// "BFE.dev is "
+```
+
+**Solution:** We can use `findIndex` to locate the positions of `{{` and `}}`, then extract and translate the key.
+
+
+```JavaScript
+/**
+ * @param {string} translation
+ * @param {any} data
+ * @returns {string}
+ */
+function t(translation, data) {
+  let chars = [...translation];
+  const n = translation.length;
+  const index1 = chars.findIndex((val, index) => val === "{" && index < n - 1 && chars[index + 1] === "{");
+  if (index1 === -1) return translation;
+  const slicedChars = chars.slice(index1, n);
+  const index2 = slicedChars.findIndex((val, index) => val === "}" && index < n - 1 && slicedChars[index + 1] === "}");
+  if (index2 === -1) return translation;
+  let str1 = translation.slice(0, index1);
+  const key = translation.slice(index1 + 2, index1 + index2);
+  let str2 = t(translation.slice(index1 + index2 + 2), data);
+  if (!data || !data[key]) return `${str1}${str2}`;
+  return `${str1}${data[key]}${str2}`;
+}
+```
+
+### 23.uglify CSS class names
+
+153.https://bigfrontend.dev/problem/unique-class-name
+
+If you use [css-loader](https://github.com/webpack-contrib/css-loader) in your webpack project, localIdentName could be used to transform class names, like below:
+
+localIdentName: "[path][name]__[local]--[hash:base64:5]",
+Or you can create your own function to generate class names by setting getLocalIdent.
+
+Now please create a function to generate unique class names following rules below.
+
+only use alphabets: a to z , A to Z
+return one unique class name each time function is called
+the class name sequence should first be in order of length, then in Alphabetical order(lowercase in front).
+should provide a function to reset the sequence
+```js
+getUniqueClassName()
+// 'a'
+
+getUniqueClassName()
+// 'b'
+
+getUniqueClassName()
+// 'c'
+
+// skip cases till 'Y'
+
+getUniqueClassName()
+// 'Z'
+
+getUniqueClassName()
+// 'aa'
+
+getUniqueClassName()
+// 'ab'
+
+getUniqueClassName()
+// 'ac'
+
+// skip more cases
+
+getUniqueClassName()
+// 'ZZ'
+
+getUniqueClassName()
+// 'aaa'
+
+getUniqueClassName()
+// 'aab'
+
+getUniqueClassName()
+// 'aac'
+
+getUniqueClassName.reset()
+
+getUniqueClassName()
+// 'a'
+```
+
+**Solution:** We can extract the character codes and simulate the process of adding 1.
+
+```JavaScript
+let cur = 'a';
+/**
+ * @returns {string}
+ */
+function getUniqueClassName() {
+  const chars = [];
+  const ans = cur;
+
+  const n = cur.length;
+  let carry = 0;
+  for (let i = n - 1; i >= 0; i--) {
+    const charCode = cur.charCodeAt(i);
+    let newCharCode = charCode + carry;
+    if (i === n - 1) {
+      newCharCode += 1;
+    }
+    if (newCharCode - 1 === 'z'.charCodeAt(0)) {
+      newCharCode = 'A'.charCodeAt(0);
+      carry = 0;
+    } else if (newCharCode - 2 === 'z'.charCodeAt(0)) {
+      newCharCode = 'B'.charCodeAt(0);
+      carry = 0;
+    } else if (newCharCode - 1 === 'Z'.charCodeAt(0)) {
+      newCharCode = 'a'.charCodeAt(0);
+      carry = 1;
+    } else if (newCharCode - 2 === 'Z'.charCodeAt(0)) {
+      newCharCode = 'b'.charCodeAt(0);
+      carry = 1;
+    } else {
+      carry = 0;
+    }
+    chars.unshift(String.fromCharCode(newCharCode));
+  }
+  if (carry === 1) {
+    chars.unshift("a");
+  }
+  cur = chars.join("");
+  return ans;
+}
+
+getUniqueClassName.reset = function() {
+  cur = 'a';
+}
+```
