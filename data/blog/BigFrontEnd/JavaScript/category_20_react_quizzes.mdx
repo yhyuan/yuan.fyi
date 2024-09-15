@@ -1,0 +1,1843 @@
+---
+title: BigFrontEnd Category 20 React Quizzes
+date: "2024-06-20"
+tags: ["BigFrontEnd", "category"]
+draft: false
+---
+### Introduction
+
+This blog post summarizes React Quizzes on BigFrontEnd.Dev.
+
+<TOCInline toc={props.toc} exclude="Introduction" />
+
+### 1.React re-render 1
+
+1.https://bigfrontend.dev/react-quiz/React-re-render-1
+
+What does the code snippet to the right output by `console.log`?
+```js
+import * as React from 'react'
+import { useState, useEffect} from 'react'
+import { createRoot } from 'react-dom/client'
+
+function A() {
+  console.log('A')
+  return <B/>
+}
+
+function B() {
+  console.log('B')
+  return <C/>
+}
+
+function C() {
+  console.log('C')
+  return null
+}
+
+function D() {
+  console.log('D')
+  return null
+}
+
+function App() {
+  const [state, setState] = useState(0)
+  useEffect(() => {
+    setState(state => state + 1)
+  }, [])
+  console.log('App')
+  return (
+    <div>
+      <A state={state}/>
+      <D/>
+    </div>
+  )
+}
+
+const root = createRoot(document.getElementById('root'));
+root.render(<App/>)
+```
+**Solution:**
+
+When the state is changed, the children components are all rendered.
+
+```js
+"App"
+"A"
+"B"
+"C"
+"D"
+"App"
+"A"
+"B"
+"C"
+"D"
+```
+
+### 2.React re-render 2 - memo()
+
+2.https://bigfrontend.dev/react-quiz/React-re-render-2
+
+What does the code snippet to the right output by `console.log`?
+```js
+import * as React from 'react'
+import { useState, useEffect, memo } from 'react'
+import { createRoot } from 'react-dom/client'
+
+function A() {
+  console.log('A')
+  return <B/>
+}
+
+const B = memo(() => {
+  console.log('B')
+  return <C/>
+})
+
+function C() {
+  console.log('C')
+  return null
+}
+
+function D() {
+  console.log('D')
+  return null
+}
+
+function App() {
+  const [state, setState] = useState(0)
+  useEffect(() => {
+    setState(state => state + 1)
+  }, [])
+  console.log('App')
+  return (
+    <div>
+      <A state={state}/>
+      <D/>
+    </div>
+  )
+}
+
+const root = createRoot(document.getElementById('root'));
+root.render(<App/>)
+```
+
+**Solution:**
+
+When the state is changed, the children components are all rendered. However, if a component is wrapped with `memo` and its properties are not changed, no render will happen.
+
+```js
+"App"
+"A"
+"B"
+"C"
+"D"
+"App"
+"A"
+"D"
+```
+
+### 3.React re-render 3
+3.https://bigfrontend.dev/react-quiz/React-re-render-3
+What does the code snippet to the right output by console.log?
+```js
+import * as React from 'react'
+import { useState, useEffect } from 'react'
+import { createRoot } from 'react-dom/client'
+
+function A({ children }) {
+  console.log('A')
+  return children
+}
+
+function B() {
+  console.log('B')
+  return <C/>
+}
+
+function C() {
+  console.log('C')
+  return null
+}
+
+function D() {
+  console.log('D')
+  return null
+}
+
+function App() {
+  const [state, setState] = useState(0)
+  useEffect(() => {
+    setState(state => state + 1)
+  }, [])
+  console.log('App')
+  return (
+    <div>
+      <A><B/></A>
+      <D/>
+    </div>
+  )
+}
+
+const root = createRoot(document.getElementById('root'));
+root.render(<App/>)
+```
+
+**Solution:**
+During the initial render, `console.log` outputs `"App", "A", "B", "C", "D"`. When `setState` is invoked in component `App`, all components are rendered and outputs `"App", "A", "B", "C", "D"`.
+
+```js
+"App"
+"A"
+"B"
+"C"
+"D"
+"App"
+"A"
+"B"
+"C"
+"D"
+```
+
+### 4.React re-render 4
+4.https://bigfrontend.dev/react-quiz/React-re-render-4
+What does the code snippet to the right output by console.log?
+```js
+import * as React from 'react'
+import { useState, useEffect } from 'react'
+import { createRoot } from 'react-dom/client'
+
+function A({ children }) {
+  console.log('A')
+  const [state, setState] = useState(0)
+  useEffect(() => {
+    setState(state => state + 1)
+  }, [])
+  return children
+}
+
+function B() {
+  console.log('B')
+  return <C/>
+}
+
+function C() {
+  console.log('C')
+  return null
+}
+
+function D() {
+  console.log('D')
+  return null
+}
+
+function App() {
+  console.log('App')
+  return (
+    <div>
+      <A><B/></A>
+      <D/>
+    </div>
+  )
+}
+
+const root = createRoot(document.getElementById('root'));
+root.render(<App/>)
+```
+**Solution:**
+During the initial render, `console.log` outputs `"App", "A", "B", "C", "D"`. When `setState` is invoked in component A, only `"A"` is logged again. This happens because the `children` elements within the `App` component remain unchanged, so components B, C, and D are not re-rendered.
+
+```js
+"App"
+"A"
+"B"
+"C"
+"D"
+"A"
+```
+
+### 5.Automatic batching 1
+5.https://bigfrontend.dev/react-quiz/Automatic-batching
+What does the code snippet to the right output by `console.log`?
+```js
+// This is a React Quiz from BFE.dev
+
+import * as React from 'react'
+import { useState } from 'react'
+import { createRoot } from 'react-dom/client'
+import { screen, fireEvent } from '@testing-library/dom'
+
+function App() {
+  const [state, setState] = useState(0)
+  console.log("App " + state)
+  return (
+    <div>
+      <button onClick={() => {
+        setState(count => count + 1)
+        setState(count => count * 2)
+      }}>click me</button>
+    </div>
+  )
+}
+
+(async () => {
+  const root = createRoot(document.getElementById('root'));
+  root.render(<App/>)
+
+  fireEvent.click(await screen.findByText('click me'))
+})()
+```
+
+**Solution:**
+Two `setState` are combined into one state change.
+```js
+"App 0"
+"App 2"
+```
+### 6.React re-render 5 - context
+
+6.https://bigfrontend.dev/react-quiz/React-re-render-5
+
+What does the code snippet to the right output by console.log?
+```js
+// This is a React Quiz from BFE.dev
+
+import * as React from 'react'
+import { useState, memo, createContext, useEffect, useContext} from 'react'
+import { createRoot } from 'react-dom/client'
+
+const MyContext = createContext(0);
+
+function B() {
+  const count = useContext(MyContext)
+  console.log('B')
+  return null
+}
+
+const A = memo(() => {
+  console.log('A')
+  return <B/>
+})
+
+function C() {
+  console.log('C')
+  return null
+}
+function App() {
+  const [state, setState] = useState(0)
+  useEffect(() => {
+    setState(state => state + 1)
+  }, [])
+  console.log('App')
+  return <MyContext.Provider value={state}>
+    <A/>
+    <C/>
+  </MyContext.Provider>
+}
+
+const root = createRoot(document.getElementById('root'));
+root.render(<App/>)
+```
+**Solution:**
+
+The initial render logs `"App", "A", "B", "C"`. During the second render, `"App"` is logged first, followed by attempts to render components A and C. However, because A is wrapped with `memo`, it doesn't re-render. B, which relies on `useContext`, does re-render, followed by C.
+
+```js
+"App"
+"A"
+"B"
+"C"
+"App"
+"B"
+"C"
+```
+
+
+### 7.Suspense 1
+
+7.https://bigfrontend.dev/react-quiz/Suspense-1
+
+What does the code snippet to the right output by console.log?
+
+```js
+// This is a React Quiz from BFE.dev
+
+import * as React from 'react'
+import { Suspense } from 'react'
+import { createRoot } from 'react-dom/client'
+
+const resource = (() => {
+  let data = null
+  let status = 'pending'
+  let fetcher = null
+  return {
+    get() {
+      if (status === 'ready') {
+        return data
+      }
+      if (status === 'pending') {
+        fetcher = new Promise((resolve, reject) => {
+          setTimeout(() => {
+            data = 1
+            status = 'ready'
+            resolve()
+          }, 100)
+        })
+        status = 'fetching'
+      }
+
+      throw fetcher
+    }
+  }
+})()
+
+function A() {
+  console.log('A1')
+  const data = resource.get()
+  console.log('A2')
+  return <p>{data}</p>
+}
+
+function Fallback() {
+  console.log('fallback')
+  return null
+}
+
+function App() {
+  console.log('App')
+  return <div>
+    <Suspense fallback={<Fallback/>}>
+      <A/>
+    </Suspense>
+  </div>
+}
+
+const root = createRoot(document.getElementById('root'));
+root.render(<App/>)
+```
+
+**Solution:**
+
+The render logs `"App", "A1"`, but it gets blocked, rendering the `fallback` component instead, resulting in the output `"fallback"`. Once the data is ready, component A is rendered.
+
+```js
+"App"
+"A1"
+"fallback"
+"A1"
+"A2"
+```
+### 8.Suspense 2
+
+8.https://bigfrontend.dev/react-quiz/Suspense-2
+
+What does the code snippet to the right output by `console.log`?
+```js
+// This is a React Quiz from BFE.dev
+
+import * as React from 'react'
+import { Suspense } from 'react'
+import { createRoot } from 'react-dom/client'
+
+const resource = (() => {
+  let data = null
+  let status = 'pending'
+  let fetcher = null
+  return {
+    get() {
+      if (status === 'ready') {
+        return data
+      }
+      if (status === 'pending') {
+        fetcher = new Promise((resolve, reject) => {
+          setTimeout(() => {
+            data = 1
+            status = 'ready'
+            resolve()
+          }, 100)
+        })
+        status = 'fetching'
+      }
+
+      throw fetcher
+    }
+  }
+})()
+
+function A() {
+  console.log('A1')
+  const data = resource.get()
+  console.log('A2')
+  return <p>{data}</p>
+}
+
+function B() {
+  console.log('B')
+  return null
+}
+
+function Fallback() {
+  console.log('fallback')
+  return null
+}
+
+function App() {
+  console.log('App')
+  return <div>
+    <Suspense fallback={<Fallback/>}>
+      <A/>
+      <B/>
+    </Suspense>
+  </div>
+}
+
+const root = createRoot(document.getElementById('root'));
+root.render(<App/>)
+```
+
+**Solution:**
+
+The render logs `"App", "A1", "B"`, but it gets blocked in A, rendering the `fallback` component instead, resulting in the output `"fallback"`. Once the data is ready, component A and B are rendered again.
+
+```js
+"App"
+"A1"
+"B"
+"fallback"
+"A1"
+"A2"
+"B"
+```
+### 9.React re-render 6 - Context
+
+9.https://bigfrontend.dev/react-quiz/react-rerender-6-context
+
+What does the code snippet to the right output by console.log?
+```js
+import * as React from 'react'
+import { useState, createContext, useEffect, useContext} from 'react'
+import { createRoot } from 'react-dom/client'
+
+const MyContext = createContext(0);
+
+function B({children}) {
+  const count = useContext(MyContext)
+  console.log('B')
+  return children
+}
+
+const A = ({children}) => {
+  const [state, setState] = useState(0)
+  console.log('A')
+  useEffect(() => {
+    setState(state => state + 1)
+  }, [])
+  return <MyContext.Provider value={state}>
+    {children}
+  </MyContext.Provider>
+}
+
+function C() {
+  console.log('C')
+  return null
+}
+
+function D() {
+  console.log('D')
+  return null
+}
+function App() {
+  console.log('App')
+  return <A><B><C/></B><D/></A>
+}
+
+const root = createRoot(document.getElementById('root'));
+root.render(<App/>)
+```
+
+**Solution:**
+
+The initial render logs `"App", "A", "B", "C"`. On the second render, `"A"` is logged first, followed by an attempt to render component B because it uses `useContext`.
+
+```js
+"App"
+"A"
+"B"
+"C"
+"D"
+"A"
+"B"
+```
+
+### 10.useLayoutEffect()
+10.https://bigfrontend.dev/react-quiz/useLayoutEffect
+
+What does the code snippet to the right output by console.log?
+```js
+// This is a React Quiz from BFE.dev
+
+import * as React from 'react'
+import { useState, useEffect, useLayoutEffect} from 'react'
+import { createRoot } from 'react-dom/client'
+
+function App() {
+  console.log('App')
+  const [state, setState] = useState(0)
+  useEffect(() => {
+    setState(state => state + 1)
+  }, [])
+
+  useEffect(() => {
+    console.log('useEffect 1')
+    return () => {
+      console.log('useEffect 1 cleanup')
+    }
+  }, [state])
+
+  useEffect(() => {
+    console.log('useEffect 2')
+    return () => {
+      console.log('useEffect 2 cleanup')
+    }
+  }, [state])
+
+  useLayoutEffect(() => {
+    console.log('useLayoutEffect')
+    return () => {
+      console.log('useLayoutEffect cleanup')
+    }
+  }, [state])
+
+  return null
+}
+
+const root = createRoot(document.getElementById('root'));
+root.render(<App/>)
+```
+
+**Solution:**
+
+The first render logs `"App", "useLayoutEffect", "useEffect 1", "useEffect 2"`. When `setState` triggers a re-render, the second render logs `"App"`, cleans up the previous `useLayoutEffect`, and then re-runs `useLayoutEffect`. Afterward, it cleans up the previous `useEffect` hooks and re-executes them.
+
+```js
+"App"
+"useLayoutEffect"
+"useEffect 1"
+"useEffect 2"
+"App"
+"useLayoutEffect cleanup"
+"useLayoutEffect"
+"useEffect 1 cleanup"
+"useEffect 2 cleanup"
+"useEffect 1"
+"useEffect 2"
+```
+
+### 11.callback props
+
+11.https://bigfrontend.dev/react-quiz/callback-props
+
+What does the code snippet to the right output by console.log?
+```js
+// This is a React Quiz from BFE.dev
+
+import * as React from 'react'
+import { memo, useState} from 'react'
+import { createRoot } from 'react-dom/client'
+import { screen, fireEvent } from '@testing-library/dom'
+
+function _A({ onClick }) {
+  console.log('A')
+  return <button onClick={onClick} data-testid="button">click me</button>
+}
+
+const A = memo(_A)
+
+function App() {
+  console.log('App')
+  const [state, setState] = useState(0)
+  return <div>
+    {state}
+    <A onClick={() => {setState(state => state + 1)}}/>
+  </div>
+}
+
+const root = createRoot(document.getElementById('root'));
+root.render(<App/>);
+
+// click the button
+;(async function() {
+  const button = await screen.findByTestId('button')
+  fireEvent.click(button)
+})()
+```
+
+**Solution:**
+
+The initial render logs `"App", "A"`. When `setState` triggers a re-render, a new `onClick` function is created. Although component A is memoized, the change in the `onClick` function causes A to re-render.
+
+```js
+"App"
+"A"
+"App"
+"A"
+```
+### 12.useEffect
+12.https://bigfrontend.dev/react-quiz/useEffect
+
+What does the code snippet to the right output by console.log?
+```js
+// This is a React Quiz from BFE.dev
+
+import React, { useEffect, useState } from 'react'
+import ReactDOM from 'react-dom'
+
+function App() {
+  const [state, setState] = useState(0)
+  console.log(state)
+
+  useEffect(() => {
+    setState(state => state + 1)
+  }, [])
+
+  useEffect(() => {
+    console.log(state)
+    setTimeout(() => {
+      console.log(state)
+    }, 100)
+  }, [])
+
+  return null
+}
+
+ReactDOM.render(<App/>, document.getElementById('root'))
+```
+
+**Solution:**
+The initial render logs `0, 0`. When `setState` triggers a re-render, `1` is logged. Then, the `console.log` inside the `setTimeout` callback executes. Due to the stale closure, where the state is still `0` as it was when the `setTimeout` was defined, `0` is logged again.
+
+```js
+0  // console.log below const [state, setState] = useState(0)
+0  // console.log inside useEffect
+1  // console.log below const [state, setState] = useState(0)
+0  // console.log inside the setTimeout
+```
+
+### 13.useRef
+
+13.https://bigfrontend.dev/react-quiz/useRef
+
+What does the code snippet to the right output by console.log?
+```js
+// This is a React Quiz from BFE.dev
+
+import * as React from 'react'
+import { useRef, useEffect, useState } from 'react'
+import { createRoot } from 'react-dom/client'
+
+function App() {
+  const ref = useRef(null)
+  const [state, setState] = useState(1)
+
+  useEffect(() => {
+    setState(2)
+  }, [])
+
+  console.log(ref.current?.textContent)
+
+  return <div>
+    <div ref={state === 1 ? ref : null}>1</div>
+    <div ref={state === 2 ? ref : null}>2</div>
+  </div>
+}
+
+const root = createRoot(document.getElementById('root'));
+root.render(<App/>)
+```
+
+**Solution:**
+The initial render logs `undefined` because ref has not be assigned.
+When `setState` triggers a re-render, `1` is ouputted because ref is pointing at div with value 1.
+
+```js
+undefined
+"1"
+```
+
+### 14.async event handler
+
+14.https://bigfrontend.dev/react-quiz/async-event-handler
+
+What does the code snippet to the right output by console.log?
+```js
+// This is a React Quiz from BFE.dev
+
+import * as React from 'react'
+import { useState } from 'react'
+import { createRoot } from "react-dom/client";
+import { screen, fireEvent } from "@testing-library/dom"
+
+function App() {
+  const [state, setState] = useState(0)
+  const increment = () => {
+    setTimeout(() => {
+      setState(state + 1)
+    }, 100)
+  }
+  console.log(state)
+  return <div>
+    <button onClick={increment}>click me</button>
+  </div>
+}
+
+const root = createRoot(document.getElementById('root'))
+root.render(<App/>)
+
+;(async () => {
+  const action = await screen.findByText('click me')
+  // click the button twice
+  fireEvent.click(action)
+  await wait(50);
+  fireEvent.click(action)
+  await wait(50);
+})()
+
+function wait(duration = 100) {
+  return new Promise((resolve) => setTimeout(resolve, duration));
+}
+```
+
+**Solution:**
+When the second click is triggered, the state is still 0. So setState will call with 1.
+```js
+0
+1
+1
+```
+
+### 15.memo 2
+
+15.https://bigfrontend.dev/react-quiz/memo-2
+
+What does the code snippet to the right output by console.log?
+
+```js
+
+import * as React from 'react'
+import { memo, useState } from 'react'
+import { createRoot } from 'react-dom/client'
+import { screen, fireEvent } from "@testing-library/dom";
+
+function _B() {
+  console.log('B')
+  return null
+}
+
+const B = memo(_B)
+
+function _A({ children }) {
+  console.log('A')
+  return children
+}
+
+const A = memo(_A)
+
+function App() {
+  const [count, setCount] = useState(0)
+  return <div>
+    <button onClick={
+      () => setCount(count => count + 1)
+    }>
+      click me
+    </button>
+    <A><B/></A>
+  </div>
+}
+
+const root = createRoot(document.getElementById("root"));
+root.render(<App />);
+
+(async function () {
+  const action = await screen.findByText('click me')
+  fireEvent.click(action);
+})()
+```
+
+**Solution:**
+The initial render outputs `"A", "B"`.
+Although `<B/>` is not rendered again, it creates a new object reference.
+Because the `children` prop of `A`—which holds the reference to B—has changed, it triggers a re-render of component A.
+
+```js
+"A"
+"B"
+"A"
+```
+Reference: https://bigfrontend.dev/react-quiz/memo-2/discuss
+Key Takeaways:
+- A component normally re-renders when its parent re-renders.
+- A memoized component will not always re-render when its parent re-renders unless its props have changed, including the children prop.
+- A component passed as props (i.e. children) to its parent component that renders it, belongs to the component where it is instantiated and passed to its parent, not the parent itself.
+- Memoizing a component with React.memo does not prevent it from returning a new object reference
+- Memoizing a component with the hook useMemo can ensure that it returns the same object reference if the hook's dependencies don't change
+
+### 16.event callback
+
+16.https://bigfrontend.dev/react-quiz/event-handler
+
+What does the code snippet to the right output by `console.log`?
+```js
+// This is a React Quiz from BFE.dev
+
+import * as React from 'react'
+import { useState } from 'react'
+import { createRoot } from 'react-dom/client'
+import { screen, fireEvent } from '@testing-library/dom'
+
+function App() {
+  const [state, setState] = useState(0)
+  const onClick = () => {
+    console.log('handler')
+    setState(state => state + 1)
+    console.log('handler ' + state)
+  }
+  console.log('render ' + state)
+  return <div>
+    <button onClick={onClick}>click me</button>
+  </div>
+}
+
+
+const root = createRoot(document.getElementById("root"));
+root.render(<App />);
+
+(async function () {
+  const action = await screen.findByText('click me')
+  fireEvent.click(action);
+})()
+```
+
+**Solution:**
+The initial render outputs `render 0`. When the onClick is called, the `setState` will put a render request to the todo list and complete the funtion firstly. It will output `"handler", "handler 0"`. In the second render, it will output `"render 1"`.
+
+```js
+"render 0" // initial render
+"handler"  // onClick is triggered.
+"handler 0" // setState will trigger a render to put it to todo list.
+"render 1"  // second render
+```
+
+### 17.flushSync()
+
+17.https://bigfrontend.dev/react-quiz/flushsync
+
+What does the code snippet to the right output by console.log?
+
+```js
+// This is a React Quiz from BFE.dev
+import * as React from 'react'
+import { useState } from 'react'
+import { createRoot, flushSync } from 'react-dom/client'
+import { screen, fireEvent } from "@testing-library/dom";
+
+function App() {
+  const [state, setState] = useState(0)
+  const onClick = () => {
+    console.log('handler')
+    flushSync(() => {
+      setState(state => state + 1)
+    })
+    console.log('handler ' + state)
+  }
+  console.log('render ' + state)
+  return <div>
+    <button onClick={onClick}>click me</button>
+  </div>
+}
+
+const root = createRoot(document.getElementById("root"));
+root.render(<App />);
+
+(async function () {
+  const action = await screen.findByText('click me')
+  fireEvent.click(action);
+})()
+```
+
+**Solution:**
+The initial render outputs `render 0`. When `onClick` is triggered, `flushSync` immediately calls `setState` and triggers a render. Once the render completes, execution resumes and the function finishes.
+
+```js
+"render 0"
+"handler"
+"render 1"
+"handler 0"
+```
+
+### 19.lazy initial state
+
+19.https://bigfrontend.dev/react-quiz/lazy-initial-state
+
+What does the code snippet to the right output by `console.log`?
+
+```js
+// This is a React Quiz from BFE.dev
+import * as React from 'react'
+import { useState, useEffect } from 'react'
+import { createRoot } from 'react-dom/client'
+
+function App() {
+  const [state1, setState1] = useState(1);
+
+  const [state2] = useState(() => {
+    console.log(2);
+    return 2;
+  });
+
+  console.log(state1);
+
+  useEffect(() => {
+    setState1(3);
+  }, []);
+
+  return null;
+}
+
+const root = createRoot(document.getElementById("root"));
+root.render(<App />);
+```
+
+**Solution:**
+The initialization function passed to `setState` will be called when the `useState` is called.
+
+```js
+2
+1
+3
+```
+
+### 20.Error Boundary
+
+20.https://bigfrontend.dev/react-quiz/Error-Boundary
+
+What does the code snippet to the right output by `console.log`?
+
+```js
+// This is a React Quiz from BFE.dev
+
+import * as React from 'react';
+import {Component} from 'react';
+import {createRoot} from 'react-dom/client';
+
+function renderWithError() {
+  throw new Error('error');
+}
+
+function A() {
+  return <ErrorBoundary name="boundary-2">{renderWithError()}</ErrorBoundary>;
+}
+
+function App() {
+  return (
+    <ErrorBoundary name="boundary-1">
+      <A />
+    </ErrorBoundary>
+  )
+}
+
+
+class ErrorBoundary extends Component<
+  { name: string; children: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch() {
+    console.log(this.props.name);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <h1>Something went wrong.</h1>;
+    }
+
+    return this.props.children;
+  }
+}
+
+const root = createRoot(document.getElementById("root"));
+root.render(<App />);
+```
+
+**Solution:**
+`ErrorBoundary` catches error from children only (accepted)
+```jsx
+"boundary-1"
+// Unfortunately <ErrorBoundary/>  captures the error from children only and not even from itself. Since the error is thrown from "boundary-2", the parent "boundary-1" catches it.
+<ErrorBoundary name="boundary-1">
+  //children component
+  <ErrorBoundary name="boundary-2">
+    //not children
+    {throw Error}
+  </ErrorBoundary>
+</ErrorBoundary>
+```
+Reference: https://bigfrontend.dev/react-quiz/Error-Boundary/discuss
+
+### 21.useEffect() II
+21.https://bigfrontend.dev/react-quiz/useEffect-II
+```js
+import * as React from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { createRoot } from 'react-dom/client';
+
+function App() {
+  const [show, setShow] = useState(true)
+  return <div>
+    {show && <Child unmount={() => setShow(false)} />}
+  </div>;
+}
+
+function Child({ unmount }) {
+  const isMounted = useIsMounted()
+  useEffect(() => {
+    console.log(isMounted)
+    Promise.resolve(true).then(() => {
+      console.log(isMounted)
+    });
+    unmount();
+  }, []);
+
+  return null;
+};
+
+function useIsMounted() {
+  const isMounted = useRef(false);
+
+  useEffect(() => {
+    isMounted.current = true;
+    return () => isMounted.current = false;
+  }, []);
+
+  return isMounted.current;
+}
+
+const root = createRoot(document.getElementById('root'));
+root.render(<App/>)
+```
+
+**Solution:**
+When `const isMounted = useIsMounted()` is called, `isMounted` is initially `false` because it only changes to `true` once the render completes.
+Since `isMounted` is a primitive type, its value will remain `false` in the `Child` component’s `useEffect` if the component isn’t rendered again.
+```js
+false
+false
+```
+
+### 22.useState()
+
+22.https://bigfrontend.dev/react-quiz/useState
+
+What does the code snippet to the right output by console.log?
+
+```js
+
+import * as React from "react";
+import { useState } from "react";
+import { createRoot } from "react-dom/client";
+import { screen, fireEvent } from "@testing-library/dom";
+
+function A() {
+  console.log('render A')
+  return null
+}
+
+function App() {
+  const [_state, setState] = useState(false)
+  console.log('render App')
+  return <div>
+    <button onClick={() => {
+      console.log('click')
+      setState(true)
+    }}>click me</button>
+    <A />
+  </div>
+}
+
+const root = createRoot(document.getElementById("root"));
+root.render(<App />);
+
+(async function () {
+  const action = await screen.findByText("click me");
+  fireEvent.click(action);
+  await wait(100);
+  fireEvent.click(action);
+  await wait(100);
+  fireEvent.click(action);
+})();
+
+function wait(duration = 100) {
+  return new Promise((resolve) => setTimeout(resolve, duration));
+}
+```
+
+**Solution:**
+The initial render output `"render App", "render A"`.
+After the first click, the console.log outputs `"click", "render App", "render A"`.
+
+Regarding `useState`, the official React documentation provides the following note:
+
+If the new value you provide is the same as the current state (as determined by an `Object.is` comparison), React will skip re-rendering that component and its child components. This is an optimization. Although React may still need to call your component before skipping its children, this should not affect your code.
+
+Based on this, I understand that during the second click, even though the new value is the same as the current state, React needs to call the component to compare the values, which triggers "render App". However, since the component and its children don't need to re-render, "render A" is not logged.
+
+On the third click, knowing that the new and old values are identical, React skips calling the component entirely and only logs "click".
+
+```js
+"render App"
+"render A"
+"click"
+"render App"
+"render A"
+"click"
+"render App"
+"click"
+```
+
+### 23.Suspense 3
+
+23.https://bigfrontend.dev/react-quiz/suspense-3
+
+```js
+// This is a React Quiz from BFE.dev
+
+import * as React from 'react'
+import { Suspense, useMemo } from 'react'
+import { createRoot } from 'react-dom'
+
+const resource = (() => {
+  let data = null
+  let status = 'pending'
+  let fetcher = null
+  return {
+    get() {
+      if (status === 'ready') {
+        return data
+      }
+      if (status === 'pending') {
+        fetcher = new Promise((resolve, reject) => {
+          setTimeout(() => {
+            data = 1
+            status = 'ready'
+            resolve()
+          }, 100)
+        })
+        status = 'fetching'
+      }
+
+      throw fetcher
+    }
+  }
+})()
+
+
+function A() {
+  console.log(1)
+  const memoed = useMemo(() => {
+    console.log(2)
+    return 'memo'
+  }, [])
+
+  const data = resource.get()
+  console.log(3)
+  return memoed + data
+}
+
+function App() {
+  return <Suspense fallback={null}>
+    <A/>
+  </Suspense>
+}
+
+const root = createRoot(document.getElementById('root'));
+root.render(<App/>)
+```
+
+**Solution:**
+The first render outputs `1` and `2`. Once the data is loaded, component A re-renders, and the output becomes `1, 2, 3`.
+```js
+1
+2
+1
+2
+3
+```
+
+### 24.useEffect() timing
+
+24.https://bigfrontend.dev/react-quiz/useeffect-timing
+
+What does the code snippet to the right output by console.log?
+
+```js
+import * as React from "react";
+import { useState, useEffect } from "react";
+import { createRoot } from "react-dom/client";
+import { screen, fireEvent } from "@testing-library/dom";
+
+function App() {
+  const [state, setState] = useState(0)
+  console.log(1)
+
+  useEffect(() => {
+    console.log(2)
+  }, [state])
+
+  Promise.resolve().then(() => console.log(3))
+
+  setTimeout(() => console.log(4), 0)
+
+  const onClick = () => {
+    console.log(5)
+    setState(num => num + 1)
+    console.log(6)
+  }
+  return <div>
+    <button onClick={onClick}>click me</button>
+  </div>
+}
+
+const root = createRoot(document.getElementById('root'));
+root.render(<App/>)
+
+setTimeout(() => fireEvent.click(screen.getByText('click me')), 100)
+```
+
+**Solution:**
+
+1. The code imports necessary React hooks and testing utilities.
+
+2. The `App` component is defined:
+   - It uses the `useState` hook to initialize a state variable with 0.
+   - It logs "1" to the console immediately when the component renders.
+
+3. A `useEffect` hook is set up:
+   - It logs "2" to the console.
+   - It depends on the `state` variable, so it will run on initial render and whenever `state` changes.
+
+4. Two asynchronous operations are set up:
+   - A resolved Promise that logs "3".
+   - A setTimeout that logs "4" after the next tick of the event loop.
+
+5. An `onClick` function is defined:
+   - It logs "5".
+   - It updates the state by incrementing it.
+   - It logs "6".
+
+6. The component returns a button with the `onClick` handler.
+
+7. The app is rendered to the DOM using `createRoot` from React 18.
+
+8. A setTimeout is set to trigger a click event on the button after 100ms.
+
+Now, let's look at the execution order:
+
+1. When the component first renders:
+   - "1" is logged (from the component body).
+   - The Promise resolves, queueing the logging of "3".
+   - The setTimeout for logging "4" is queued.
+   - The useEffect runs, logging "2".
+   - The Promise microtask executes, logging "3".
+   - After the current call stack is clear, the setTimeout callback runs, logging "4".
+
+2. After 100ms, the button is clicked:
+   - "5" is logged.
+   - The state update is queued.
+   - "6" is logged.
+   - React schedules a re-render due to the state update.
+
+3. On re-render:
+   - "1" is logged again (component body).
+   - A new Promise resolves, queueing another log of "3".
+   - A new setTimeout for "4" is queued.
+   - The useEffect runs again (because state changed), logging "2".
+   - The Promise microtask executes, logging "3".
+   - After the call stack clears, the setTimeout callback runs, logging "4".
+
+So, the final console output would be:
+1, 2, 3, 4, 5, 6, 1, 2, 3, 4
+
+This code demonstrates React's rendering lifecycle, the event loop, and how asynchronous operations interact with React's rendering process.
+
+```js
+1
+2
+3
+4
+5
+6
+1
+2
+3
+4
+```
+
+### 25.all kinds of effects
+
+25.https://bigfrontend.dev/react-quiz/all-kinds-of-effects
+
+What does the code snippet to the right output by console.log?
+
+```js
+// This is a React Quiz from BFE.dev
+
+import * as React from 'react'
+import { useState, useEffect, useLayoutEffect, useInsertionEffect} from 'react'
+import { createRoot } from 'react-dom/client'
+
+function App() {
+  console.log(1)
+  const [state, setState] = useState(0)
+  useEffect(() => {
+    setState(state => state + 1)
+  }, [])
+
+  useEffect(() => {
+    console.log(2)
+    return () => {
+      console.log(3)
+    }
+  }, [state])
+
+  useEffect(() => {
+    console.log(4)
+    return () => {
+      console.log(5)
+    }
+  }, [state])
+
+  useLayoutEffect(() => {
+    console.log(6)
+    return () => {
+      console.log(7)
+    }
+  }, [state])
+
+  useInsertionEffect(() => {
+    console.log(8)
+    return () => {
+      console.log(9)
+    }
+  }, [state])
+  console.log(10)
+  return null
+}
+
+const root = createRoot(document.getElementById('root'));
+root.render(<App/>)
+```
+
+**Solution:**
+The first render logs `1`, `10`, `8`, `6`, `2`, `4` in that order. `useInsertionEffect` executes first, followed by `useLayoutEffect`, and finally, the two `useEffect` hooks.
+
+During the second render, `1` and `10` are logged first. Then, `useInsertionEffect` is cleaned up and re-executed, followed by `useLayoutEffect` being cleaned up and re-executed. Lastly, both `useEffect` hooks are cleaned up first and then re-executed.
+
+```js
+1
+10
+8
+6
+2
+4
+1
+10
+9
+8
+7
+6
+3
+5
+2
+4
+```
+### 26.useEffect() III
+
+26.https://bigfrontend.dev/react-quiz/useeffect-iii
+
+What does the code snippet to the right output by console.log?
+```js
+import * as React from "react";
+import { useState, useEffect } from "react";
+import { createRoot } from "react-dom/client";
+
+function App() {
+  const [count, setCount] = useState(1)
+  console.log(1)
+  useEffect(() => {
+    console.log(2)
+    return () => {
+      console.log(3)
+    }
+  }, [count])
+
+  useEffect(() => {
+    console.log(4)
+    setCount(count => count + 1)
+  }, [])
+  return <Child count={count} />
+}
+
+function Child({ count }) {
+  useEffect(() => {
+    console.log(5)
+    return () => {
+      console.log(6)
+    }
+  }, [count]);
+
+  return null;
+};
+
+const root = createRoot(document.getElementById('root'));
+root.render(<App/>)
+```
+
+**Solution:**
+The first render logs `1`, `5`, `2`, and `4` in that sequence.
+
+The `useEffect` in the Child component is executed first, followed by the `useEffect` in the Parent component.
+
+During the second render, `1` is logged first. Then, the `useEffect` in the Child component is cleaned up, followed by the cleanup of the `useEffect` in the Parent component.
+
+Finally, both `useEffect` hooks in the Child and Parent components are re-executed.
+
+```js
+1
+5
+2
+4
+1
+6
+3
+5
+2
+```
+### 27.useEffect() timing II
+
+27.https://bigfrontend.dev/react-quiz/useeffect-timing-ii
+
+What does the code snippet to the right output by console.log?
+
+```js
+'infiniteLoopProtection:false'
+
+import * as React from "react";
+import { useState, useEffect} from "react";
+import { createRoot } from "react-dom/client";
+
+function App() {
+  const [state] = useState(0)
+  console.log(1)
+
+  const start = Date.now()
+  while (Date.now() - start < 50) {
+    window.timestamp = Date.now()
+  }
+
+  useEffect(() => {
+    console.log(2)
+  }, [state])
+
+  Promise.resolve().then(() => console.log(3))
+
+  setTimeout(() => console.log(4), 0)
+
+  return null
+}
+
+const root = createRoot(document.getElementById('root'));
+root.render(<App/>)
+```
+
+**Solution:**
+It seems that adding
+```js
+const start = Date.now()
+while (Date.now() - start < 50) {
+  window.timestamp = Date.now()
+}
+```
+moves the callback in `useEffect` in the initial rendere after Promise and setTimeout.
+
+```js
+1
+3
+4
+2
+```
+
+### 28.useEffect() timing III
+
+28.https://bigfrontend.dev/react-quiz/useeffect-timing-iii
+
+What does the code snippet to the right output by console.log?
+```js
+'infiniteLoopProtection:false'
+import * as React from "react";
+import { useState, useEffect } from "react";
+import { createRoot } from "react-dom/client";
+import { screen, fireEvent } from "@testing-library/dom";
+
+function App() {
+  const [state, setState] = useState(0)
+  console.log(1)
+
+  const start = Date.now()
+  while (Date.now() - start < 50) {
+    window.timestamp = Date.now()
+  }
+
+  useEffect(() => {
+    console.log(2)
+  }, [state])
+
+  Promise.resolve().then(() => console.log(3))
+
+  setTimeout(() => console.log(4), 0)
+
+  const onClick = () => {
+    console.log(5)
+    setState(num => num + 1)
+    console.log(6)
+  }
+  return <div>
+    <button onClick={onClick}>click me</button>
+  </div>
+}
+
+const root = createRoot(document.getElementById('root'));
+root.render(<App/>)
+
+setTimeout(() => fireEvent.click(screen.getByText('click me')), 100)
+```
+
+**Solution:**
+
+In the first render, the callback in `useEffect` is executed after both the Promise and `setTimeout`, resulting in the console log output `1, 3, 4, 2`.
+
+After `onClick` is triggered, `5` and `6` are logged first. During the second render, the `useEffect` callback runs before the Promise and `setTimeout` callbacks.
+
+```js
+1
+3
+4
+2
+5
+6
+1
+2
+3
+4
+```
+
+### 29.useEffect() timing IV
+
+29.https://bigfrontend.dev/react-quiz/useeffect-timing-iv
+
+What does the code snippet to the right output by console.log?
+```js
+'infiniteLoopProtection:false'
+
+import * as React from 'react'
+import { useState, useEffect, useLayoutEffect} from 'react'
+import { createRoot } from 'react-dom'
+
+function App() {
+  const [state, setState] = useState(0)
+  console.log(1)
+
+  const start = Date.now()
+  while (Date.now() - start < 50) {
+    window.timestamp = Date.now()
+  }
+
+  useEffect(() => {
+    console.log(2)
+  }, [state])
+
+  Promise.resolve().then(() => console.log(3))
+
+  setTimeout(() => console.log(4), 0)
+
+  useLayoutEffect(() => {
+    console.log(5)
+    setState(state => state + 1)
+  }, [])
+
+  return null
+}
+
+const root = createRoot(document.getElementById('root'));
+root.render(<App/>)
+```
+
+**Solution:**
+
+```js
+1 // initial render
+5 // initial useLayoutEffect
+2 // initial useEffect
+1 // after setState in useLayoutEffect component re-rendered. hence, again 1 is printed
+2 // useEffect executed since count changed
+3 // resolved promise value on first render
+3 // resolved promise value on second render
+4 // setTimeout function first render
+4 // setTimeout function second render
+```
+
+### 30.Error Boundary Once More
+
+30.https://bigfrontend.dev/react-quiz/error-boundary-once-more
+
+What does the code snippet to the right output by console.log?
+
+```js
+// This is a React Quiz from BFE.dev
+
+import * as React from 'react';
+import { Component } from 'react';
+import { createRoot } from 'react-dom';
+
+function renderWithError() {
+  console.log('throw')
+  throw new Error('error');
+}
+
+function A() {
+  return <ErrorBoundary name="boundary-2">
+    {renderWithError()}
+  </ErrorBoundary>;
+}
+
+function App() {
+  return (
+    <ErrorBoundary name="boundary-1">
+      <A />
+    </ErrorBoundary>
+  )
+}
+
+
+class ErrorBoundary extends Component<
+  { name: string; children: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return {
+      hasError: true
+    }
+  }
+
+  render() {
+    console.log('render')
+    if (this.state.hasError) {
+      return <h1>Something went wrong.</h1>;
+    }
+
+    return this.props.children;
+  }
+}
+
+const root = createRoot(document.getElementById("root"));
+root.render(<App />);
+```
+
+**Solution:**
+
+```js
+render
+throw
+throw
+render
+render
+throw
+throw
+render
+```
+
+### Summary
+
+We can create a simple html to test the react rendering sequance.
+```html
+<!doctype html>
+<html>
+    <head>
+        <meta charset="UTF-8" />
+        <title>Hello World</title>
+        <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+        <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+
+        <!-- Don't use this in production: -->
+        <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    </head>
+    <body>
+        <div id="root"></div>
+        <script type="text/babel">
+            function App() {
+                const [state] = React.useState(0);
+                console.log(1);
+                React.useEffect(() => {
+                    console.log(2);
+                }, [state]);
+                Promise.resolve().then(() => console.log(3));
+                setTimeout(() => console.log(4), 0);
+                return null;
+            }
+            const root = ReactDOM.createRoot(document.getElementById("root"));
+            root.render(<App />);
+        </script>
+    </body>
+</html>
+```
+
+Here is a summary about rendering in React.
+
+1. **`setState`:**
+   - Triggers a component and its children to render. This process is asynchronous.
+   - If a component is wrapped with `memo` and its props haven't changed (compared by reference), it will not re-render.
+   - For the `children` prop: If a component is passed as a `children` prop, it will not re-render within the hosting component.
+   - To force synchronous rendering, you can wrap `setState` with `flushSync`.
+   - The initial function in `useState` is executed when `useState` is called.
+
+2. **`Context`:**
+   - A component that uses context will re-render if the value within the context changes.
+
+3. **`Suspense`:**
+   - Component rendering begins until it is blocked by a suspended operation.
+   - Once the block is resolved, the component will restart the rendering process.
+
+4. **`useInsertionEffect`, `useLayoutEffect`, and `useEffect`:**
+   - If cleanup is required, the cleanup for `useInsertionEffect` runs first, followed by the callback execution.
+   - Similarly, if cleanup is needed, the cleanup for `useLayoutEffect` runs first, followed by the callback execution.
+   - For `useEffect`, if cleanup is needed, it runs first, followed by the callback execution.
+
+5. **`onClick` Prop:**
+   - An `onClick` handler such as `() => {}` is a new instance on every render.
+
+6. **ErrorBoundary:**
+   - An ErrorBoundary component catches errors from its children but cannot catch its own errors.
+
+7. **`memo` and Child Components:**
+   - Suppose `A` and `B` are memoized components. The render of `<A><B/></A>` will create a new instance of `B`, even if `B` itself does not re-render (because it is memoized). This results in `A` receiving a new instance for the `children` prop.

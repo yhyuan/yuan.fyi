@@ -1,0 +1,4495 @@
+---
+title: Methods in String, Array, Object, Set, Map, Proxy, Reflect
+date: "2024-06-16"
+tags: ["JavaScript"]
+draft: false
+---
+
+### Introduction
+
+This blog post summarizes the methods in String, Array, Object, Set, Map, Proxy, Reflect in JavaScript.
+
+<TOCInline toc={props.toc} exclude="Introduction" />
+
+### 1.`String`
+
+Here's a list of String methods in JavaScript along with examples:
+
+1. charAt(index)
+   ```javascript
+   "Hello".charAt(1); // 'e'
+   ```
+
+2. charCodeAt(index)
+   ```javascript
+   "Hello".charCodeAt(1); // 101
+   ```
+
+3. codePointAt(index)
+   ```javascript
+   "😄".codePointAt(0); // 128516
+   ```
+
+4. concat(str1, str2, ...)
+   ```javascript
+   "Hello".concat(" ", "World"); // "Hello World"
+   ```
+
+5. endsWith(searchString, length)
+   ```javascript
+   "Hello World".endsWith("World"); // true
+   ```
+
+6. includes(searchString, position)
+   ```javascript
+   "Hello World".includes("World"); // true
+   ```
+
+7. indexOf(searchValue, fromIndex)
+   ```javascript
+   "Hello World".indexOf("o"); // 4
+   ```
+
+8. lastIndexOf(searchValue, fromIndex)
+   ```javascript
+   "Hello World".lastIndexOf("o"); // 7
+   ```
+
+9. localeCompare(compareString, locales, options)
+   ```javascript
+   "a".localeCompare("b"); // -1
+   ```
+
+10. match(regexp)
+    ```javascript
+    "Hello World".match(/[A-Z]/g); // ['H', 'W']
+    ```
+
+11. matchAll(regexp)
+    ```javascript
+    [..."Hello World".matchAll(/[A-Z]/g)]; // [['H'], ['W']]
+    ```
+
+12. normalize(form)
+    ```javascript
+    "é".normalize('NFC') === "é".normalize('NFD'); // false
+    ```
+
+13. padEnd(targetLength, padString)
+    ```javascript
+    "Hello".padEnd(10, "."); // "Hello....."
+    ```
+
+14. padStart(targetLength, padString)
+    ```javascript
+    "Hello".padStart(10, "."); // ".....Hello"
+    ```
+
+15. repeat(count)
+    ```javascript
+    "Ha".repeat(3); // "HaHaHa"
+    ```
+
+16. replace(searchFor, replaceWith)
+    ```javascript
+    "Hello World".replace("World", "JavaScript"); // "Hello JavaScript"
+    ```
+
+17. replaceAll(searchFor, replaceWith)
+    ```javascript
+    "Hello World World".replaceAll("World", "JavaScript"); // "Hello JavaScript JavaScript"
+    ```
+
+18. search(regexp)
+    ```javascript
+    "Hello World".search(/World/); // 6
+    ```
+
+19. slice(beginIndex, endIndex)
+    ```javascript
+    "Hello World".slice(6); // "World"
+    ```
+
+20. split(separator, limit)
+    ```javascript
+    "Hello World".split(" "); // ["Hello", "World"]
+    ```
+
+21. startsWith(searchString, position)
+    ```javascript
+    "Hello World".startsWith("Hello"); // true
+    ```
+
+22. substring(indexStart, indexEnd)
+    ```javascript
+    "Hello World".substring(6, 11); // "World"
+    ```
+
+23. toLowerCase()
+    ```javascript
+    "Hello World".toLowerCase(); // "hello world"
+    ```
+
+24. toUpperCase()
+    ```javascript
+    "Hello World".toUpperCase(); // "HELLO WORLD"
+    ```
+
+25. trim()
+    ```javascript
+    "  Hello World  ".trim(); // "Hello World"
+    ```
+
+26. trimStart() / trimLeft()
+    ```javascript
+    "  Hello World  ".trimStart(); // "Hello World  "
+    ```
+
+27. trimEnd() / trimRight()
+    ```javascript
+    "  Hello World  ".trimEnd(); // "  Hello World"
+    ```
+
+28. valueOf()
+    ```javascript
+    "Hello World".valueOf(); // "Hello World"
+    ```
+
+29. at(index) (ES2022)
+    ```javascript
+    "Hello".at(-1); // "o"
+    ```
+
+Static methods:
+
+30. String.fromCharCode(num1, num2, ...)
+    ```javascript
+    String.fromCharCode(72, 101, 108, 108, 111); // "Hello"
+    ```
+
+31. String.fromCodePoint(num1, num2, ...)
+    ```javascript
+    String.fromCodePoint(128516); // "😄"
+    ```
+
+32. String.raw(template, ...substitutions)
+    ```javascript
+    String.raw`Hello\nWorld`; // "Hello\\nWorld"
+    ```
+
+Property:
+
+33. length
+    ```javascript
+    "Hello".length; // 5
+    ```
+
+Remember, strings in JavaScript are immutable, so these methods return new strings rather than modifying the original.
+
+### 2.`Array`
+
+Certainly! Here's a comprehensive list of Array methods in JavaScript along with examples:
+
+1. push()
+   ```javascript
+   let arr = [1, 2];
+   arr.push(3); // arr is now [1, 2, 3]
+   ```
+
+2. pop()
+   ```javascript
+   let arr = [1, 2, 3];
+   let last = arr.pop(); // last = 3, arr is now [1, 2]
+   ```
+
+3. unshift()
+   ```javascript
+   let arr = [1, 2];
+   arr.unshift(0); // arr is now [0, 1, 2]
+   ```
+
+4. shift()
+   ```javascript
+   let arr = [1, 2, 3];
+   let first = arr.shift(); // first = 1, arr is now [2, 3]
+   ```
+
+5. concat()
+   ```javascript
+   let arr1 = [1, 2];
+   let arr2 = [3, 4];
+   let newArr = arr1.concat(arr2); // newArr is [1, 2, 3, 4]
+   ```
+
+6. join()
+   ```javascript
+   let arr = ['Hello', 'World'];
+   let str = arr.join(' '); // str is "Hello World"
+   ```
+
+7. slice()
+   ```javascript
+   let arr = [1, 2, 3, 4, 5];
+   let sliced = arr.slice(1, 4); // sliced is [2, 3, 4]
+   ```
+
+8. splice()
+   ```javascript
+   let arr = [1, 2, 3, 4];
+   arr.splice(1, 2, 'a', 'b'); // arr is now [1, 'a', 'b', 4]
+   ```
+
+9. indexOf()
+   ```javascript
+   let arr = [1, 2, 3, 2];
+   let index = arr.indexOf(2); // index is 1
+   ```
+
+10. lastIndexOf()
+    ```javascript
+    let arr = [1, 2, 3, 2];
+    let lastIndex = arr.lastIndexOf(2); // lastIndex is 3
+    ```
+
+11. forEach()
+    ```javascript
+    let arr = [1, 2, 3];
+    arr.forEach(item => console.log(item)); // logs 1, 2, 3
+    ```
+
+12. map()
+    ```javascript
+    let arr = [1, 2, 3];
+    let doubled = arr.map(item => item * 2); // doubled is [2, 4, 6]
+    ```
+
+13. filter()
+    ```javascript
+    let arr = [1, 2, 3, 4, 5];
+    let evens = arr.filter(item => item % 2 === 0); // evens is [2, 4]
+    ```
+
+14. reduce()
+    ```javascript
+    let arr = [1, 2, 3, 4];
+    let sum = arr.reduce((acc, cur) => acc + cur, 0); // sum is 10
+    ```
+
+15. some()
+    ```javascript
+    let arr = [1, 2, 3, 4, 5];
+    let hasEven = arr.some(item => item % 2 === 0); // hasEven is true
+    ```
+
+16. every()
+    ```javascript
+    let arr = [2, 4, 6, 8];
+    let allEven = arr.every(item => item % 2 === 0); // allEven is true
+    ```
+
+17. find()
+    ```javascript
+    let arr = [1, 2, 3, 4, 5];
+    let found = arr.find(item => item > 3); // found is 4
+    ```
+
+18. findIndex()
+    ```javascript
+    let arr = [1, 2, 3, 4, 5];
+    let foundIndex = arr.findIndex(item => item > 3); // foundIndex is 3
+    ```
+
+19. includes()
+    ```javascript
+    let arr = [1, 2, 3];
+    let includes2 = arr.includes(2); // includes2 is true
+    ```
+
+20. sort()
+    ```javascript
+    let arr = [3, 1, 4, 1, 5];
+    arr.sort((a, b) => a - b); // arr is now [1, 1, 3, 4, 5]
+    ```
+
+21. reverse()
+    ```javascript
+    let arr = [1, 2, 3];
+    arr.reverse(); // arr is now [3, 2, 1]
+    ```
+
+22. fill()
+    ```javascript
+    let arr = [1, 2, 3, 4];
+    arr.fill(0, 1, 3); // arr is now [1, 0, 0, 4]
+    ```
+
+23. copyWithin()
+    ```javascript
+    let arr = [1, 2, 3, 4, 5];
+    arr.copyWithin(0, 3, 5); // arr is now [4, 5, 3, 4, 5]
+    ```
+
+24. flat()
+    ```javascript
+    let arr = [1, [2, [3, 4]]];
+    let flattened = arr.flat(2); // flattened is [1, 2, 3, 4]
+    ```
+
+25. flatMap()
+    ```javascript
+    let arr = [1, 2, 3];
+    let result = arr.flatMap(x => [x, x * 2]); // result is [1, 2, 2, 4, 3, 6]
+    ```
+
+26. from() (static method)
+    ```javascript
+    let arrFromString = Array.from('hello'); // arrFromString is ['h', 'e', 'l', 'l', 'o']
+    ```
+
+27. isArray() (static method)
+    ```javascript
+    let isArr = Array.isArray([1, 2, 3]); // isArr is true
+    ```
+
+28. of() (static method)
+    ```javascript
+    let arr = Array.of(1, 2, 3); // arr is [1, 2, 3]
+    ```
+
+29. entries()
+    ```javascript
+    let arr = ['a', 'b', 'c'];
+    let iterator = arr.entries();
+    console.log(iterator.next().value); // [0, 'a']
+    ```
+
+30. from()
+    ```javascript
+    let arrFromSet = Array.from(new Set([1, 2, 3, 2])); // [1, 2, 3]
+    ```
+
+31. keys()
+    ```javascript
+    let arr = ['a', 'b', 'c'];
+    let iterator = arr.keys();
+    console.log(iterator.next().value); // 0
+    ```
+
+32. reduceRight()
+    ```javascript
+    let arr = [[0, 1], [2, 3], [4, 5]];
+    let flattened = arr.reduceRight((acc, cur) => acc.concat(cur), []);
+    // flattened is [4, 5, 2, 3, 0, 1]
+    ```
+
+33. toLocaleString()
+    ```javascript
+    let arr = [1, 'a', new Date('21 Dec 1997 14:12:00 UTC')];
+    console.log(arr.toLocaleString('en', { timeZone: 'UTC' }));
+    // "1,a,12/21/1997, 2:12:00 PM" (output may vary based on locale)
+    ```
+
+34. toString()
+    ```javascript
+    let arr = [1, 2, 'a', '1a'];
+    console.log(arr.toString()); // "1,2,a,1a"
+    ```
+
+35. values()
+    ```javascript
+    let arr = ['a', 'b', 'c'];
+    let iterator = arr.values();
+    console.log(iterator.next().value); // 'a'
+    ```
+These are the standard methods available on the `Array` object in JavaScript. Additionally, there are some methods available on `Array.prototype`, such as `Symbol.iterator`, `Symbol.species`, `Symbol.unscopables`, and `[@@unscopables]`, which are used for internal purposes or special cases.
+
+### 3.`Object`
+The `Object` in JavaScript is a built-in constructor for creating objects, and it has several methods associated with it. Here are the commonly used methods:
+
+1. Object.assign()
+   Copies the values of all enumerable own properties from one or more source objects to a target object.
+   ```javascript
+   const target = { a: 1, b: 2 };
+   const source = { b: 3, c: 4 };
+   const returnedTarget = Object.assign(target, source);
+   console.log(target); // { a: 1, b: 3, c: 4 }
+   ```
+
+2. Object.create()
+   Creates a new object with the specified prototype object and properties.
+   ```javascript
+   const person = {
+     isHuman: false,
+     printIntroduction: function() {
+       console.log(`My name is ${this.name}. Am I human? ${this.isHuman}`);
+     }
+   };
+   const me = Object.create(person);
+   me.name = 'Matthew';
+   me.isHuman = true;
+   me.printIntroduction(); // "My name is Matthew. Am I human? true"
+   ```
+
+3. Object.defineProperty()
+   Defines a new property directly on an object or modifies an existing property, and returns the object.
+   ```javascript
+   const object1 = {};
+   Object.defineProperty(object1, 'property1', {
+     value: 42,
+     writable: false
+   });
+   object1.property1 = 77; // Throws an error in strict mode
+   console.log(object1.property1); // 42
+   ```
+
+4. Object.defineProperties()
+   Defines new or modifies existing properties directly on an object, returning the object.
+   ```javascript
+   const object1 = {};
+   Object.defineProperties(object1, {
+     property1: { value: 42, writable: true },
+     property2: {}
+   });
+   console.log(object1.property1); // 42
+   ```
+
+5. Object.entries()
+   Returns an array of key-value pairs from an object's own enumerable string-keyed properties.
+   ```javascript
+   const object1 = { a: 'somestring', b: 42 };
+   console.log(Object.entries(object1)); // [['a', 'somestring'], ['b', 42]]
+   ```
+
+6. Object.freeze()
+   Freezes an object, preventing new properties from being added to it and existing properties from being modified or removed.
+   ```javascript
+   const obj = { prop: 42 };
+   Object.freeze(obj);
+   obj.prop = 33; // Throws an error in strict mode
+   console.log(obj.prop); // 42
+   ```
+
+7. Object.fromEntries()
+   Returns a new object from an iterable of key-value pairs (e.g., array) or iterable entries.
+   ```javascript
+   const entries = new Map([['foo', 'bar'], ['baz', 42]]);
+   const obj = Object.fromEntries(entries);
+   console.log(obj); // { foo: "bar", baz: 42 }
+   ```
+
+8. Object.getOwnPropertyDescriptor()
+   Returns an object describing the configuration of a specific property on a given object.
+   ```javascript
+   const object1 = { property1: 42 };
+   const descriptor1 = Object.getOwnPropertyDescriptor(object1, 'property1');
+   console.log(descriptor1.configurable); // true
+   console.log(descriptor1.value); // 42
+   ```
+
+9. Object.getOwnPropertyDescriptors()
+   Returns an object containing all own property descriptors for an object.
+   ```javascript
+   const object1 = { property1: 42 };
+   const descriptors1 = Object.getOwnPropertyDescriptors(object1);
+   console.log(descriptors1.property1.writable); // true
+   console.log(descriptors1.property1.value); // 42
+   ```
+
+10. Object.getOwnPropertyNames()
+    Returns an array of all properties (enumerable or not) found directly upon a given object.
+    ```javascript
+    const object1 = { a: 1, b: 2, c: 3 };
+    console.log(Object.getOwnPropertyNames(object1)); // ["a", "b", "c"]
+    ```
+
+11. Object.getOwnPropertySymbols()
+    Returns an array of all symbol properties found directly upon a given object.
+    ```javascript
+    const obj = {};
+    const a = Symbol('a');
+    const b = Symbol.for('b');
+    obj[a] = 'localSymbol';
+    obj[b] = 'globalSymbol';
+    const objectSymbols = Object.getOwnPropertySymbols(obj);
+    console.log(objectSymbols.length); // 2
+    ```
+
+12. Object.getPrototypeOf()
+    Returns the prototype (internal `[[Prototype]]` property) of the specified object.
+    ```javascript
+    const prototype1 = {};
+    const object1 = Object.create(prototype1);
+    console.log(Object.getPrototypeOf(object1) === prototype1); // true
+    ```
+
+13. Object.is()
+    Determines whether two values are the same value. `===` will fail for `NaN===NaN` and `0 !== -0`.
+    ```javascript
+    console.log(Object.is('foo', 'foo')); // true
+    console.log(Object.is(window, window)); // true
+    console.log(Object.is('foo', 'bar')); // false
+    console.log(Object.is([], [])); // false
+    ```
+
+14. Object.isExtensible()
+    Determines if an object is extensible (whether it can have new properties added to it).
+    ```javascript
+    const object1 = {};
+    console.log(Object.isExtensible(object1)); // true
+    Object.preventExtensions(object1);
+    console.log(Object.isExtensible(object1)); // false
+    ```
+
+15. Object.isFrozen()
+    Determines if an object is frozen.
+    ```javascript
+    const object1 = { property1: 42 };
+    console.log(Object.isFrozen(object1)); // false
+    Object.freeze(object1);
+    console.log(Object.isFrozen(object1)); // true
+    ```
+
+16. Object.isSealed()
+    Determines if an object is sealed.
+    ```javascript
+    const object1 = { property1: 42 };
+    console.log(Object.isSealed(object1)); // false
+    Object.seal(object1);
+    console.log(Object.isSealed(object1)); // true
+    ```
+
+17. Object.keys()
+    Returns an array of a given object's own enumerable property names.
+    ```javascript
+    const object1 = { a: 'somestring', b: 42, c: false };
+    console.log(Object.keys(object1)); // ["a", "b", "c"]
+    ```
+
+18. Object.preventExtensions()
+    Prevents any extensions of an object.
+    ```javascript
+    const object1 = {};
+    Object.preventExtensions(object1);
+    try {
+      Object.defineProperty(object1, 'property1', { value: 42 });
+    } catch (e) {
+      console.log(e); // TypeError: Cannot define property property1, object is not extensible
+    }
+    ```
+
+19. Object.seal()
+    Prevents new properties from being added to an object and marks all existing properties as non-configurable.
+    ```javascript
+    const object1 = { property1: 42 };
+    Object.seal(object1);
+    object1.property1 = 33;
+    console.log(object1.property1); // 33
+    delete object1.property1; // fails silently in non-strict mode
+    console.log(object1.property1); // 33
+    ```
+
+20. Object.setPrototypeOf()
+    Sets the prototype (i.e., the internal `[[Prototype]]` property) of a specified object to another object or `null`.
+    ```javascript
+    const obj = { a: 1 };
+    const parent = { b: 2 };
+    Object.setPrototypeOf(obj, parent);
+    console.log(obj.b); // 2
+    ```
+
+21. Object.values()
+    Returns an array of a given object's own enumerable property values.
+    ```javascript
+    const object1 = { a: 'somestring', b: 42, c: false };
+    console.log(Object.values(object1)); // ["somestring", 42, false]
+    ```
+
+These methods provide various functionalities for working with objects in JavaScript.
+
+### 4.`Set`
+Here are the new Set methods in JavaScript:
+
+1. Set constructor
+   ```javascript
+   let set1 = new Set([1, 2, 3, 4, 5]);
+   let set2 = new Set("hello");
+   ```
+
+2. add()
+   ```javascript
+   let mySet = new Set();
+   mySet.add(1);
+   mySet.add(5);
+   mySet.add("some text");
+   console.log(mySet); // Set(3) {1, 5, "some text"}
+   ```
+
+3. delete()
+   ```javascript
+   let mySet = new Set([1, 2, 3, 4]);
+   mySet.delete(3);
+   console.log(mySet); // Set(3) {1, 2, 4}
+   ```
+
+4. has()
+   ```javascript
+   let mySet = new Set([1, 2, 3, 4]);
+   console.log(mySet.has(3)); // true
+   console.log(mySet.has(5)); // false
+   ```
+
+5. clear()
+   ```javascript
+   let mySet = new Set([1, 2, 3]);
+   mySet.clear();
+   console.log(mySet); // Set(0) {}
+   ```
+
+6. size
+   ```javascript
+   let mySet = new Set([1, 2, 3, 4]);
+   console.log(mySet.size); // 4
+   ```
+
+7. forEach()
+   ```javascript
+   let mySet = new Set([1, 2, 3]);
+   mySet.forEach(value => console.log(value));
+   // Output:
+   // 1
+   // 2
+   // 3
+   ```
+
+8. values()
+   ```javascript
+   let mySet = new Set([1, 2, 3]);
+   let iterator = mySet.values();
+   console.log(iterator.next().value); // 1
+   console.log(iterator.next().value); // 2
+   ```
+
+9. keys()
+   ```javascript
+   let mySet = new Set([1, 2, 3]);
+   let iterator = mySet.keys();
+   console.log(iterator.next().value); // 1
+   console.log(iterator.next().value); // 2
+   ```
+   Note: keys() is the same as values() for Set objects.
+
+10. entries()
+    ```javascript
+    let mySet = new Set([1, 2, 3]);
+    let iterator = mySet.entries();
+    console.log(iterator.next().value); // [1, 1]
+    console.log(iterator.next().value); // [2, 2]
+    ```
+
+11. [Symbol.iterator]
+    ```javascript
+    let mySet = new Set([1, 2, 3]);
+    for (let item of mySet) {
+      console.log(item);
+    }
+    // Output:
+    // 1
+    // 2
+    // 3
+    ```
+
+12. Set.prototype[@@iterator]()
+    ```javascript
+    let mySet = new Set([1, 2, 3]);
+    let iterator = mySet[Symbol.iterator]();
+    console.log(iterator.next().value); // 1
+    console.log(iterator.next().value); // 2
+    ```
+
+Additional utility methods (not part of the Set prototype, but useful for Set operations):
+
+13. Union of sets
+    ```javascript
+    let set1 = new Set([1, 2, 3]);
+    let set2 = new Set([3, 4, 5]);
+    let union = new Set([...set1, ...set2]);
+    console.log(union); // Set(5) {1, 2, 3, 4, 5}
+    ```
+
+14. Intersection of sets
+    ```javascript
+    let set1 = new Set([1, 2, 3]);
+    let set2 = new Set([3, 4, 5]);
+    let intersection = new Set([...set1].filter(x => set2.has(x)));
+    console.log(intersection); // Set(1) {3}
+    ```
+
+15. Difference of sets
+    ```javascript
+    let set1 = new Set([1, 2, 3]);
+    let set2 = new Set([3, 4, 5]);
+    let difference = new Set([...set1].filter(x => !set2.has(x)));
+    console.log(difference); // Set(2) {1, 2}
+    ```
+
+16. Set.prototype.intersection() (Stage 3 proposal)
+    ```javascript
+    let set1 = new Set([1, 2, 3]);
+    let set2 = new Set([2, 3, 4]);
+    let intersection = set1.intersection(set2);
+    console.log(intersection); // Set(2) {2, 3}
+    ```
+
+17. Set.prototype.union() (Stage 3 proposal)
+    ```javascript
+    let set1 = new Set([1, 2, 3]);
+    let set2 = new Set([3, 4, 5]);
+    let union = set1.union(set2);
+    console.log(union); // Set(5) {1, 2, 3, 4, 5}
+    ```
+
+18. Set.prototype.difference() (Stage 3 proposal)
+    ```javascript
+    let set1 = new Set([1, 2, 3]);
+    let set2 = new Set([2, 3, 4]);
+    let difference = set1.difference(set2);
+    console.log(difference); // Set(1) {1}
+    ```
+
+19. Set.prototype.symmetricDifference() (Stage 3 proposal)
+    ```javascript
+    let set1 = new Set([1, 2, 3]);
+    let set2 = new Set([2, 3, 4]);
+    let symDifference = set1.symmetricDifference(set2);
+    console.log(symDifference); // Set(2) {1, 4}
+    ```
+
+20. Set.prototype.isSubsetOf() (Stage 3 proposal)
+    ```javascript
+    let set1 = new Set([1, 2]);
+    let set2 = new Set([1, 2, 3, 4]);
+    console.log(set1.isSubsetOf(set2)); // true
+    ```
+
+21. Set.prototype.isSupersetOf() (Stage 3 proposal)
+    ```javascript
+    let set1 = new Set([1, 2, 3, 4]);
+    let set2 = new Set([2, 3]);
+    console.log(set1.isSupersetOf(set2)); // true
+    ```
+
+22. Set.prototype.isDisjointFrom() (Stage 3 proposal)
+    ```javascript
+    let set1 = new Set([1, 2]);
+    let set2 = new Set([3, 4]);
+    console.log(set1.isDisjointFrom(set2)); // true
+    ```
+
+### 5.`Map`
+
+The `Map` object in JavaScript is a collection of key-value pairs, and it has several methods for manipulating those pairs. Here's a list of all the methods available on the `Map` object:
+
+1. Map constructor
+   ```javascript
+   let map1 = new Map([['key1', 'value1'], ['key2', 'value2']]);
+   let map2 = new Map();
+   ```
+
+2. set(key, value)
+   ```javascript
+   let myMap = new Map();
+   myMap.set('key1', 'value1');
+   myMap.set(42, 'answer');
+   console.log(myMap); // Map(2) {"key1" => "value1", 42 => "answer"}
+   ```
+
+3. get(key)
+   ```javascript
+   let myMap = new Map([['key1', 'value1'], ['key2', 'value2']]);
+   console.log(myMap.get('key1')); // "value1"
+   console.log(myMap.get('key3')); // undefined
+   ```
+
+4. has(key)
+   ```javascript
+   let myMap = new Map([['key1', 'value1'], ['key2', 'value2']]);
+   console.log(myMap.has('key1')); // true
+   console.log(myMap.has('key3')); // false
+   ```
+
+5. delete(key)
+   ```javascript
+   let myMap = new Map([['key1', 'value1'], ['key2', 'value2']]);
+   myMap.delete('key1');
+   console.log(myMap); // Map(1) {"key2" => "value2"}
+   ```
+
+6. clear()
+   ```javascript
+   let myMap = new Map([['key1', 'value1'], ['key2', 'value2']]);
+   myMap.clear();
+   console.log(myMap); // Map(0) {}
+   ```
+
+7. size
+   ```javascript
+   let myMap = new Map([['key1', 'value1'], ['key2', 'value2']]);
+   console.log(myMap.size); // 2
+   ```
+
+8. forEach(callbackFn[, thisArg])
+   ```javascript
+   let myMap = new Map([['key1', 'value1'], ['key2', 'value2']]);
+   myMap.forEach((value, key) => {
+     console.log(key + ' = ' + value);
+   });
+   // Output:
+   // key1 = value1
+   // key2 = value2
+   ```
+
+9. keys()
+   ```javascript
+   let myMap = new Map([['key1', 'value1'], ['key2', 'value2']]);
+   let iterator = myMap.keys();
+   console.log(iterator.next().value); // "key1"
+   console.log(iterator.next().value); // "key2"
+   ```
+
+10. values()
+    ```javascript
+    let myMap = new Map([['key1', 'value1'], ['key2', 'value2']]);
+    let iterator = myMap.values();
+    console.log(iterator.next().value); // "value1"
+    console.log(iterator.next().value); // "value2"
+    ```
+
+11. entries()
+    ```javascript
+    let myMap = new Map([['key1', 'value1'], ['key2', 'value2']]);
+    let iterator = myMap.entries();
+    console.log(iterator.next().value); // ["key1", "value1"]
+    console.log(iterator.next().value); // ["key2", "value2"]
+    ```
+
+12. [Symbol.iterator]
+    ```javascript
+    let myMap = new Map([['key1', 'value1'], ['key2', 'value2']]);
+    for (let [key, value] of myMap) {
+      console.log(key + ' = ' + value);
+    }
+    // Output:
+    // key1 = value1
+    // key2 = value2
+    ```
+
+13. Map.prototype[@@iterator]()
+    ```javascript
+    let myMap = new Map([['key1', 'value1'], ['key2', 'value2']]);
+    let iterator = myMap[Symbol.iterator]();
+    console.log(iterator.next().value); // ["key1", "value1"]
+    console.log(iterator.next().value); // ["key2", "value2"]
+    ```
+
+Additional utility methods (not part of the Map prototype, but useful for Map operations):
+
+14. Creating a Map from an Object
+    ```javascript
+    let obj = { key1: 'value1', key2: 'value2' };
+    let map = new Map(Object.entries(obj));
+    console.log(map); // Map(2) {"key1" => "value1", "key2" => "value2"}
+    ```
+
+15. Converting a Map to an Object
+    ```javascript
+    let myMap = new Map([['key1', 'value1'], ['key2', 'value2']]);
+    let obj = Object.fromEntries(myMap);
+    console.log(obj); // { key1: "value1", key2: "value2" }
+    ```
+
+16. Merging two Maps
+    ```javascript
+    let map1 = new Map([['key1', 'value1'], ['key2', 'value2']]);
+    let map2 = new Map([['key2', 'newValue2'], ['key3', 'value3']]);
+    let mergedMap = new Map([...map1, ...map2]);
+    console.log(mergedMap);
+    // Map(3) {"key1" => "value1", "key2" => "newValue2", "key3" => "value3"}
+    ```
+
+Remember that Maps in JavaScript maintain insertion order, can use any value (including objects) as keys, and are iterable. They're often preferred over plain objects when you need a simple key/value store with more predictable behavior.
+
+### 6.`Promise`
+
+In JavaScript, the `Promise` object has several methods that are used for handling asynchronous operations. Here are the methods available on the `Promise` class:
+
+1. Promise constructor
+   ```javascript
+   let promise = new Promise((resolve, reject) => {
+     setTimeout(() => {
+       resolve("Success!");
+     }, 1000);
+   });
+   ```
+
+2. Promise.resolve()
+   ```javascript
+   let resolvedPromise = Promise.resolve("Already resolved");
+   resolvedPromise.then(value => console.log(value)); // "Already resolved"
+   ```
+
+3. Promise.reject()
+   ```javascript
+   let rejectedPromise = Promise.reject(new Error("Failure"));
+   rejectedPromise.catch(error => console.log(error.message)); // "Failure"
+   ```
+
+4. then()
+   ```javascript
+   let promise = Promise.resolve("Success");
+   promise.then(
+     value => console.log(value), // "Success"
+     error => console.log(error)
+   );
+   ```
+
+5. catch()
+   ```javascript
+   let promise = Promise.reject(new Error("Failure"));
+   promise.catch(error => console.log(error.message)); // "Failure"
+   ```
+
+6. finally()
+   ```javascript
+   let promise = Promise.resolve("Success");
+   promise
+     .finally(() => console.log("This runs regardless of success or failure"))
+     .then(value => console.log(value));
+   ```
+
+7. Promise.all()
+   ```javascript
+   let promise1 = Promise.resolve(1);
+   let promise2 = Promise.resolve(2);
+   let promise3 = Promise.resolve(3);
+
+   Promise.all([promise1, promise2, promise3])
+     .then(values => console.log(values)); // [1, 2, 3]
+   ```
+
+8. Promise.race()
+   ```javascript
+   let promise1 = new Promise(resolve => setTimeout(() => resolve("one"), 500));
+   let promise2 = new Promise(resolve => setTimeout(() => resolve("two"), 100));
+
+   Promise.race([promise1, promise2])
+     .then(value => console.log(value)); // "two"
+   ```
+
+9. Promise.allSettled()
+   ```javascript
+   let promise1 = Promise.resolve(1);
+   let promise2 = Promise.reject("error");
+   let promise3 = Promise.resolve(3);
+
+   Promise.allSettled([promise1, promise2, promise3])
+     .then(results => console.log(results));
+   // [
+   //   { status: "fulfilled", value: 1 },
+   //   { status: "rejected", reason: "error" },
+   //   { status: "fulfilled", value: 3 }
+   // ]
+   ```
+
+10. Promise.any()
+    ```javascript
+    let promise1 = Promise.reject("error");
+    let promise2 = new Promise(resolve => setTimeout(() => resolve("slow"), 500));
+    let promise3 = Promise.resolve("quick");
+
+    Promise.any([promise1, promise2, promise3])
+      .then(value => console.log(value)); // "quick"
+    ```
+
+11. Promise chaining
+    ```javascript
+    new Promise((resolve, reject) => {
+      setTimeout(() => resolve(1), 1000);
+    }).then(result => {
+      console.log(result); // 1
+      return result * 2;
+    }).then(result => {
+      console.log(result); // 2
+      return result * 2;
+    }).then(result => {
+      console.log(result); // 4
+    });
+    ```
+
+12. Async/Await (syntactic sugar for Promises)
+    ```javascript
+    async function fetchData() {
+      try {
+        let response = await fetch('https://api.example.com/data');
+        let data = await response.json();
+        console.log(data);
+      } catch (error) {
+        console.log('Error:', error);
+      }
+    }
+
+    fetchData();
+    ```
+
+13. Promise.prototype.then() vs. Promise.prototype.catch()
+    ```javascript
+    Promise.reject('error')
+      .then(() => console.log('Success'),
+            error => console.log('Error:', error))
+      .catch(error => console.log('Caught:', error));
+    // Output: "Error: error"
+    ```
+
+14. Using Promise.resolve() to create a Promise from a value
+    ```javascript
+    let cache = new Map();
+    function getCachedData(key) {
+      if (cache.has(key)) {
+        return Promise.resolve(cache.get(key));
+      }
+      // Fetch data if not in cache
+      return fetchDataFromServer(key);
+    }
+    ```
+
+Remember that Promises are a powerful tool for handling asynchronous operations in JavaScript. They provide a cleaner and more manageable way to work with callbacks and help avoid the "callback hell" problem. The introduction of async/await syntax has made working with Promises even more straightforward in many cases.
+
+### 7.`Proxy`
+
+Proxy handlers are objects that define custom behavior for fundamental operations (e.g., property lookup, assignment, enumeration, etc.). Here are some of the most commonly used Proxy handlers:
+
+Certainly! Here's a comprehensive list of methods (traps) in the Proxy class in JavaScript, along with explanations and examples:
+
+1. Proxy Constructor
+   Explanation: Creates a new Proxy object that wraps a target object and can intercept fundamental operations.
+
+   Example:
+   ```javascript
+   let target = {};
+   let handler = {};
+   let proxy = new Proxy(target, handler);
+   ```
+
+2. get
+   Explanation: Intercepts property access operations.
+
+   Example:
+   ```javascript
+   let target = { name: 'John' };
+   let handler = {
+     get: function(target, prop) {
+       console.log(`Accessing property: ${prop}`);
+       return prop in target ? target[prop] : 'Not found';
+     }
+   };
+   let proxy = new Proxy(target, handler);
+   console.log(proxy.name); // Logs: "Accessing property: name", then "John"
+   console.log(proxy.age);  // Logs: "Accessing property: age", then "Not found"
+   ```
+
+3. set
+   Explanation: Intercepts property assignment operations.
+
+   Example:
+   ```javascript
+   let target = {};
+   let handler = {
+     set: function(target, prop, value) {
+       if (typeof value !== 'number') {
+         throw new TypeError('The value must be a number');
+       }
+       target[prop] = value;
+       return true;
+     }
+   };
+   let proxy = new Proxy(target, handler);
+   proxy.age = 30; // Works fine
+   proxy.name = 'John'; // Throws TypeError
+   ```
+
+4. has
+   Explanation: Intercepts the 'in' operator.
+
+   Example:
+   ```javascript
+   let target = { name: 'John', age: 30 };
+   let handler = {
+     has: function(target, prop) {
+       console.log(`Checking for property: ${prop}`);
+       return prop in target;
+     }
+   };
+   let proxy = new Proxy(target, handler);
+   console.log('name' in proxy); // Logs: "Checking for property: name", then true
+   ```
+
+5. deleteProperty
+   Explanation: Intercepts the 'delete' operator.
+
+   Example:
+   ```javascript
+   let target = { name: 'John', age: 30 };
+   let handler = {
+     deleteProperty: function(target, prop) {
+       console.log(`Attempting to delete: ${prop}`);
+       if (prop === 'name') return false;
+       delete target[prop];
+       return true;
+     }
+   };
+   let proxy = new Proxy(target, handler);
+   delete proxy.age; // Logs: "Attempting to delete: age", returns true
+   delete proxy.name; // Logs: "Attempting to delete: name", returns false
+   ```
+
+6. apply
+   Explanation: Intercepts function calls.
+
+   Example:
+   ```javascript
+   function sum(a, b) { return a + b; }
+   let handler = {
+     apply: function(target, thisArg, argumentsList) {
+       console.log(`Calling function with args: ${argumentsList}`);
+       return target.apply(thisArg, argumentsList);
+     }
+   };
+   let proxy = new Proxy(sum, handler);
+   console.log(proxy(1, 2)); // Logs: "Calling function with args: 1,2", then 3
+   ```
+
+7. construct
+   Explanation: Intercepts 'new' operations.
+
+   Example:
+   ```javascript
+   function User(name) { this.name = name; }
+   let handler = {
+     construct: function(target, args) {
+       console.log(`Creating new instance with args: ${args}`);
+       return new target(...args);
+     }
+   };
+   let UserProxy = new Proxy(User, handler);
+   let user = new UserProxy('John'); // Logs: "Creating new instance with args: John"
+   ```
+
+8. getOwnPropertyDescriptor
+   Explanation: Intercepts Object.getOwnPropertyDescriptor.
+
+   Example:
+   ```javascript
+   let target = { name: 'John' };
+   let handler = {
+     getOwnPropertyDescriptor: function(target, prop) {
+       console.log(`Getting descriptor for: ${prop}`);
+       return { configurable: true, enumerable: true, value: target[prop] };
+     }
+   };
+   let proxy = new Proxy(target, handler);
+   console.log(Object.getOwnPropertyDescriptor(proxy, 'name'));
+   // Logs: "Getting descriptor for: name", then the descriptor object
+   ```
+
+9. defineProperty
+   Explanation: Intercepts Object.defineProperty.
+
+   Example:
+   ```javascript
+   let target = {};
+   let handler = {
+     defineProperty: function(target, prop, descriptor) {
+       console.log(`Defining property: ${prop}`);
+       return Object.defineProperty(target, prop, descriptor);
+     }
+   };
+   let proxy = new Proxy(target, handler);
+   Object.defineProperty(proxy, 'name', { value: 'John' });
+   // Logs: "Defining property: name"
+   ```
+
+10. getPrototypeOf
+    Explanation: Intercepts Object.getPrototypeOf.
+
+    Example:
+    ```javascript
+    let target = {};
+    let handler = {
+      getPrototypeOf: function(target) {
+        console.log('Getting prototype');
+        return Array.prototype;
+      }
+    };
+    let proxy = new Proxy(target, handler);
+    console.log(Object.getPrototypeOf(proxy) === Array.prototype);
+    // Logs: "Getting prototype", then true
+    ```
+
+11. setPrototypeOf
+    Explanation: Intercepts Object.setPrototypeOf.
+
+    Example:
+    ```javascript
+    let target = {};
+    let handler = {
+      setPrototypeOf: function(target, proto) {
+        console.log(`Setting prototype to: ${proto}`);
+        return Object.setPrototypeOf(target, proto);
+      }
+    };
+    let proxy = new Proxy(target, handler);
+    Object.setPrototypeOf(proxy, Array.prototype);
+    // Logs: "Setting prototype to: [object Array]"
+    ```
+
+12. isExtensible
+    Explanation: Intercepts Object.isExtensible.
+
+    Example:
+    ```javascript
+    let target = {};
+    let handler = {
+      isExtensible: function(target) {
+        console.log('Checking if object is extensible');
+        return Object.isExtensible(target);
+      }
+    };
+    let proxy = new Proxy(target, handler);
+    console.log(Object.isExtensible(proxy));
+    // Logs: "Checking if object is extensible", then true
+    ```
+
+13. preventExtensions
+    Explanation: Intercepts Object.preventExtensions.
+
+    Example:
+    ```javascript
+    let target = {};
+    let handler = {
+      preventExtensions: function(target) {
+        console.log('Preventing extensions');
+        Object.preventExtensions(target);
+        return true;
+      }
+    };
+    let proxy = new Proxy(target, handler);
+    Object.preventExtensions(proxy);
+    // Logs: "Preventing extensions"
+    ```
+
+14. ownKeys
+    Explanation: Intercepts Object.getOwnPropertyNames and Object.getOwnPropertySymbols.
+
+    Example:
+    ```javascript
+    let target = { a: 1, b: 2, c: 3 };
+    let handler = {
+      ownKeys: function(target) {
+        console.log('Getting own keys');
+        return ['a', 'c'];
+      }
+    };
+    let proxy = new Proxy(target, handler);
+    console.log(Object.keys(proxy));
+    // Logs: "Getting own keys", then ['a', 'c']
+    ```
+
+These Proxy traps provide powerful ways to intercept and customize fundamental operations on objects, enabling advanced patterns like validation, logging, access control, and more.
+
+These methods allow developers to create powerful abstractions and implement complex behaviors:
+
+- Validation: You can validate data before it's set or returned.
+- Default Values: Implement automatic default values for non-existent properties.
+- Logging/Debugging: Log all accesses, modifications, or method calls on an object.
+- Lazy Loading: Load properties only when they're accessed.
+- Access Control: Implement read-only or write-only properties, or restrict access based on conditions.
+- Virtual Properties: Create computed properties that don't actually exist on the target object.
+- Data Binding: Automatically update UI or trigger events when data changes.
+- Meta-Programming: Implement powerful meta-programming techniques by intercepting fundamental object operations.
+
+Proxies provide a powerful way to customize object behavior at a fundamental level, enabling patterns and techniques that would be difficult or impossible to implement otherwise.
+
+### 8.`Reflect`
+
+Reflect provides methods to perform default operations for those same fundamental operations. Here are some of the most commonly used Reflect methods:
+
+The Reflect object in JavaScript provides methods for interceptable JavaScript operations. Here's a list of methods in the Reflect class, along with explanations and examples:
+
+1. Reflect.apply(target, thisArgument, argumentsList)
+   Explanation: Calls a target function with given this value and arguments.
+
+   Example:
+   ```javascript
+   function sum(a, b) { return a + b; }
+   console.log(Reflect.apply(sum, null, [1, 2])); // 3
+   ```
+
+2. Reflect.construct(target, argumentsList[, newTarget])
+   Explanation: Acts like the new operator, but as a function. It is equivalent to calling new target(...argumentsList).
+
+   Example:
+   ```javascript
+   function User(name) { this.name = name; }
+   let user = Reflect.construct(User, ['John']);
+   console.log(user.name); // "John"
+   ```
+
+3. Reflect.defineProperty(target, propertyKey, attributes)
+   Explanation: Similar to Object.defineProperty(), but returns a Boolean.
+
+   Example:
+   ```javascript
+   let obj = {};
+   Reflect.defineProperty(obj, 'name', { value: 'John', writable: false });
+   console.log(obj.name); // "John"
+   obj.name = 'Jane'; // Won't change
+   console.log(obj.name); // Still "John"
+   ```
+
+4. Reflect.deleteProperty(target, propertyKey)
+   Explanation: The delete operator as a function. Equivalent to delete target[propertyKey].
+
+   Example:
+   ```javascript
+   let obj = { x: 1, y: 2 };
+   Reflect.deleteProperty(obj, 'x');
+   console.log(obj); // { y: 2 }
+   ```
+
+5. Reflect.get(target, propertyKey[, receiver])
+   Explanation: Returns the value of the property. Works like getting a property from an object (target[propertyKey]) as a function.
+
+   Example:
+   ```javascript
+   let obj = { x: 1, y: 2 };
+   console.log(Reflect.get(obj, 'x')); // 1
+   ```
+
+6. Reflect.getOwnPropertyDescriptor(target, propertyKey)
+   Explanation: Similar to Object.getOwnPropertyDescriptor(). Returns a property descriptor of the given property if it exists on the object, undefined otherwise.
+
+   Example:
+   ```javascript
+   let obj = { x: 1 };
+   console.log(Reflect.getOwnPropertyDescriptor(obj, 'x'));
+   // { value: 1, writable: true, enumerable: true, configurable: true }
+   ```
+
+7. Reflect.getPrototypeOf(target)
+   Explanation: Same as Object.getPrototypeOf().
+
+   Example:
+   ```javascript
+   let arr = [];
+   console.log(Reflect.getPrototypeOf(arr) === Array.prototype); // true
+   ```
+
+8. Reflect.has(target, propertyKey)
+   Explanation: Works like the in operator as a function. Returns a boolean indicating whether the property exists.
+
+   Example:
+   ```javascript
+   let obj = { x: 1 };
+   console.log(Reflect.has(obj, 'x')); // true
+   console.log(Reflect.has(obj, 'y')); // false
+   ```
+
+9. Reflect.isExtensible(target)
+   Explanation: Same as Object.isExtensible(). Determines if an object is extensible.
+
+   Example:
+   ```javascript
+   let obj = {};
+   console.log(Reflect.isExtensible(obj)); // true
+   Object.freeze(obj);
+   console.log(Reflect.isExtensible(obj)); // false
+   ```
+
+10. Reflect.ownKeys(target)
+    Explanation: Returns an array of the target object's own property keys.
+
+    Example:
+    ```javascript
+    let obj = { x: 1, y: 2 };
+    console.log(Reflect.ownKeys(obj)); // ['x', 'y']
+    ```
+
+11. Reflect.preventExtensions(target)
+    Explanation: Similar to Object.preventExtensions(). Prevents new properties from ever being added to an object.
+
+    Example:
+    ```javascript
+    let obj = { x: 1 };
+    Reflect.preventExtensions(obj);
+    obj.y = 2; // This won't work
+    console.log(obj); // { x: 1 }
+    ```
+
+12. Reflect.set(target, propertyKey, value[, receiver])
+    Explanation: A function that assigns values to properties. Returns a boolean that is true if the update was successful.
+
+    Example:
+    ```javascript
+    let obj = { x: 1 };
+    Reflect.set(obj, 'y', 2);
+    console.log(obj); // { x: 1, y: 2 }
+    ```
+
+13. Reflect.setPrototypeOf(target, prototype)
+    Explanation: Sets the prototype of a specified object to another object or null. Returns a boolean indicating whether the operation was successful.
+
+    Example:
+    ```javascript
+    let obj = {};
+    Reflect.setPrototypeOf(obj, Array.prototype);
+    obj.push(1);
+    console.log(obj); // [1]
+    ```
+
+These Reflect methods provide a way to control object behavior that is more consistent with other parts of the language. They're often used in conjunction with Proxies to implement custom object behaviors and can be particularly useful in meta-programming scenarios.
+
+### 9.`Number`
+Here's a list of key methods available in the Number class in JavaScript, along with explanations and examples:
+
+1. `Number.isFinite(value)`
+   Determines whether a value is a finite number.
+
+   Example:
+   ```javascript
+   console.log(Number.isFinite(42)); // true
+   console.log(Number.isFinite(Infinity)); // false
+   console.log(Number.isFinite(NaN)); // false
+   ```
+
+2. `Number.isInteger(value)`
+   Determines whether a value is an integer.
+
+   Example:
+   ```javascript
+   console.log(Number.isInteger(5)); // true
+   console.log(Number.isInteger(5.5)); // false
+   ```
+
+3. `Number.isNaN(value)`
+   Determines whether a value is NaN (Not-a-Number).
+
+   Example:
+   ```javascript
+   console.log(Number.isNaN(NaN)); // true
+   console.log(Number.isNaN(5)); // false
+   ```
+
+4. `Number.parseFloat(string)`
+   Parses a string argument and returns a floating-point number.
+
+   Example:
+   ```javascript
+   console.log(Number.parseFloat('3.14')); // 3.14
+   console.log(Number.parseFloat('3.14abc')); // 3.14
+   ```
+
+5. `Number.parseInt(string, radix)`
+   Parses a string argument and returns an integer of the specified radix or base.
+
+   Example:
+   ```javascript
+   console.log(Number.parseInt('42', 10)); // 42
+   console.log(Number.parseInt('0xFF', 16)); // 255
+   ```
+
+6. `Number.prototype.toFixed(digits)`
+   Formats a number using fixed-point notation.
+
+   Example:
+   ```javascript
+   const num = 3.14159;
+   console.log(num.toFixed(2)); // "3.14"
+   ```
+
+7. `Number.prototype.toPrecision(precision)`
+   Returns a string representing the number to the specified precision.
+
+   Example:
+   ```javascript
+   const num = 123.456;
+   console.log(num.toPrecision(4)); // "123.5"
+   ```
+
+8. `Number.prototype.toString(radix)`
+   Returns a string representing the number in the specified radix (base).
+
+   Example:
+   ```javascript
+   const num = 255;
+   console.log(num.toString(16)); // "ff"
+   ```
+
+9. `Number.prototype.toExponential(fractionDigits)`
+   Returns a string representing the number in exponential notation.
+
+   Example:
+   ```javascript
+   const num = 123456;
+   console.log(num.toExponential(2)); // "1.23e+5"
+   ```
+
+These methods cover the main functionality provided by the Number class in JavaScript. Would you like me to elaborate on any of these methods or provide more examples?
+
+### 10.`Boolean`
+The Boolean class in JavaScript is relatively simple and has fewer methods compared to other primitive types. Here's a list of the key methods and properties available for Boolean objects, along with explanations and examples:
+
+1. `Boolean(value)`
+   This is actually a function that can be used to convert a value to a boolean.
+
+   Example:
+   ```javascript
+   console.log(Boolean(1)); // true
+   console.log(Boolean(0)); // false
+   console.log(Boolean('')); // false
+   console.log(Boolean('hello')); // true
+   ```
+
+2. `Boolean.prototype.toString()`
+   Returns a string representation of the boolean.
+
+   Example:
+   ```javascript
+   const bool = new Boolean(true);
+   console.log(bool.toString()); // "true"
+
+   const bool2 = false;
+   console.log(bool2.toString()); // "false"
+   ```
+
+3. `Boolean.prototype.valueOf()`
+   Returns the primitive value of the Boolean object.
+
+   Example:
+   ```javascript
+   const bool = new Boolean(true);
+   console.log(bool.valueOf()); // true
+
+   const bool2 = new Boolean(false);
+   console.log(bool2.valueOf()); // false
+   ```
+
+It's important to note that while these methods exist, it's generally not recommended to use the Boolean object constructor (`new Boolean()`) in practice. Instead, it's better to use boolean primitives (`true` and `false`) directly.
+
+Here's an example illustrating why:
+
+```javascript
+const x = new Boolean(false);
+if (x) {
+  console.log("This will be executed, even though x was created with false!");
+}
+```
+
+In this case, the condition is true because `x` is an object, and all objects are truthy in JavaScript. This can lead to confusing behavior.
+
+Instead, you should use boolean primitives:
+
+```javascript
+const x = false;
+if (x) {
+  console.log("This won't be executed");
+} else {
+  console.log("This will be executed");
+}
+```
+
+While the Boolean class has fewer methods compared to other JavaScript classes, understanding these methods and the behavior of Boolean objects versus boolean primitives is crucial for writing clear and correct JavaScript code.
+
+Would you like me to elaborate on any aspect of working with booleans in JavaScript?
+
+### 11.`Function`
+ The Function class in JavaScript is fundamental to the language's design, as functions are first-class objects. Here's a list of key methods and properties available for Function objects, along with explanations and examples:
+
+1. `Function.prototype.apply(thisArg, [argsArray])`
+   Calls a function with a given `this` value and arguments provided as an array.
+
+   Example:
+   ```javascript
+   function greet(greeting, punctuation) {
+     console.log(greeting + ', ' + this.name + punctuation);
+   }
+
+   const person = { name: 'Alice' };
+   greet.apply(person, ['Hello', '!']); // Output: Hello, Alice!
+   ```
+
+2. `Function.prototype.call(thisArg, arg1, arg2, ...)`
+   Similar to `apply()`, but arguments are passed individually.
+
+   Example:
+   ```javascript
+   function greet(greeting, punctuation) {
+     console.log(greeting + ', ' + this.name + punctuation);
+   }
+
+   const person = { name: 'Bob' };
+   greet.call(person, 'Hi', '?'); // Output: Hi, Bob?
+   ```
+
+3. `Function.prototype.bind(thisArg, arg1, arg2, ...)`
+   Creates a new function with a fixed `this` value and optionally preset arguments.
+
+   Example:
+   ```javascript
+   function greet(greeting) {
+     console.log(greeting + ', ' + this.name);
+   }
+
+   const person = { name: 'Charlie' };
+   const greetCharlie = greet.bind(person);
+   greetCharlie('Hello'); // Output: Hello, Charlie
+   ```
+
+4. `Function.prototype.toString()`
+   Returns a string representing the source code of the function.
+
+   Example:
+   ```javascript
+   function add(a, b) { return a + b; }
+   console.log(add.toString());
+   // Output: function add(a, b) { return a + b; }
+   ```
+
+5. `Function.prototype.length`
+   Returns the number of parameters expected by the function.
+
+   Example:
+   ```javascript
+   function func1(a) {}
+   function func2(a, b) {}
+   console.log(func1.length); // 1
+   console.log(func2.length); // 2
+   ```
+
+6. `Function.prototype.name`
+   Returns the name of the function.
+
+   Example:
+   ```javascript
+   function myFunction() {}
+   console.log(myFunction.name); // "myFunction"
+
+   const myArrowFunction = () => {};
+   console.log(myArrowFunction.name); // "myArrowFunction"
+   ```
+
+7. `Function.prototype[@@hasInstance]`
+   Determines if a constructor object recognizes an object as its instance.
+
+   Example:
+   ```javascript
+   class MyClass {}
+   const obj = new MyClass();
+   console.log(MyClass[Symbol.hasInstance](obj)); // true
+   ```
+
+8. `new Function([arg1[, arg2[, ...argN]],] functionBody)`
+   Creates a new Function object from a string.
+
+   Example:
+   ```javascript
+   const sum = new Function('a', 'b', 'return a + b');
+   console.log(sum(2, 3)); // 5
+   ```
+
+It's worth noting that while the `new Function()` constructor exists, it's generally not recommended for regular use due to security and performance concerns. It's better to declare functions using function declarations or expressions.
+
+These methods and properties provide powerful ways to work with functions in JavaScript, enabling dynamic function creation, context binding, and introspection. They're particularly useful in advanced scenarios involving meta-programming or when working with libraries that make heavy use of function manipulation.
+
+Would you like me to elaborate on any of these methods or provide more complex examples of their usage?
+
+### 12.`Date`
+ The Date class in JavaScript provides a wide range of methods for working with dates and times. Here's a list of key methods available in the Date class, along with explanations and examples:
+
+1. `Date.now()`
+   Returns the number of milliseconds elapsed since January 1, 1970.
+
+   Example:
+   ```javascript
+   console.log(Date.now()); // e.g., 1631234567890
+   ```
+
+2. `Date.parse(dateString)`
+   Parses a date string and returns the number of milliseconds since January 1, 1970.
+
+   Example:
+   ```javascript
+   console.log(Date.parse('2023-09-07T12:00:00Z')); // 1694088000000
+   ```
+
+3. `new Date()` (constructor)
+   Creates a new Date object.
+
+   Example:
+   ```javascript
+   const now = new Date();
+   const specific = new Date('2023-09-07T12:00:00Z');
+   console.log(now);
+   console.log(specific);
+   ```
+
+4. `Date.prototype.getFullYear()`
+   Returns the year of the date.
+
+   Example:
+   ```javascript
+   const date = new Date('2023-09-07');
+   console.log(date.getFullYear()); // 2023
+   ```
+
+5. `Date.prototype.getMonth()`
+   Returns the month (0-11) of the date.
+
+   Example:
+   ```javascript
+   const date = new Date('2023-09-07');
+   console.log(date.getMonth()); // 8 (September is month 8)
+   ```
+
+6. `Date.prototype.getDate()`
+   Returns the day of the month (1-31).
+
+   Example:
+   ```javascript
+   const date = new Date('2023-09-07');
+   console.log(date.getDate()); // 7
+   ```
+
+7. `Date.prototype.getDay()`
+   Returns the day of the week (0-6, where 0 is Sunday).
+
+   Example:
+   ```javascript
+   const date = new Date('2023-09-07');
+   console.log(date.getDay()); // 4 (Thursday)
+   ```
+
+8. `Date.prototype.getHours()`
+   Returns the hour (0-23) of the date.
+
+   Example:
+   ```javascript
+   const date = new Date('2023-09-07T15:30:00');
+   console.log(date.getHours()); // 15
+   ```
+
+9. `Date.prototype.getMinutes()`
+   Returns the minutes (0-59) of the date.
+
+   Example:
+   ```javascript
+   const date = new Date('2023-09-07T15:30:00');
+   console.log(date.getMinutes()); // 30
+   ```
+
+10. `Date.prototype.getSeconds()`
+    Returns the seconds (0-59) of the date.
+
+    Example:
+    ```javascript
+    const date = new Date('2023-09-07T15:30:45');
+    console.log(date.getSeconds()); // 45
+    ```
+
+11. `Date.prototype.getTime()`
+    Returns the number of milliseconds since January 1, 1970.
+
+    Example:
+    ```javascript
+    const date = new Date('2023-09-07T12:00:00Z');
+    console.log(date.getTime()); // 1694088000000
+    ```
+
+12. `Date.prototype.setFullYear(year[, month[, day]])`
+    Sets the year of the date.
+
+    Example:
+    ```javascript
+    const date = new Date('2023-09-07');
+    date.setFullYear(2024);
+    console.log(date); // 2024-09-07T00:00:00.000Z
+    ```
+
+13. `Date.prototype.toISOString()`
+    Returns a string representation of the date in ISO format.
+
+    Example:
+    ```javascript
+    const date = new Date('2023-09-07T12:30:00Z');
+    console.log(date.toISOString()); // "2023-09-07T12:30:00.000Z"
+    ```
+
+14. `Date.prototype.toLocaleString()`
+    Returns a string with a language-sensitive representation of the date.
+
+    Example:
+    ```javascript
+    const date = new Date('2023-09-07T12:30:00');
+    console.log(date.toLocaleString('en-US')); // "9/7/2023, 12:30:00 PM"
+    ```
+
+These methods cover the main functionality provided by the Date class in JavaScript. There are also corresponding "set" methods for most of the "get" methods (e.g., `setMonth()`, `setDate()`, etc.).
+
+### 13.`RegExp`
+
+ The RegExp class in JavaScript provides methods for working with regular expressions. Here's a list of the key methods available in the RegExp class, along with explanations and examples:
+
+1. `RegExp.prototype.test(string)`
+   Tests for a match in a string. Returns true or false.
+
+   Example:
+   ```javascript
+   const regex = /hello/i;
+   console.log(regex.test('Hello, world!')); // true
+   console.log(regex.test('Goodbye!')); // false
+   ```
+
+2. `RegExp.prototype.exec(string)`
+   Executes a search for a match in a string. Returns an array of information or null.
+
+   Example:
+   ```javascript
+   const regex = /(\d{3})-(\d{3})-(\d{4})/;
+   const result = regex.exec('Call me at 123-456-7890');
+   console.log(result);
+   // Output: ['123-456-7890', '123', '456', '7890', index: 11, input: 'Call me at 123-456-7890', groups: undefined]
+   ```
+
+3. `RegExp.prototype.toString()`
+   Returns a string representation of the regular expression.
+
+   Example:
+   ```javascript
+   const regex = /hello/i;
+   console.log(regex.toString()); // "/hello/i"
+   ```
+
+4. `RegExp.prototype.source`
+   Returns the text of the pattern, without the forward slashes and flags.
+
+   Example:
+   ```javascript
+   const regex = /hello/i;
+   console.log(regex.source); // "hello"
+   ```
+
+5. `RegExp.prototype.flags`
+   Returns a string containing the flags of the regular expression.
+
+   Example:
+   ```javascript
+   const regex = /hello/gi;
+   console.log(regex.flags); // "gi"
+   ```
+
+6. `RegExp.prototype.global`
+   A boolean indicating whether the "g" flag is set.
+
+   Example:
+   ```javascript
+   const regex1 = /hello/g;
+   const regex2 = /hello/;
+   console.log(regex1.global); // true
+   console.log(regex2.global); // false
+   ```
+
+7. `RegExp.prototype.ignoreCase`
+   A boolean indicating whether the "i" flag is set.
+
+   Example:
+   ```javascript
+   const regex1 = /hello/i;
+   const regex2 = /hello/;
+   console.log(regex1.ignoreCase); // true
+   console.log(regex2.ignoreCase); // false
+   ```
+
+8. `RegExp.prototype.multiline`
+   A boolean indicating whether the "m" flag is set.
+
+   Example:
+   ```javascript
+   const regex1 = /hello/m;
+   const regex2 = /hello/;
+   console.log(regex1.multiline); // true
+   console.log(regex2.multiline); // false
+   ```
+
+9. `RegExp.prototype.lastIndex`
+   The index at which to start the next match. Only used with the `g` flag.
+
+   Example:
+   ```javascript
+   const regex = /\d+/g;
+   const str = '123 456 789';
+   console.log(regex.exec(str)); // ['123', index: 0, ...]
+   console.log(regex.lastIndex); // 3
+   console.log(regex.exec(str)); // ['456', index: 4, ...]
+   ```
+
+10. `RegExp.prototype[@@match](str)`
+    Internal method to match a regular expression against a string.
+
+    Example:
+    ```javascript
+    const regex = /\d+/g;
+    console.log('123 456 789'.match(regex)); // ['123', '456', '789']
+    ```
+
+11. `RegExp.prototype[@@matchAll](str)`
+    Internal method to match all occurrences of a regular expression in a string.
+
+    Example:
+    ```javascript
+    const regex = /\d+/g;
+    const str = '123 456 789';
+    const matches = str.matchAll(regex);
+    for (const match of matches) {
+      console.log(match);
+    }
+    // Output:
+    // ['123', index: 0, input: '123 456 789', groups: undefined]
+    // ['456', index: 4, input: '123 456 789', groups: undefined]
+    // ['789', index: 8, input: '123 456 789', groups: undefined]
+    ```
+
+It's worth noting that while these methods are part of the RegExp prototype, many of them are typically used via String methods that internally call these RegExp methods. For example, `String.prototype.match()`, `String.prototype.replace()`, and `String.prototype.split()` all work with regular expressions.
+
+### 14.`WeakSet`
+
+The WeakSet class in JavaScript is a collection that can only store object references weakly. It has a limited set of methods compared to other collection types. Here's a list of the available methods for WeakSet, along with explanations and examples:
+
+1. `WeakSet()` (constructor)
+   Creates a new WeakSet object.
+
+   Example:
+   ```javascript
+   const ws = new WeakSet();
+   ```
+
+2. `WeakSet.prototype.add(value)`
+   Adds a new object to the WeakSet.
+
+   Example:
+   ```javascript
+   const ws = new WeakSet();
+   const obj = {};
+   ws.add(obj);
+   console.log(ws.has(obj)); // true
+   ```
+
+3. `WeakSet.prototype.delete(value)`
+   Removes the specified object from the WeakSet.
+
+   Example:
+   ```javascript
+   const ws = new WeakSet();
+   const obj = {};
+   ws.add(obj);
+   console.log(ws.has(obj)); // true
+   ws.delete(obj);
+   console.log(ws.has(obj)); // false
+   ```
+
+4. `WeakSet.prototype.has(value)`
+   Returns a boolean indicating whether the object exists in the WeakSet or not.
+
+   Example:
+   ```javascript
+   const ws = new WeakSet();
+   const obj1 = {};
+   const obj2 = {};
+   ws.add(obj1);
+   console.log(ws.has(obj1)); // true
+   console.log(ws.has(obj2)); // false
+   ```
+
+It's important to note some key characteristics of WeakSet:
+
+1. WeakSet can only contain objects. Primitive values are not allowed.
+2. References to objects in a WeakSet are held weakly, which means if there are no other references to an object stored in the WeakSet, it can be garbage collected.
+3. WeakSets are not enumerable, meaning you can't loop over them or get their size.
+4. WeakSets don't have methods like `forEach()`, `values()`, `keys()`, or `entries()`.
+
+Here's an example demonstrating these characteristics:
+
+```javascript
+let ws = new WeakSet();
+
+let obj1 = {};
+let obj2 = {};
+
+ws.add(obj1);
+ws.add(obj2);
+
+console.log(ws.has(obj1)); // true
+console.log(ws.has(obj2)); // true
+
+obj1 = null; // Remove strong reference to obj1
+
+// We can't check if obj1 was garbage collected, but it may be removed from the WeakSet
+
+// This would throw an error:
+// for (let item of ws) { console.log(item); }
+
+// This would also throw an error:
+// console.log(ws.size);
+```
+
+WeakSets are particularly useful in scenarios where you want to associate metadata with objects without preventing those objects from being garbage collected when they're no longer used elsewhere in your program. For example, they can be used to keep track of which objects have been processed in some way, without risking memory leaks.
+
+### 15.`WeakMap`
+ The WeakMap class in JavaScript is a collection of key/value pairs where the keys must be objects and are held weakly. Here's a list of the available methods for WeakMap, along with explanations and examples:
+
+1. `WeakMap()` (constructor)
+   Creates a new WeakMap object.
+
+   Example:
+   ```javascript
+   const wm = new WeakMap();
+   ```
+
+2. `WeakMap.prototype.set(key, value)`
+   Sets the value for the key in the WeakMap. Returns the WeakMap object.
+
+   Example:
+   ```javascript
+   const wm = new WeakMap();
+   const obj = {};
+   wm.set(obj, 'associated data');
+   console.log(wm.get(obj)); // 'associated data'
+   ```
+
+3. `WeakMap.prototype.get(key)`
+   Returns the value associated with the key, or undefined if there is none.
+
+   Example:
+   ```javascript
+   const wm = new WeakMap();
+   const key1 = {};
+   const key2 = {};
+   wm.set(key1, 'value1');
+   console.log(wm.get(key1)); // 'value1'
+   console.log(wm.get(key2)); // undefined
+   ```
+
+4. `WeakMap.prototype.delete(key)`
+   Removes any value associated with the key. Returns true if an element in the WeakMap object existed and has been removed, or false if the element does not exist.
+
+   Example:
+   ```javascript
+   const wm = new WeakMap();
+   const obj = {};
+   wm.set(obj, 'data');
+   console.log(wm.has(obj)); // true
+   wm.delete(obj);
+   console.log(wm.has(obj)); // false
+   ```
+
+5. `WeakMap.prototype.has(key)`
+   Returns a boolean asserting whether a value has been associated with the key in the WeakMap object or not.
+
+   Example:
+   ```javascript
+   const wm = new WeakMap();
+   const key1 = {};
+   const key2 = {};
+   wm.set(key1, 'value');
+   console.log(wm.has(key1)); // true
+   console.log(wm.has(key2)); // false
+   ```
+
+Key characteristics of WeakMap:
+
+1. WeakMap keys must be objects. Primitive data types as keys are not allowed.
+2. WeakMap holds "weak" references to key objects, which means that if there are no other references to the key object, it can be garbage collected.
+3. WeakMaps are not enumerable, meaning you can't loop over them or get their size.
+4. WeakMaps don't have methods like `forEach()`, `values()`, `keys()`, or `entries()`.
+
+Here's an example demonstrating these characteristics:
+
+```javascript
+let wm = new WeakMap();
+
+let obj1 = {};
+let obj2 = {};
+
+wm.set(obj1, 'data for obj1');
+wm.set(obj2, 'data for obj2');
+
+console.log(wm.get(obj1)); // 'data for obj1'
+console.log(wm.has(obj2)); // true
+
+obj1 = null; // Remove strong reference to obj1
+
+// We can't check if obj1 was garbage collected, but it may be removed from the WeakMap
+
+// This would throw an error:
+// for (let [key, value] of wm) { console.log(key, value); }
+
+// This would also throw an error:
+// console.log(wm.size);
+```
+
+WeakMaps are particularly useful in scenarios where you want to associate additional data with objects without preventing those objects from being garbage collected when they're no longer used elsewhere in your program. Some common use cases include:
+
+1. Storing private data for objects
+2. Implementing caches that don't prevent garbage collection
+3. Adding metadata to objects you don't own
+
+Here's a more complex example showing how WeakMap can be used to store private data:
+
+```javascript
+const privateData = new WeakMap();
+
+class Person {
+  constructor(name, age) {
+    privateData.set(this, { name, age });
+  }
+
+  getName() {
+    return privateData.get(this).name;
+  }
+
+  getAge() {
+    return privateData.get(this).age;
+  }
+}
+
+const john = new Person('John', 30);
+console.log(john.getName()); // 'John'
+console.log(john.getAge());  // 30
+
+// The age and name are not directly accessible
+console.log(john.name); // undefined
+console.log(john.age);  // undefined
+
+// When 'john' goes out of scope and is garbage collected,
+// its associated data in the WeakMap will also be eligible for garbage collection
+```
+
+In this example, WeakMap is used to store private data for Person instances. This data is not directly accessible from outside the class, providing a form of encapsulation.
+
+### 16.`Error`
+
+The Error class in JavaScript is used to create error objects. These objects are typically used with the `throw` statement to handle runtime errors. Here's a list of the key properties and methods available in the Error class, along with explanations and examples:
+
+1. `Error()` (constructor)
+   Creates a new Error object.
+
+   Example:
+   ```javascript
+   const error = new Error('This is an error message');
+   console.log(error.message); // 'This is an error message'
+   ```
+
+2. `Error.prototype.message`
+   The error message. This is a property, not a method.
+
+   Example:
+   ```javascript
+   const error = new Error('Oops! Something went wrong');
+   console.log(error.message); // 'Oops! Something went wrong'
+   ```
+
+3. `Error.prototype.name`
+   The name of the error. This is a property, not a method.
+
+   Example:
+   ```javascript
+   const error = new Error('An error occurred');
+   console.log(error.name); // 'Error'
+
+   const typeError = new TypeError('Invalid type');
+   console.log(typeError.name); // 'TypeError'
+   ```
+
+4. `Error.prototype.toString()`
+   Returns a string representation of the error.
+
+   Example:
+   ```javascript
+   const error = new Error('File not found');
+   console.log(error.toString()); // 'Error: File not found'
+   ```
+
+5. `Error.prototype.stack`
+   A non-standard property that contains a stack trace. This is a property, not a method.
+
+   Example:
+   ```javascript
+   function foo() {
+     throw new Error('An error occurred in foo');
+   }
+
+   try {
+     foo();
+   } catch (error) {
+     console.log(error.stack);
+   }
+   // Output might look like:
+   // Error: An error occurred in foo
+   //     at foo (example.js:2:11)
+   //     at example.js:6:5
+   ```
+
+While the Error class itself doesn't have many methods, it's often extended to create more specific error types. JavaScript has several built-in error types that inherit from Error:
+
+- `SyntaxError`
+- `ReferenceError`
+- `TypeError`
+- `RangeError`
+- `URIError`
+- `EvalError`
+
+Here's an example of creating and using a custom error type:
+
+```javascript
+class ValidationError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'ValidationError';
+  }
+}
+
+function validateUser(user) {
+  if (!user.name) {
+    throw new ValidationError('User name is required');
+  }
+  if (user.age < 0) {
+    throw new ValidationError('Age must be a positive number');
+  }
+}
+
+try {
+  validateUser({ name: '', age: -5 });
+} catch (error) {
+  if (error instanceof ValidationError) {
+    console.log('Validation error:', error.message);
+  } else {
+    console.log('An unexpected error occurred:', error);
+  }
+}
+// Output: Validation error: User name is required
+```
+
+In this example, we create a custom `ValidationError` class that extends the built-in `Error` class. We then use this custom error in a `validateUser` function and catch it specifically in our error handling.
+
+It's worth noting that while these are the standard properties and methods, the exact behavior might vary slightly between different JavaScript environments, especially for non-standard properties like `stack`.
+
+Error handling is a crucial part of robust JavaScript programming. Proper use of the Error class and its derivatives can greatly improve the debugging process and the overall reliability of your code.
+
+### 17.`Symbol`
+The Symbol class in JavaScript is a bit unique compared to other primitive types. Symbols are immutable and unique, primarily used as property keys. While Symbol itself is not a class in the traditional sense, it does have some static methods and properties. Here's a list of the key methods and properties related to Symbol, along with explanations and examples:
+
+1. `Symbol(description)`
+   Creates a new Symbol with an optional description.
+
+   Example:
+   ```javascript
+   const sym1 = Symbol();
+   const sym2 = Symbol('mySymbol');
+   console.log(sym2.toString()); // "Symbol(mySymbol)"
+   ```
+
+2. `Symbol.for(key)`
+   Returns a Symbol with the given key from the global Symbol registry, creating it if it doesn't exist.
+
+   Example:
+   ```javascript
+   const globalSym = Symbol.for('myGlobalSymbol');
+   const sameGlobalSym = Symbol.for('myGlobalSymbol');
+   console.log(globalSym === sameGlobalSym); // true
+   ```
+
+3. `Symbol.keyFor(symbol)`
+   Retrieves the key for the given Symbol from the global Symbol registry.
+
+   Example:
+   ```javascript
+   const globalSym = Symbol.for('myGlobalSymbol');
+   console.log(Symbol.keyFor(globalSym)); // "myGlobalSymbol"
+
+   const localSym = Symbol('myLocalSymbol');
+   console.log(Symbol.keyFor(localSym)); // undefined
+   ```
+
+4. `Symbol.prototype.toString()`
+   Returns a string representation of the Symbol.
+
+   Example:
+   ```javascript
+   const sym = Symbol('mySymbol');
+   console.log(sym.toString()); // "Symbol(mySymbol)"
+   ```
+
+5. `Symbol.prototype.valueOf()`
+   Returns the primitive value of the Symbol object.
+
+   Example:
+   ```javascript
+   const sym = Symbol('mySymbol');
+   console.log(sym.valueOf() === sym); // true
+   ```
+
+6. `Symbol.prototype.description`
+   Returns the description of the Symbol.
+
+   Example:
+   ```javascript
+   const sym = Symbol('mySymbol');
+   console.log(sym.description); // "mySymbol"
+   ```
+
+Symbol also provides several well-known symbols as static properties. These are used by various JavaScript features. Here are a few examples:
+
+7. `Symbol.iterator`
+   A method used to define the default iterator for an object.
+
+   Example:
+   ```javascript
+   const myIterable = {};
+   myIterable[Symbol.iterator] = function* () {
+     yield 1;
+     yield 2;
+     yield 3;
+   };
+   console.log([...myIterable]); // [1, 2, 3]
+   ```
+
+8. `Symbol.hasInstance`
+   A method used to determine if a constructor object recognizes an object as its instance.
+
+   Example:
+   ```javascript
+   class MyArray {
+     static [Symbol.hasInstance](instance) {
+       return Array.isArray(instance);
+     }
+   }
+   console.log([] instanceof MyArray); // true
+   ```
+
+9. `Symbol.toPrimitive`
+   A method that converts an object to a primitive value.
+
+   Example:
+   ```javascript
+   const obj = {
+     [Symbol.toPrimitive](hint) {
+       if (hint === 'number') return 42;
+       if (hint === 'string') return 'hello';
+       return true;
+     }
+   };
+   console.log(+obj);    // 42
+   console.log(`${obj}`); // "hello"
+   console.log(obj + ''); // "true"
+   ```
+
+Here's a more complex example demonstrating the use of Symbols for creating "private" object properties:
+
+```javascript
+const nameSymbol = Symbol('name');
+const ageSymbol = Symbol('age');
+
+class Person {
+  constructor(name, age) {
+    this[nameSymbol] = name;
+    this[ageSymbol] = age;
+  }
+
+  introduce() {
+    console.log(`Hi, I'm ${this[nameSymbol]} and I'm ${this[ageSymbol]} years old.`);
+  }
+}
+
+const john = new Person('John', 30);
+john.introduce(); // "Hi, I'm John and I'm 30 years old."
+
+console.log(Object.keys(john)); // []
+console.log(Object.getOwnPropertyNames(john)); // []
+console.log(Object.getOwnPropertySymbols(john)); // [Symbol(name), Symbol(age)]
+
+// The properties are not truly private, but they're not easily accessible
+console.log(john[Object.getOwnPropertySymbols(john)[0]]); // "John"
+```
+
+In this example, we use Symbols as property keys to create properties that are not enumerable and don't show up in most common forms of property inspection, providing a form of "soft privacy".
+
+Symbols play a unique role in JavaScript, offering a way to create non-string property keys and hook into various language behaviors. They're particularly useful in metaprogramming scenarios and when you need to add properties to objects without risking name collisions.
+
+### 18.`ArrayBuffer`
+The ArrayBuffer class in JavaScript represents a fixed-length binary data buffer. It's a low-level data structure that serves as the basis for other typed arrays and data views. Here's a list of the key methods and properties available in the ArrayBuffer class, along with explanations and examples:
+
+1. `ArrayBuffer()` (constructor)
+   Creates a new ArrayBuffer of the specified length in bytes.
+
+   Example:
+   ```javascript
+   const buffer = new ArrayBuffer(16); // Creates a 16-byte buffer
+   console.log(buffer.byteLength); // 16
+   ```
+
+2. `ArrayBuffer.isView(arg)`
+   Returns true if the argument is a view on an ArrayBuffer (like a typed array or DataView).
+
+   Example:
+   ```javascript
+   const buffer = new ArrayBuffer(16);
+   const int32Array = new Int32Array(buffer);
+   console.log(ArrayBuffer.isView(int32Array)); // true
+   console.log(ArrayBuffer.isView(buffer)); // false
+   ```
+
+3. `ArrayBuffer.prototype.slice(begin, end)`
+   Returns a new ArrayBuffer whose contents are a copy of this ArrayBuffer's bytes from begin (inclusive) to end (exclusive).
+
+   Example:
+   ```javascript
+   const buffer = new ArrayBuffer(8);
+   const view = new Uint8Array(buffer);
+   view.set([1, 2, 3, 4, 5, 6, 7, 8]);
+   const sliced = buffer.slice(2, 6);
+   const slicedView = new Uint8Array(sliced);
+   console.log(Array.from(slicedView)); // [3, 4, 5, 6]
+   ```
+
+4. `ArrayBuffer.prototype.byteLength`
+   A read-only property that returns the length of the ArrayBuffer in bytes.
+
+   Example:
+   ```javascript
+   const buffer = new ArrayBuffer(32);
+   console.log(buffer.byteLength); // 32
+   ```
+
+5. `ArrayBuffer.prototype[Symbol.toStringTag]`
+   A read-only property that returns the string "ArrayBuffer".
+
+   Example:
+   ```javascript
+   const buffer = new ArrayBuffer(8);
+   console.log(Object.prototype.toString.call(buffer)); // "[object ArrayBuffer]"
+   ```
+
+Here's a more complex example demonstrating how ArrayBuffer can be used with different views:
+
+```javascript
+// Create a 16-byte buffer
+const buffer = new ArrayBuffer(16);
+
+// Create different views on the same buffer
+const int32View = new Int32Array(buffer);
+const float64View = new Float64Array(buffer);
+const uint8View = new Uint8Array(buffer);
+
+// Set values using one view
+int32View[0] = 42;
+int32View[1] = 100;
+
+// Read values using different views
+console.log(int32View[0]); // 42
+console.log(float64View[0]); // 5.447603722011605e-270 (same bytes interpreted as float64)
+console.log(Array.from(uint8View.slice(0, 8))); // [42, 0, 0, 0, 100, 0, 0, 0]
+
+// Modify the buffer using another view
+uint8View[0] = 255;
+
+// The change is reflected in all views
+console.log(int32View[0]); // 4294967295 (255 in the first byte changes the entire 32-bit integer)
+```
+
+It's important to note that ArrayBuffer itself doesn't provide methods to read or write data. To interact with the data in an ArrayBuffer, you typically use typed array views (like Uint8Array, Int32Array, etc.) or a DataView object.
+
+Here's an example using DataView for more controlled reading and writing:
+
+```javascript
+const buffer = new ArrayBuffer(16);
+const view = new DataView(buffer);
+
+// Writing data
+view.setInt32(0, 42, true); // Write 42 as 32-bit integer at byte offset 0 (little endian)
+view.setFloat64(4, Math.PI, true); // Write PI as 64-bit float at byte offset 4 (little endian)
+
+// Reading data
+console.log(view.getInt32(0, true)); // 42
+console.log(view.getFloat64(4, true)); // 3.141592653589793
+
+// Reading the same data with different interpretations
+console.log(view.getUint8(0)); // 42 (first byte of the 32-bit integer)
+console.log(view.getUint16(0, true)); // 42 (first two bytes of the 32-bit integer)
+```
+
+ArrayBuffers are particularly useful when working with binary data, such as when processing files, performing low-level network operations, or interfacing with WebGL for graphics processing. They provide a way to work with raw binary data in JavaScript, which is otherwise a high-level language that abstracts away most low-level details.
+
+### 19.TypedArray (`Int8Array`, `Uint8Array`, `Float32Array`, etc.)
+
+Certainly. Typed Arrays in JavaScript, such as Int8Array and Uint8Array, provide a way to work with binary data in a more efficient manner. They share many methods and properties. Here's a list of key methods and properties available for Typed Arrays, with explanations and examples:
+
+1. Constructor
+   Creates a new Typed Array of the specified length or from an existing array-like object.
+
+   Examples:
+   ```javascript
+   const int8 = new Int8Array(4);
+   const uint8 = new Uint8Array([1, 2, 3, 4]);
+   ```
+
+2. `TypedArray.from(source[, mapFn[, thisArg]])`
+   Creates a new Typed Array from an array-like or iterable object.
+
+   Example:
+   ```javascript
+   const int16 = Int16Array.from([1, 2, 3, 4], x => x * 2);
+   console.log(Array.from(int16)); // [2, 4, 6, 8]
+   ```
+
+3. `TypedArray.of(...elements)`
+   Creates a new Typed Array with a variable number of arguments.
+
+   Example:
+   ```javascript
+   const float32 = Float32Array.of(1.5, 2.5, 3.5);
+   console.log(Array.from(float32)); // [1.5, 2.5, 3.5]
+   ```
+
+4. `TypedArray.prototype.set(array[, offset])`
+   Stores multiple values in the Typed Array, reading input values from a specified array.
+
+   Example:
+   ```javascript
+   const uint8 = new Uint8Array(5);
+   uint8.set([1, 2, 3], 1);
+   console.log(Array.from(uint8)); // [0, 1, 2, 3, 0]
+   ```
+
+5. `TypedArray.prototype.subarray([begin[, end]])`
+   Returns a new Typed Array on the same ArrayBuffer store, referencing the elements at begin, up to (but not including) end.
+
+   Example:
+   ```javascript
+   const int32 = new Int32Array([1, 2, 3, 4, 5]);
+   const subset = int32.subarray(1, 4);
+   console.log(Array.from(subset)); // [2, 3, 4]
+   ```
+
+6. `TypedArray.prototype.slice([begin[, end]])`
+   Returns a new Typed Array containing the elements in the range from begin to end (not including end).
+
+   Example:
+   ```javascript
+   const uint16 = new Uint16Array([1, 2, 3, 4, 5]);
+   const sliced = uint16.slice(1, 4);
+   console.log(Array.from(sliced)); // [2, 3, 4]
+   ```
+
+7. `TypedArray.prototype.forEach(callbackFn[, thisArg])`
+   Calls a function for each element in the Typed Array.
+
+   Example:
+   ```javascript
+   const int8 = new Int8Array([1, 2, 3]);
+   int8.forEach((value, index) => console.log(`Value at ${index}: ${value}`));
+   // Output:
+   // Value at 0: 1
+   // Value at 1: 2
+   // Value at 2: 3
+   ```
+
+8. `TypedArray.prototype.map(callbackFn[, thisArg])`
+   Creates a new Typed Array with the results of calling a provided function on every element.
+
+   Example:
+   ```javascript
+   const uint8 = new Uint8Array([1, 2, 3]);
+   const doubled = uint8.map(x => x * 2);
+   console.log(Array.from(doubled)); // [2, 4, 6]
+   ```
+
+9. `TypedArray.prototype.filter(callbackFn[, thisArg])`
+   Creates a new Typed Array with all elements that pass the test implemented by the provided function.
+
+   Example:
+   ```javascript
+   const int16 = new Int16Array([1, 2, 3, 4, 5]);
+   const even = int16.filter(x => x % 2 === 0);
+   console.log(Array.from(even)); // [2, 4]
+   ```
+
+10. `TypedArray.prototype.reduce(callbackFn[, initialValue])`
+    Applies a function against an accumulator and each value of the Typed Array to reduce it to a single value.
+
+    Example:
+    ```javascript
+    const uint32 = new Uint32Array([1, 2, 3, 4]);
+    const sum = uint32.reduce((acc, val) => acc + val, 0);
+    console.log(sum); // 10
+    ```
+
+11. `TypedArray.prototype.fill(value[, start[, end]])`
+    Fills all the elements of the Typed Array from start to end with a static value.
+
+    Example:
+    ```javascript
+    const float64 = new Float64Array(5);
+    float64.fill(3.14, 1, 4);
+    console.log(Array.from(float64)); // [0, 3.14, 3.14, 3.14, 0]
+    ```
+
+12. `TypedArray.prototype.find(callbackFn[, thisArg])`
+    Returns the value of the first element in the Typed Array that satisfies the provided testing function.
+
+    Example:
+    ```javascript
+    const int8 = new Int8Array([1, 2, 3, 4, 5]);
+    const found = int8.find(x => x > 3);
+    console.log(found); // 4
+    ```
+
+13. `TypedArray.prototype.findIndex(callbackFn[, thisArg])`
+    Returns the index of the first element in the Typed Array that satisfies the provided testing function.
+
+    Example:
+    ```javascript
+    const uint16 = new Uint16Array([1, 2, 3, 4, 5]);
+    const index = uint16.findIndex(x => x > 3);
+    console.log(index); // 3
+    ```
+
+14. `TypedArray.prototype.length`
+    The length property represents the number of elements in the Typed Array.
+
+    Example:
+    ```javascript
+    const int32 = new Int32Array([1, 2, 3, 4, 5]);
+    console.log(int32.length); // 5
+    ```
+
+Here's a more complex example demonstrating several of these methods:
+
+```javascript
+// Create a Uint8Array from an ArrayBuffer
+const buffer = new ArrayBuffer(16);
+const uint8Array = new Uint8Array(buffer);
+
+// Fill the array with some values
+uint8Array.set([1, 2, 3, 4, 5], 0);
+
+// Use map to double each value
+const doubledArray = uint8Array.map(x => x * 2);
+
+// Use filter to get only even numbers
+const evenArray = doubledArray.filter(x => x % 2 === 0);
+
+// Use reduce to sum all values
+const sum = evenArray.reduce((acc, val) => acc + val, 0);
+
+console.log('Original:', Array.from(uint8Array.subarray(0, 5)));
+console.log('Doubled:', Array.from(doubledArray.subarray(0, 5)));
+console.log('Even numbers:', Array.from(evenArray));
+console.log('Sum of even numbers:', sum);
+
+// Output:
+// Original: [1, 2, 3, 4, 5]
+// Doubled: [2, 4, 6, 8, 10]
+// Even numbers: [2, 4, 6, 8, 10]
+// Sum of even numbers: 30
+```
+
+This example demonstrates creating a Typed Array, setting values, and using various methods to manipulate the data. Typed Arrays are particularly useful when working with binary data or when performance is critical, as they provide a way to work with raw binary data in a more efficient manner than regular JavaScript arrays.
+
+### 20.`JSON`
+
+The JSON (JavaScript Object Notation) object in JavaScript provides methods for parsing JSON strings and converting JavaScript values to JSON. While it's not a class in the traditional sense, it offers static methods for working with JSON data. Here's a list of the methods available in the JSON object, along with explanations and examples:
+
+1. `JSON.parse(text[, reviver])`
+   Parses a JSON string and returns a JavaScript object.
+
+   Example:
+   ```javascript
+   const jsonString = '{"name":"John","age":30,"city":"New York"}';
+   const obj = JSON.parse(jsonString);
+   console.log(obj.name); // "John"
+   console.log(obj.age);  // 30
+   ```
+
+   With reviver function:
+   ```javascript
+   const jsonString = '{"date":"2023-09-07T12:00:00Z"}';
+   const obj = JSON.parse(jsonString, (key, value) => {
+     if (key === 'date') return new Date(value);
+     return value;
+   });
+   console.log(obj.date instanceof Date); // true
+   ```
+
+2. `JSON.stringify(value[, replacer[, space]])`
+   Converts a JavaScript value to a JSON string.
+
+   Example:
+   ```javascript
+   const obj = { name: "Alice", age: 25, city: "London" };
+   const jsonString = JSON.stringify(obj);
+   console.log(jsonString); // '{"name":"Alice","age":25,"city":"London"}'
+   ```
+
+   With replacer function:
+   ```javascript
+   const obj = { name: "Bob", age: 35, password: "secret123" };
+   const jsonString = JSON.stringify(obj, (key, value) => {
+     if (key === 'password') return undefined; // Exclude password
+     return value;
+   });
+   console.log(jsonString); // '{"name":"Bob","age":35}'
+   ```
+
+   With space parameter for pretty-printing:
+   ```javascript
+   const obj = { name: "Charlie", details: { age: 40, city: "Paris" } };
+   const jsonString = JSON.stringify(obj, null, 2);
+   console.log(jsonString);
+   // Output:
+   // {
+   //   "name": "Charlie",
+   //   "details": {
+   //     "age": 40,
+   //     "city": "Paris"
+   //   }
+   // }
+   ```
+
+3. `JSON[@@toStringTag]`
+   A property that returns the string "JSON".
+
+   Example:
+   ```javascript
+   console.log(JSON[Symbol.toStringTag]); // "JSON"
+   console.log(Object.prototype.toString.call(JSON)); // "[object JSON]"
+   ```
+
+Here are some more complex examples demonstrating the use of JSON methods:
+
+1. Handling circular references:
+
+```javascript
+const circular = { name: "Circular Object" };
+circular.self = circular;
+
+try {
+  JSON.stringify(circular);
+} catch (error) {
+  console.log(error.message); // "Converting circular structure to JSON"
+}
+
+// Custom replacer to handle circular references
+const getCircularReplacer = () => {
+  const seen = new WeakSet();
+  return (key, value) => {
+    if (typeof value === "object" && value !== null) {
+      if (seen.has(value)) {
+        return "[Circular]";
+      }
+      seen.add(value);
+    }
+    return value;
+  };
+};
+
+const safeJsonString = JSON.stringify(circular, getCircularReplacer());
+console.log(safeJsonString); // '{"name":"Circular Object","self":"[Circular]"}'
+```
+
+2. Using JSON for deep cloning:
+
+```javascript
+function deepClone(obj) {
+  return JSON.parse(JSON.stringify(obj));
+}
+
+const original = {
+  name: "Original",
+  details: { age: 30, hobbies: ["reading", "coding"] }
+};
+
+const clone = deepClone(original);
+clone.details.age = 31;
+clone.details.hobbies.push("gaming");
+
+console.log(original.details.age); // 30
+console.log(original.details.hobbies); // ["reading", "coding"]
+console.log(clone.details.age); // 31
+console.log(clone.details.hobbies); // ["reading", "coding", "gaming"]
+```
+
+3. Custom date serialization and deserialization:
+
+```javascript
+const data = {
+  name: "Event",
+  date: new Date("2023-09-07T12:00:00Z")
+};
+
+// Custom replacer for date serialization
+const dateReplacer = (key, value) => {
+  if (value instanceof Date) {
+    return { __type: 'Date', value: value.toISOString() };
+  }
+  return value;
+};
+
+const jsonString = JSON.stringify(data, dateReplacer);
+console.log(jsonString);
+// '{"name":"Event","date":{"__type":"Date","value":"2023-09-07T12:00:00.000Z"}}'
+
+// Custom reviver for date deserialization
+const dateReviver = (key, value) => {
+  if (typeof value === 'object' && value !== null && value.__type === 'Date') {
+    return new Date(value.value);
+  }
+  return value;
+};
+
+const parsedData = JSON.parse(jsonString, dateReviver);
+console.log(parsedData.date instanceof Date); // true
+console.log(parsedData.date.getFullYear()); // 2023
+```
+
+These methods of the JSON object are crucial for working with JSON data in JavaScript, especially when dealing with API responses, storing data in localStorage, or sending data to a server. They provide a straightforward way to convert between JavaScript objects and JSON strings, with options for customizing the conversion process as needed.
+
+### 21.`BigInt`
+
+BigInt is a built-in object in JavaScript that provides a way to represent whole numbers larger than 2^53 - 1, which is the largest number JavaScript can reliably represent with the Number primitive. Here's a list of methods and operations available for BigInt, along with explanations and examples:
+
+1. BigInt() constructor
+   Creates a BigInt value.
+
+   Example:
+   ```javascript
+   const bigInt = BigInt(123);
+   console.log(bigInt); // 123n
+
+   const bigIntFromString = BigInt("456789012345678901234567890");
+   console.log(bigIntFromString); // 456789012345678901234567890n
+   ```
+
+2. BigInt literal notation
+   You can create a BigInt by appending 'n' to the end of an integer.
+
+   Example:
+   ```javascript
+   const bigInt = 123456789012345678901234567890n;
+   console.log(bigInt); // 123456789012345678901234567890n
+   ```
+
+3. Arithmetic operations
+   BigInt supports basic arithmetic operations.
+
+   Example:
+   ```javascript
+   console.log(3n + 2n); // 5n
+   console.log(3n - 2n); // 1n
+   console.log(3n * 2n); // 6n
+   console.log(3n / 2n); // 1n (integer division)
+   console.log(3n % 2n); // 1n
+   console.log(3n ** 2n); // 9n (exponentiation)
+   ```
+
+4. Comparison operations
+   BigInt can be compared using standard comparison operators.
+
+   Example:
+   ```javascript
+   console.log(3n > 2n); // true
+   console.log(3n < 2n); // false
+   console.log(3n >= 3n); // true
+   console.log(3n <= 2n); // false
+   console.log(3n === 3n); // true
+   console.log(3n !== 2n); // true
+   ```
+
+5. Bitwise operations
+   BigInt supports bitwise operations.
+
+   Example:
+   ```javascript
+   console.log(16n & 8n); // 0n
+   console.log(16n | 8n); // 24n
+   console.log(16n ^ 8n); // 24n
+   console.log(~16n); // -17n
+   console.log(16n << 1n); // 32n
+   console.log(16n >> 1n); // 8n
+   ```
+
+6. BigInt.asIntN(width, bigint)
+   Clamps a BigInt value to a signed integer between -2^(width-1) and 2^(width-1)-1.
+
+   Example:
+   ```javascript
+   console.log(BigInt.asIntN(3, 12n)); // -4n
+   console.log(BigInt.asIntN(2, -12n)); // 0n
+   ```
+
+7. BigInt.asUintN(width, bigint)
+   Clamps a BigInt value to an unsigned integer between 0 and 2^width-1.
+
+   Example:
+   ```javascript
+   console.log(BigInt.asUintN(3, 12n)); // 4n
+   console.log(BigInt.asUintN(2, 12n)); // 0n
+   ```
+
+8. BigInt.prototype.toString([radix])
+   Returns a string representing the BigInt value in the specified radix (base).
+
+   Example:
+   ```javascript
+   const bigInt = 123456789n;
+   console.log(bigInt.toString()); // "123456789"
+   console.log(bigInt.toString(2)); // "111010110111100110100010101"
+   console.log(bigInt.toString(16)); // "75bcd15"
+   ```
+
+9. BigInt.prototype.valueOf()
+   Returns the BigInt value.
+
+   Example:
+   ```javascript
+   const bigInt = 123456789n;
+   console.log(bigInt.valueOf()); // 123456789n
+   ```
+
+Here's a more complex example demonstrating various operations with BigInt:
+
+```javascript
+function factorial(n) {
+    if (n === 0n || n === 1n) return 1n;
+    return n * factorial(n - 1n);
+}
+
+console.log(factorial(20n)); // 2432902008176640000n
+
+function fibonacci(n) {
+    if (n <= 1n) return n;
+    let [a, b] = [0n, 1n];
+    for (let i = 2n; i <= n; i++) {
+        [a, b] = [b, a + b];
+    }
+    return b;
+}
+
+console.log(fibonacci(100n)); // 354224848179261915075n
+
+function gcd(a, b) {
+    while (b) {
+        [a, b] = [b, a % b];
+    }
+    return a;
+}
+
+console.log(gcd(48n, 18n)); // 6n
+
+// Prime number test
+function isPrime(n) {
+    if (n <= 1n) return false;
+    for (let i = 2n; i * i <= n; i++) {
+        if (n % i === 0n) return false;
+    }
+    return true;
+}
+
+console.log(isPrime(2305843009213693951n)); // true (Mersenne prime)
+
+// Bitwise operations
+const a = 0b1010n;
+const b = 0b1100n;
+console.log((a & b).toString(2)); // "1000"
+console.log((a | b).toString(2)); // "1110"
+console.log((a ^ b).toString(2)); // "110"
+```
+
+This example demonstrates the use of BigInt in various mathematical operations, including factorial calculation, Fibonacci sequence generation, greatest common divisor calculation, prime number testing, and bitwise operations.
+
+Remember that BigInt cannot be used with methods in the Math object and cannot be mixed with Numbers in operations. You'll need to convert between BigInt and Number when necessary, keeping in mind that conversion from BigInt to Number may lose precision.
+
+### 22.`Math`
+
+The Math object in JavaScript provides a collection of static properties and methods for mathematical operations. Here's a comprehensive list of Math methods with explanations and examples:
+
+1. Math.abs(x)
+   Returns the absolute value of a number.
+
+   Example:
+   ```javascript
+   console.log(Math.abs(-5)); // 5
+   console.log(Math.abs(3.14)); // 3.14
+   ```
+
+2. Math.ceil(x)
+   Rounds a number up to the nearest integer.
+
+   Example:
+   ```javascript
+   console.log(Math.ceil(4.3)); // 5
+   console.log(Math.ceil(-4.7)); // -4
+   ```
+
+3. Math.floor(x)
+   Rounds a number down to the nearest integer.
+
+   Example:
+   ```javascript
+   console.log(Math.floor(4.7)); // 4
+   console.log(Math.floor(-4.3)); // -5
+   ```
+
+4. Math.round(x)
+   Rounds a number to the nearest integer.
+
+   Example:
+   ```javascript
+   console.log(Math.round(4.5)); // 5
+   console.log(Math.round(4.4)); // 4
+   ```
+
+5. Math.max(...values)
+   Returns the largest of zero or more numbers.
+
+   Example:
+   ```javascript
+   console.log(Math.max(1, 3, 2)); // 3
+   console.log(Math.max(-1, -3, -2)); // -1
+   ```
+
+6. Math.min(...values)
+   Returns the smallest of zero or more numbers.
+
+   Example:
+   ```javascript
+   console.log(Math.min(1, 3, 2)); // 1
+   console.log(Math.min(-1, -3, -2)); // -3
+   ```
+
+7. Math.pow(base, exponent)
+   Returns base raised to the power of exponent.
+
+   Example:
+   ```javascript
+   console.log(Math.pow(2, 3)); // 8
+   console.log(Math.pow(4, 0.5)); // 2
+   ```
+
+8. Math.sqrt(x)
+   Returns the square root of a number.
+
+   Example:
+   ```javascript
+   console.log(Math.sqrt(9)); // 3
+   console.log(Math.sqrt(2)); // 1.4142135623730951
+   ```
+
+9. Math.random()
+   Returns a pseudo-random number between 0 and 1.
+
+   Example:
+   ```javascript
+   console.log(Math.random()); // e.g., 0.7648357619434297
+   console.log(Math.floor(Math.random() * 10)); // Random integer between 0 and 9
+   ```
+
+10. Math.sin(x), Math.cos(x), Math.tan(x)
+    Trigonometric functions (argument in radians).
+
+    Example:
+    ```javascript
+    console.log(Math.sin(Math.PI / 2)); // 1
+    console.log(Math.cos(Math.PI)); // -1
+    console.log(Math.tan(Math.PI / 4)); // 0.9999999999999999
+    ```
+
+11. Math.asin(x), Math.acos(x), Math.atan(x)
+    Inverse trigonometric functions.
+
+    Example:
+    ```javascript
+    console.log(Math.asin(1)); // 1.5707963267948966 (π/2)
+    console.log(Math.acos(-1)); // 3.141592653589793 (π)
+    console.log(Math.atan(1)); // 0.7853981633974483 (π/4)
+    ```
+
+12. Math.log(x)
+    Returns the natural logarithm of a number.
+
+    Example:
+    ```javascript
+    console.log(Math.log(Math.E)); // 1
+    console.log(Math.log(10)); // 2.302585092994046
+    ```
+
+13. Math.exp(x)
+    Returns e^x, where x is the argument, and e is Euler's number.
+
+    Example:
+    ```javascript
+    console.log(Math.exp(1)); // 2.718281828459045
+    console.log(Math.exp(0)); // 1
+    ```
+
+14. Math.trunc(x)
+    Returns the integer part of a number by removing any fractional digits.
+
+    Example:
+    ```javascript
+    console.log(Math.trunc(13.37)); // 13
+    console.log(Math.trunc(-13.37)); // -13
+    ```
+
+15. Math.sign(x)
+    Returns the sign of the x, indicating whether x is positive, negative or zero.
+
+    Example:
+    ```javascript
+    console.log(Math.sign(3)); // 1
+    console.log(Math.sign(-3)); // -1
+    console.log(Math.sign(0)); // 0
+    ```
+
+Here's a more complex example that uses several Math methods:
+
+```javascript
+// Function to generate a random color
+function randomColor() {
+    return `rgb(${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)})`;
+}
+
+// Function to calculate the area of a circle
+function circleArea(radius) {
+    return Math.PI * Math.pow(radius, 2);
+}
+
+// Function to calculate the distance between two points
+function distance(x1, y1, x2, y2) {
+    return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+}
+
+// Function to generate a random integer between min and max (inclusive)
+function randomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+// Function to round a number to a specified number of decimal places
+function roundTo(num, places) {
+    const multiplier = Math.pow(10, places);
+    return Math.round(num * multiplier) / multiplier;
+}
+
+console.log(randomColor()); // e.g., "rgb(45, 123, 200)"
+console.log(circleArea(5)); // 78.53981633974483
+console.log(distance(0, 0, 3, 4)); // 5
+console.log(randomInt(1, 10)); // Random integer between 1 and 10
+console.log(roundTo(Math.PI, 2)); // 3.14
+```
+
+This example demonstrates the use of various Math methods in practical scenarios such as generating random colors, calculating geometric properties, and rounding numbers to a specified precision.
+
+Remember that all Math functions are static and should be called through the Math object. Also, be aware that JavaScript uses IEEE 754 floating-point arithmetic, which can sometimes lead to small precision errors in decimal calculations.
+
+### 23.`SharedArrayBuffer`
+Certainly. The SharedArrayBuffer is a fixed-length binary data buffer that can be shared between multiple threads (e.g., main thread and Web Workers) in JavaScript. It's used for creating shared memory in multi-threaded programs.
+
+Here's a list of the key methods and properties available for SharedArrayBuffer, along with explanations and examples:
+
+1. Constructor: `new SharedArrayBuffer(length)`
+   Creates a new SharedArrayBuffer object of the specified length in bytes.
+
+   Example:
+   ```javascript
+   const buffer = new SharedArrayBuffer(16); // Creates a 16-byte buffer
+   console.log(buffer.byteLength); // 16
+   ```
+
+2. `SharedArrayBuffer.prototype.byteLength`
+   A read-only property that returns the length of the ArrayBuffer in bytes.
+
+   Example:
+   ```javascript
+   const buffer = new SharedArrayBuffer(32);
+   console.log(buffer.byteLength); // 32
+   ```
+
+3. `SharedArrayBuffer.prototype.slice(begin, end)`
+   Returns a new SharedArrayBuffer whose contents are a copy of this SharedArrayBuffer's bytes from begin (inclusive) to end (exclusive).
+
+   Example:
+   ```javascript
+   const buffer = new SharedArrayBuffer(8);
+   const view = new Uint8Array(buffer);
+   view.set([1, 2, 3, 4, 5, 6, 7, 8]);
+
+   const sliced = buffer.slice(2, 6);
+   const slicedView = new Uint8Array(sliced);
+   console.log(Array.from(slicedView)); // [3, 4, 5, 6]
+   ```
+
+4. `SharedArrayBuffer.prototype[Symbol.species]`
+   The constructor function used to create derived objects.
+
+   Example:
+   ```javascript
+   console.log(SharedArrayBuffer[Symbol.species] === SharedArrayBuffer); // true
+   ```
+
+5. `SharedArrayBuffer.prototype[Symbol.toStringTag]`
+   A string value that is used in the creation of the default string description of an object.
+
+   Example:
+   ```javascript
+   const buffer = new SharedArrayBuffer(8);
+   console.log(Object.prototype.toString.call(buffer)); // "[object SharedArrayBuffer]"
+   ```
+
+It's important to note that SharedArrayBuffer itself doesn't provide methods for reading from or writing to the buffer. Instead, you typically use it with typed arrays or a DataView to manipulate the data.
+
+Here's a more complex example demonstrating the use of SharedArrayBuffer with Web Workers:
+
+```javascript
+// Main thread code
+const worker = new Worker('worker.js');
+
+const sharedBuffer = new SharedArrayBuffer(4);
+const sharedArray = new Int32Array(sharedBuffer);
+
+sharedArray[0] = 123;
+
+worker.postMessage({ sharedBuffer });
+
+worker.onmessage = function(event) {
+  console.log('Value after worker modification:', sharedArray[0]);
+};
+
+// worker.js (Web Worker code)
+self.onmessage = function(event) {
+  const { sharedBuffer } = event.data;
+  const sharedArray = new Int32Array(sharedBuffer);
+
+  console.log('Initial value in worker:', sharedArray[0]);
+
+  // Modify the shared data
+  Atomics.add(sharedArray, 0, 1);
+
+  self.postMessage('Done');
+};
+```
+
+In this example:
+1. We create a SharedArrayBuffer in the main thread.
+2. We create an Int32Array view of the buffer and set an initial value.
+3. We pass the SharedArrayBuffer to a Web Worker.
+4. The Web Worker creates its own view of the shared buffer.
+5. The Worker reads the initial value and modifies it using Atomics.add.
+6. The main thread can then see the modified value.
+
+This demonstrates how SharedArrayBuffer allows for shared memory between the main thread and a Web Worker.
+
+Note: Due to security concerns (Spectre vulnerability), the use of SharedArrayBuffer might be restricted in some browsers. To use it, you may need to set specific HTTP headers:
+
+```
+Cross-Origin-Opener-Policy: same-origin
+Cross-Origin-Embedder-Policy: require-corp
+```
+
+Always ensure you're using SharedArrayBuffer securely and be aware of the potential risks associated with shared memory in multi-threaded environments.
+
+### 24.`Atomics`
+Certainly! The Atomics object provides atomic operations as static methods. It's primarily used with SharedArrayBuffer objects to ensure that operations on shared memory are executed without interruption. Here's a list of methods available in the Atomics object, along with explanations and examples:
+
+1. Atomics.add(typedArray, index, value)
+   Adds a value to the existing value at a specified index in the array and returns the old value.
+
+   Example:
+   ```javascript
+   const buffer = new SharedArrayBuffer(4);
+   const int32 = new Int32Array(buffer);
+   int32[0] = 5;
+   console.log(Atomics.add(int32, 0, 3)); // 5 (returns old value)
+   console.log(int32[0]); // 8
+   ```
+
+2. Atomics.sub(typedArray, index, value)
+   Subtracts a value from the existing value at a specified index and returns the old value.
+
+   Example:
+   ```javascript
+   const buffer = new SharedArrayBuffer(4);
+   const int32 = new Int32Array(buffer);
+   int32[0] = 10;
+   console.log(Atomics.sub(int32, 0, 3)); // 10 (returns old value)
+   console.log(int32[0]); // 7
+   ```
+
+3. Atomics.and(typedArray, index, value)
+   Performs a bitwise AND operation on the value at the specified index and returns the old value.
+
+   Example:
+   ```javascript
+   const buffer = new SharedArrayBuffer(4);
+   const int32 = new Int32Array(buffer);
+   int32[0] = 5; // 0101 in binary
+   console.log(Atomics.and(int32, 0, 3)); // 5 (returns old value)
+   console.log(int32[0]); // 1 (0001 in binary)
+   ```
+
+4. Atomics.or(typedArray, index, value)
+   Performs a bitwise OR operation on the value at the specified index and returns the old value.
+
+   Example:
+   ```javascript
+   const buffer = new SharedArrayBuffer(4);
+   const int32 = new Int32Array(buffer);
+   int32[0] = 5; // 0101 in binary
+   console.log(Atomics.or(int32, 0, 3)); // 5 (returns old value)
+   console.log(int32[0]); // 7 (0111 in binary)
+   ```
+
+5. Atomics.xor(typedArray, index, value)
+   Performs a bitwise XOR operation on the value at the specified index and returns the old value.
+
+   Example:
+   ```javascript
+   const buffer = new SharedArrayBuffer(4);
+   const int32 = new Int32Array(buffer);
+   int32[0] = 5; // 0101 in binary
+   console.log(Atomics.xor(int32, 0, 3)); // 5 (returns old value)
+   console.log(int32[0]); // 6 (0110 in binary)
+   ```
+
+6. Atomics.load(typedArray, index)
+   Returns the value at the specified index in the array.
+
+   Example:
+   ```javascript
+   const buffer = new SharedArrayBuffer(4);
+   const int32 = new Int32Array(buffer);
+   int32[0] = 42;
+   console.log(Atomics.load(int32, 0)); // 42
+   ```
+
+7. Atomics.store(typedArray, index, value)
+   Stores a value at the specified index in the array and returns that value.
+
+   Example:
+   ```javascript
+   const buffer = new SharedArrayBuffer(4);
+   const int32 = new Int32Array(buffer);
+   console.log(Atomics.store(int32, 0, 42)); // 42
+   console.log(int32[0]); // 42
+   ```
+
+8. Atomics.exchange(typedArray, index, value)
+   Stores a value at the specified index in the array and returns the old value.
+
+   Example:
+   ```javascript
+   const buffer = new SharedArrayBuffer(4);
+   const int32 = new Int32Array(buffer);
+   int32[0] = 5;
+   console.log(Atomics.exchange(int32, 0, 10)); // 5 (returns old value)
+   console.log(int32[0]); // 10
+   ```
+
+9. Atomics.compareExchange(typedArray, index, expectedValue, replacementValue)
+   Compares the value at the specified index with an expected value, and if they match, replaces it with a new value.
+
+   Example:
+   ```javascript
+   const buffer = new SharedArrayBuffer(4);
+   const int32 = new Int32Array(buffer);
+   int32[0] = 5;
+   console.log(Atomics.compareExchange(int32, 0, 5, 10)); // 5
+   console.log(int32[0]); // 10
+   console.log(Atomics.compareExchange(int32, 0, 5, 20)); // 10
+   console.log(int32[0]); // 10 (no change because expected value didn't match)
+   ```
+
+10. Atomics.wait(typedArray, index, value, timeout)
+    Verifies that a given position in an Int32Array still contains a given value and if so, sleeps until notified or timeout expires.
+
+11. Atomics.notify(typedArray, index, count)
+    Wakes up sleeping threads that are waiting on the given index of the array.
+
+Here's a more complex example demonstrating the use of Atomics in a multi-threaded scenario with a Web Worker:
+
+```javascript
+// Main thread code
+const buffer = new SharedArrayBuffer(4);
+const int32 = new Int32Array(buffer);
+
+const worker = new Worker('worker.js');
+
+worker.postMessage({ buffer: buffer });
+
+int32[0] = 0;
+
+// Increment the shared value 1000 times
+for (let i = 0; i < 1000; i++) {
+  Atomics.add(int32, 0, 1);
+}
+
+worker.onmessage = function(event) {
+  console.log("Final value:", Atomics.load(int32, 0));
+};
+
+// worker.js (Web Worker code)
+self.onmessage = function(event) {
+  const { buffer } = event.data;
+  const int32 = new Int32Array(buffer);
+
+  // Increment the shared value 1000 times
+  for (let i = 0; i < 1000; i++) {
+    Atomics.add(int32, 0, 1);
+  }
+
+  self.postMessage('done');
+};
+```
+
+In this example, both the main thread and the Web Worker increment a shared value 1000 times each. The use of `Atomics.add()` ensures that these operations are atomic and don't interfere with each other. The final value should be 2000, demonstrating that all increments were performed correctly without race conditions.
+
+Remember that Atomics operations are only available on SharedArrayBuffer objects, which may be restricted in some environments due to security concerns. Always check for compatibility and necessary security headers when using these features.
+
+### 25.`DataView`
+
+Certainly! The DataView class in JavaScript provides a low-level interface for reading and writing multiple number types in an ArrayBuffer, without having to care about the platform's endianness. Here's a list of methods available in the DataView class, along with explanations and examples:
+
+1. Constructor: `new DataView(buffer [, byteOffset [, byteLength]])`
+   Creates a new DataView object.
+
+   Example:
+   ```javascript
+   const buffer = new ArrayBuffer(16);
+   const view = new DataView(buffer);
+   ```
+
+2. `DataView.prototype.getInt8(byteOffset)`
+   Gets a signed 8-bit integer at the specified byte offset.
+
+   Example:
+   ```javascript
+   view.setInt8(0, -128);
+   console.log(view.getInt8(0)); // -128
+   ```
+
+3. `DataView.prototype.getUint8(byteOffset)`
+   Gets an unsigned 8-bit integer at the specified byte offset.
+
+   Example:
+   ```javascript
+   view.setUint8(1, 255);
+   console.log(view.getUint8(1)); // 255
+   ```
+
+4. `DataView.prototype.getInt16(byteOffset [, littleEndian])`
+   Gets a signed 16-bit integer at the specified byte offset.
+
+   Example:
+   ```javascript
+   view.setInt16(2, 32767, true);
+   console.log(view.getInt16(2, true)); // 32767
+   ```
+
+5. `DataView.prototype.getUint16(byteOffset [, littleEndian])`
+   Gets an unsigned 16-bit integer at the specified byte offset.
+
+   Example:
+   ```javascript
+   view.setUint16(4, 65535);
+   console.log(view.getUint16(4)); // 65535
+   ```
+
+6. `DataView.prototype.getInt32(byteOffset [, littleEndian])`
+   Gets a signed 32-bit integer at the specified byte offset.
+
+   Example:
+   ```javascript
+   view.setInt32(6, -2147483648);
+   console.log(view.getInt32(6)); // -2147483648
+   ```
+
+7. `DataView.prototype.getUint32(byteOffset [, littleEndian])`
+   Gets an unsigned 32-bit integer at the specified byte offset.
+
+   Example:
+   ```javascript
+   view.setUint32(8, 4294967295);
+   console.log(view.getUint32(8)); // 4294967295
+   ```
+
+8. `DataView.prototype.getFloat32(byteOffset [, littleEndian])`
+   Gets a 32-bit float at the specified byte offset.
+
+   Example:
+   ```javascript
+   view.setFloat32(12, 3.14);
+   console.log(view.getFloat32(12)); // 3.140000104904175
+   ```
+
+9. `DataView.prototype.getFloat64(byteOffset [, littleEndian])`
+   Gets a 64-bit float at the specified byte offset.
+
+   Example:
+   ```javascript
+   const buffer2 = new ArrayBuffer(8);
+   const view2 = new DataView(buffer2);
+   view2.setFloat64(0, Math.PI);
+   console.log(view2.getFloat64(0)); // 3.141592653589793
+   ```
+
+10. `DataView.prototype.setInt8(byteOffset, value)`
+    Sets a signed 8-bit integer at the specified byte offset.
+
+11. `DataView.prototype.setUint8(byteOffset, value)`
+    Sets an unsigned 8-bit integer at the specified byte offset.
+
+12. `DataView.prototype.setInt16(byteOffset, value [, littleEndian])`
+    Sets a signed 16-bit integer at the specified byte offset.
+
+13. `DataView.prototype.setUint16(byteOffset, value [, littleEndian])`
+    Sets an unsigned 16-bit integer at the specified byte offset.
+
+14. `DataView.prototype.setInt32(byteOffset, value [, littleEndian])`
+    Sets a signed 32-bit integer at the specified byte offset.
+
+15. `DataView.prototype.setUint32(byteOffset, value [, littleEndian])`
+    Sets an unsigned 32-bit integer at the specified byte offset.
+
+16. `DataView.prototype.setFloat32(byteOffset, value [, littleEndian])`
+    Sets a 32-bit float at the specified byte offset.
+
+17. `DataView.prototype.setFloat64(byteOffset, value [, littleEndian])`
+    Sets a 64-bit float at the specified byte offset.
+
+18. `DataView.prototype.buffer`
+    The ArrayBuffer referenced by this view. Read-only.
+
+19. `DataView.prototype.byteLength`
+    The length (in bytes) of this view. Read-only.
+
+20. `DataView.prototype.byteOffset`
+    The offset (in bytes) of this view from the start of its ArrayBuffer. Read-only.
+
+Here's a more complex example demonstrating various uses of DataView:
+
+```javascript
+// Create an ArrayBuffer with 16 bytes
+const buffer = new ArrayBuffer(16);
+
+// Create a DataView using the buffer
+const view = new DataView(buffer);
+
+// Write different types of data to the buffer
+view.setInt8(0, -128);
+view.setUint8(1, 255);
+view.setInt16(2, 32767, true);
+view.setUint16(4, 65535);
+view.setInt32(6, -2147483648);
+view.setUint32(10, 4294967295);
+view.setFloat32(14, Math.PI);
+
+// Read the data back
+console.log("Int8:", view.getInt8(0));
+console.log("Uint8:", view.getUint8(1));
+console.log("Int16 (Little Endian):", view.getInt16(2, true));
+console.log("Uint16:", view.getUint16(4));
+console.log("Int32:", view.getInt32(6));
+console.log("Uint32:", view.getUint32(10));
+console.log("Float32:", view.getFloat32(14));
+
+// Demonstrate endianness
+console.log("Int16 (Big Endian):", view.getInt16(2)); // Different from little endian value
+
+// Show buffer information
+console.log("Buffer length:", view.buffer.byteLength);
+console.log("View length:", view.byteLength);
+console.log("View offset:", view.byteOffset);
+
+// Create a new view of part of the buffer
+const partialView = new DataView(buffer, 4, 4);
+console.log("Partial view Uint16:", partialView.getUint16(0)); // Same as view.getUint16(4)
+```
+
+This example demonstrates how to use DataView to write and read different types of data to and from an ArrayBuffer, how to handle endianness, and how to create views of parts of a buffer. DataView is particularly useful when working with binary data formats, especially when dealing with data from external sources or when precise control over byte-level data is required.
+
+### 26.`Generator`
+Certainly! Generators in JavaScript are special functions that can be paused and resumed, allowing them to yield multiple values over time. While there isn't a formal "Generator" class, generator functions return a Generator object that conforms to both the iterable protocol and the iterator protocol. Here's a list of methods and properties available on Generator objects, along with explanations and examples:
+
+1. `Generator.prototype.next(value)`
+   Resumes the generator and returns an object with `value` and `done` properties.
+
+   Example:
+   ```javascript
+   function* numberGenerator() {
+     yield 1;
+     yield 2;
+     yield 3;
+   }
+
+   const gen = numberGenerator();
+   console.log(gen.next()); // { value: 1, done: false }
+   console.log(gen.next()); // { value: 2, done: false }
+   console.log(gen.next()); // { value: 3, done: false }
+   console.log(gen.next()); // { value: undefined, done: true }
+   ```
+
+2. `Generator.prototype.return(value)`
+   Terminates the generator and returns the given value.
+
+   Example:
+   ```javascript
+   function* numberGenerator() {
+     yield 1;
+     yield 2;
+     yield 3;
+   }
+
+   const gen = numberGenerator();
+   console.log(gen.next()); // { value: 1, done: false }
+   console.log(gen.return(4)); // { value: 4, done: true }
+   console.log(gen.next()); // { value: undefined, done: true }
+   ```
+
+3. `Generator.prototype.throw(error)`
+   Throws an error into the generator and resumes execution.
+
+   Example:
+   ```javascript
+   function* errorHandler() {
+     try {
+       yield 1;
+       yield 2;
+     } catch (e) {
+       console.log('Caught:', e);
+     }
+     yield 3;
+   }
+
+   const gen = errorHandler();
+   console.log(gen.next()); // { value: 1, done: false }
+   console.log(gen.throw(new Error('Generator error'))); // Logs: Caught: Error: Generator error
+                                                         // { value: 3, done: false }
+   ```
+
+4. `Generator.prototype[Symbol.iterator]`
+   Returns the generator object itself, making it iterable.
+
+   Example:
+   ```javascript
+   function* numberGenerator() {
+     yield 1;
+     yield 2;
+     yield 3;
+   }
+
+   const gen = numberGenerator();
+   for (let value of gen) {
+     console.log(value);
+   }
+   // Logs:
+   // 1
+   // 2
+   // 3
+   ```
+
+Here are some more advanced examples demonstrating the use of generators:
+
+1. Infinite sequence generator:
+
+```javascript
+function* fibonacciGenerator() {
+  let [prev, curr] = [0, 1];
+  while (true) {
+    yield curr;
+    [prev, curr] = [curr, prev + curr];
+  }
+}
+
+const fib = fibonacciGenerator();
+for (let i = 0; i < 10; i++) {
+  console.log(fib.next().value);
+}
+// Logs: 1, 1, 2, 3, 5, 8, 13, 21, 34, 55
+```
+
+2. Asynchronous generator:
+
+```javascript
+async function* asyncNumberGenerator() {
+  for (let i = 0; i < 5; i++) {
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    yield i;
+  }
+}
+
+(async () => {
+  for await (let num of asyncNumberGenerator()) {
+    console.log(num);
+  }
+})();
+// Logs 0, 1, 2, 3, 4 with a 1-second delay between each number
+```
+
+3. Generator delegation using `yield*`:
+
+```javascript
+function* gen1() {
+  yield 'a';
+  yield 'b';
+}
+
+function* gen2() {
+  yield 'x';
+  yield* gen1();
+  yield 'y';
+}
+
+for (let value of gen2()) {
+  console.log(value);
+}
+// Logs: x, a, b, y
+```
+
+4. Using generators for lazy evaluation:
+
+```javascript
+function* range(start, end) {
+  for (let i = start; i <= end; i++) {
+    yield i;
+  }
+}
+
+function* evenNumbers(iterator) {
+  for (let value of iterator) {
+    if (value % 2 === 0) {
+      yield value;
+    }
+  }
+}
+
+const numbers = range(1, 10);
+const evens = evenNumbers(numbers);
+
+for (let value of evens) {
+  console.log(value);
+}
+// Logs: 2, 4, 6, 8, 10
+```
+
+5. Two-way communication with generators:
+
+```javascript
+function* twoWayCommunication() {
+  const x = yield "First yield";
+  console.log("Received:", x);
+  const y = yield "Second yield";
+  console.log("Received:", y);
+  return "Generator done";
+}
+
+const gen = twoWayCommunication();
+console.log(gen.next().value); // First yield
+console.log(gen.next('Hello').value); // Logs "Received: Hello" and returns "Second yield"
+console.log(gen.next('World').value); // Logs "Received: World" and returns "Generator done"
+```
+
+These examples demonstrate the versatility of generators in JavaScript. They can be used for creating iterables, handling asynchronous operations, implementing lazy evaluation, and even for complex control flow scenarios. Generators provide a powerful way to work with sequences of values and to implement custom iteration behavior.
+
+### 27.GeneratorFunction
+
+### 28.`AsyncFunction`
+
+The AsyncFunction class in JavaScript is not typically used directly, but it's the constructor for async functions. Async functions are a special type of function that work with asynchronous, promise-based behavior.
+
+Here's an overview of the AsyncFunction class and its usage:
+
+1. `AsyncFunction` Constructor
+   Creates a new async function object.
+
+   Example:
+   ```javascript
+   const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
+
+   const asyncFunc = new AsyncFunction('a', 'b', 'return await Promise.resolve(a + b)');
+
+   asyncFunc(2, 3).then(result => console.log(result)); // 5
+   ```
+
+While AsyncFunction doesn't have many methods of its own, async functions created with it (or with the more common async function syntax) have access to several important features:
+
+2. `async` keyword
+   Defines an asynchronous function.
+
+   Example:
+   ```javascript
+   async function fetchData() {
+     const response = await fetch('https://api.example.com/data');
+     return await response.json();
+   }
+   ```
+
+3. `await` operator
+   Pauses the execution of the async function and waits for the promise to resolve.
+
+   Example:
+   ```javascript
+   async function example() {
+     const result = await someAsyncOperation();
+     console.log(result);
+   }
+   ```
+
+4. Returning a Promise
+   Async functions always return a Promise.
+
+   Example:
+   ```javascript
+   async function getValue() {
+     return 42;
+   }
+
+   getValue().then(value => console.log(value)); // 42
+   ```
+
+5. Error Handling
+   Using try/catch blocks for error handling in async functions.
+
+   Example:
+   ```javascript
+   async function fetchData() {
+     try {
+       const response = await fetch('https://api.example.com/data');
+       return await response.json();
+     } catch (error) {
+       console.error('Error fetching data:', error);
+     }
+   }
+   ```
+
+6. Parallel Execution
+   Using `Promise.all` with async functions for parallel execution.
+
+   Example:
+   ```javascript
+   async function fetchMultipleData() {
+     const [data1, data2] = await Promise.all([
+       fetch('https://api.example.com/data1').then(r => r.json()),
+       fetch('https://api.example.com/data2').then(r => r.json())
+     ]);
+     return { data1, data2 };
+   }
+   ```
+
+7. Async Iteration
+   Using async functions with for-await-of loops.
+
+   Example:
+   ```javascript
+   async function* asyncGenerator() {
+     yield await Promise.resolve(1);
+     yield await Promise.resolve(2);
+     yield await Promise.resolve(3);
+   }
+
+   async function example() {
+     for await (const value of asyncGenerator()) {
+       console.log(value);
+     }
+   }
+
+   example(); // Logs: 1, 2, 3
+   ```
+
+Here's a more complex example that demonstrates several aspects of async functions:
+
+```javascript
+async function fetchUserData(userId) {
+  try {
+    const response = await fetch(`https://api.example.com/users/${userId}`);
+    if (!response.ok) throw new Error('User not found');
+    return await response.json();
+  } catch (error) {
+    console.error(`Error fetching user ${userId}:`, error);
+    return null;
+  }
+}
+
+async function fetchUserPosts(userId) {
+  try {
+    const response = await fetch(`https://api.example.com/users/${userId}/posts`);
+    if (!response.ok) throw new Error('Posts not found');
+    return await response.json();
+  } catch (error) {
+    console.error(`Error fetching posts for user ${userId}:`, error);
+    return [];
+  }
+}
+
+async function getUserWithPosts(userId) {
+  const [userData, userPosts] = await Promise.all([
+    fetchUserData(userId),
+    fetchUserPosts(userId)
+  ]);
+
+  if (!userData) return null;
+
+  return {
+    ...userData,
+    posts: userPosts
+  };
+}
+
+async function processUsers(userIds) {
+  const users = [];
+
+  for (const userId of userIds) {
+    const user = await getUserWithPosts(userId);
+    if (user) users.push(user);
+  }
+
+  return users;
+}
+
+// Usage
+processUsers([1, 2, 3])
+  .then(users => console.log('Processed users:', users))
+  .catch(error => console.error('Error processing users:', error));
+```
+
+This example demonstrates:
+1. Creating multiple async functions
+2. Error handling with try/catch
+3. Parallel execution with Promise.all
+4. Async function composition
+5. Iterating over an array with async operations
+
+Remember, while AsyncFunction is the constructor for async functions, it's rare to use it directly. The `async function` syntax is much more common and readable in day-to-day JavaScript development.
+
+### 29.`Intl`
+
+The Intl object in JavaScript provides language-sensitive string comparison, number formatting, and date and time formatting. It's a global object that provides several constructors for internationalization functionalities. Here's a list of the key constructors and methods available in the Intl object, along with explanations and examples:
+
+1. `Intl.Collator`
+   Used for language-sensitive string comparison.
+
+   Example:
+   ```javascript
+   const collator = new Intl.Collator('de');
+   console.log(collator.compare('ä', 'z')); // -1 (ä comes before z in German)
+
+   const sorted = ['ä', 'a', 'z'].sort(collator.compare);
+   console.log(sorted); // ['a', 'ä', 'z']
+   ```
+
+2. `Intl.DateTimeFormat`
+   Used for language-sensitive date and time formatting.
+
+   Example:
+   ```javascript
+   const date = new Date(Date.UTC(2023, 8, 7, 12, 0, 0));
+   const formatter = new Intl.DateTimeFormat('en-US', {
+     weekday: 'long',
+     year: 'numeric',
+     month: 'long',
+     day: 'numeric',
+     hour: 'numeric',
+     minute: 'numeric',
+     timeZone: 'UTC'
+   });
+   console.log(formatter.format(date)); // "Thursday, September 7, 2023 at 12:00 PM"
+   ```
+
+3. `Intl.NumberFormat`
+   Used for language-sensitive number formatting.
+
+   Example:
+   ```javascript
+   const number = 123456.789;
+   const formatter = new Intl.NumberFormat('de-DE', {
+     style: 'currency',
+     currency: 'EUR'
+   });
+   console.log(formatter.format(number)); // "123.456,79 €"
+   ```
+
+4. `Intl.PluralRules`
+   Used for plural-sensitive formatting and language-specific plural rules.
+
+   Example:
+   ```javascript
+   const pr = new Intl.PluralRules('en-US');
+   console.log(pr.select(0)); // 'other'
+   console.log(pr.select(1)); // 'one'
+   console.log(pr.select(2)); // 'other'
+   ```
+
+5. `Intl.RelativeTimeFormat`
+   Used for language-sensitive relative time formatting.
+
+   Example:
+   ```javascript
+   const rtf = new Intl.RelativeTimeFormat('en', { style: 'long' });
+   console.log(rtf.format(2, 'day')); // "in 2 days"
+   console.log(rtf.format(-1, 'week')); // "1 week ago"
+   ```
+
+6. `Intl.Segmenter`
+   Used for language-sensitive text segmentation.
+
+   Example:
+   ```javascript
+   const segmenter = new Intl.Segmenter('en', { granularity: 'word' });
+   const string = "Hello world! How are you?";
+   const segments = segmenter.segment(string);
+   for (let { segment } of segments) {
+     console.log(segment);
+   }
+   // Output: "Hello" "world" "How" "are" "you"
+   ```
+
+7. `Intl.ListFormat`
+   Used for language-sensitive list formatting.
+
+   Example:
+   ```javascript
+   const fruits = ['apple', 'banana', 'orange'];
+   const formatter = new Intl.ListFormat('en', { style: 'long', type: 'conjunction' });
+   console.log(formatter.format(fruits)); // "apple, banana, and orange"
+   ```
+
+8. `Intl.DisplayNames`
+   Used for language-sensitive display names for languages, regions, scripts, and currencies.
+
+   Example:
+   ```javascript
+   const regionNames = new Intl.DisplayNames(['en'], { type: 'region' });
+   console.log(regionNames.of('US')); // "United States"
+
+   const languageNames = new Intl.DisplayNames(['fr'], { type: 'language' });
+   console.log(languageNames.of('en-US')); // "anglais américain"
+   ```
+
+9. `Intl.supportedValuesOf(key)`
+   Returns an array of supported values for a given key.
+
+   Example:
+   ```javascript
+   console.log(Intl.supportedValuesOf('calendar'));
+   // ['buddhist', 'chinese', ..., 'gregory', ...]
+   ```
+
+Here's a more complex example that uses multiple Intl features:
+
+```javascript
+function formatEvent(event, locale) {
+  const dateFormatter = new Intl.DateTimeFormat(locale, {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+    timeZone: event.timeZone
+  });
+
+  const currencyFormatter = new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency: event.currency
+  });
+
+  const relativeTimeFormatter = new Intl.RelativeTimeFormat(locale, { style: 'long' });
+
+  const listFormatter = new Intl.ListFormat(locale, { style: 'long', type: 'conjunction' });
+
+  const formattedDate = dateFormatter.format(event.date);
+  const formattedPrice = currencyFormatter.format(event.price);
+  const daysUntilEvent = Math.ceil((event.date - new Date()) / (1000 * 60 * 60 * 24));
+  const relativeTime = relativeTimeFormatter.format(daysUntilEvent, 'day');
+  const formattedAttendees = listFormatter.format(event.attendees);
+
+  return `
+    Event: ${event.name}
+    Date: ${formattedDate}
+    Price: ${formattedPrice}
+    Time until event: ${relativeTime}
+    Attendees: ${formattedAttendees}
+  `;
+}
+
+const event = {
+  name: 'International Conference',
+  date: new Date(2024, 5, 15, 10, 0),
+  timeZone: 'Europe/London',
+  price: 599.99,
+  currency: 'GBP',
+  attendees: ['John', 'Jane', 'Bob']
+};
+
+console.log(formatEvent(event, 'en-US'));
+console.log(formatEvent(event, 'fr-FR'));
+```
+
+This example demonstrates how to use various Intl constructors to format an event's details in a language-sensitive manner. It handles date and time formatting, currency formatting, relative time formatting, and list formatting, all while respecting the specified locale.
+
+The Intl object and its constructors provide powerful tools for creating internationalized applications, allowing you to adapt your JavaScript code to various languages and regions with ease.
+
+### 30.`WebAssembly`
+
+The WebAssembly object in JavaScript provides methods and constructors for working with WebAssembly modules. WebAssembly (often abbreviated as Wasm) is a binary instruction format designed for efficient execution in web browsers.
+
+Here's a list of the key methods and properties available in the WebAssembly object, along with explanations and examples:
+
+1. `WebAssembly.compile(bufferSource)`
+   Compiles WebAssembly binary code into a WebAssembly.Module.
+
+   Example:
+   ```javascript
+   fetch('simple.wasm')
+     .then(response => response.arrayBuffer())
+     .then(bytes => WebAssembly.compile(bytes))
+     .then(module => {
+       // Use the compiled module
+     });
+   ```
+
+2. `WebAssembly.instantiate(bufferSource, importObject)`
+   Compiles and instantiates WebAssembly code.
+
+   Example:
+   ```javascript
+   fetch('simple.wasm')
+     .then(response => response.arrayBuffer())
+     .then(bytes => WebAssembly.instantiate(bytes))
+     .then(result => {
+       console.log(result.instance.exports.add(1, 2)); // Assuming 'add' is exported
+     });
+   ```
+
+3. `WebAssembly.validate(bufferSource)`
+   Validates a given typed array of WebAssembly binary code.
+
+   Example:
+   ```javascript
+   fetch('simple.wasm')
+     .then(response => response.arrayBuffer())
+     .then(bytes => {
+       const valid = WebAssembly.validate(bytes);
+       console.log(valid ? "Valid WebAssembly module" : "Invalid WebAssembly module");
+     });
+   ```
+
+4. `WebAssembly.compileStreaming(source)`
+   Compiles a WebAssembly module from a streamed source.
+
+   Example:
+   ```javascript
+   WebAssembly.compileStreaming(fetch('simple.wasm'))
+     .then(module => {
+       // Use the compiled module
+     });
+   ```
+
+5. `WebAssembly.instantiateStreaming(source, importObject)`
+   Compiles and instantiates a WebAssembly module directly from a streamed source.
+
+   Example:
+   ```javascript
+   WebAssembly.instantiateStreaming(fetch('simple.wasm'))
+     .then(result => {
+       console.log(result.instance.exports.add(3, 4)); // Assuming 'add' is exported
+     });
+   ```
+
+6. `WebAssembly.Module` constructor
+   Creates a new Module object.
+
+   Example:
+   ```javascript
+   fetch('simple.wasm')
+     .then(response => response.arrayBuffer())
+     .then(bytes => {
+       const module = new WebAssembly.Module(bytes);
+       // Use the module
+     });
+   ```
+
+7. `WebAssembly.Instance` constructor
+   Creates a new Instance object.
+
+   Example:
+   ```javascript
+   fetch('simple.wasm')
+     .then(response => response.arrayBuffer())
+     .then(bytes => WebAssembly.compile(bytes))
+     .then(module => {
+       const instance = new WebAssembly.Instance(module);
+       console.log(instance.exports.add(5, 6)); // Assuming 'add' is exported
+     });
+   ```
+
+8. `WebAssembly.Memory` constructor
+   Creates a new Memory object.
+
+   Example:
+   ```javascript
+   const memory = new WebAssembly.Memory({ initial: 10, maximum: 100 });
+   ```
+
+9. `WebAssembly.Table` constructor
+   Creates a new Table object.
+
+   Example:
+   ```javascript
+   const table = new WebAssembly.Table({ initial: 2, element: "anyfunc" });
+   ```
+
+10. `WebAssembly.CompileError`, `WebAssembly.LinkError`, `WebAssembly.RuntimeError`
+    These are error objects that can be thrown during WebAssembly operations.
+
+Here's a more complex example that demonstrates using WebAssembly to perform a calculation:
+
+```javascript
+// Assume we have a WebAssembly module that exports a 'fibonacci' function
+
+const importObject = {
+  env: {
+    memoryBase: 0,
+    tableBase: 0,
+    memory: new WebAssembly.Memory({ initial: 256 }),
+    table: new WebAssembly.Table({ initial: 0, element: 'anyfunc' })
+  }
+};
+
+WebAssembly.instantiateStreaming(fetch('fibonacci.wasm'), importObject)
+  .then(result => {
+    const fibonacci = result.instance.exports.fibonacci;
+    console.log('Fibonacci(10):', fibonacci(10));
+    console.log('Fibonacci(20):', fibonacci(20));
+  })
+  .catch(error => {
+    console.error('WebAssembly instantiation failed:', error);
+  });
+```
+
+In this example, we're loading a WebAssembly module that calculates Fibonacci numbers. We create an import object with a memory and table, which the WebAssembly module might need. After instantiation, we can call the exported 'fibonacci' function as if it were a regular JavaScript function.
+
+Remember that working with WebAssembly often involves creating the .wasm files separately (usually compiled from languages like C, C++, or Rust) and then loading and using them in JavaScript. The WebAssembly object provides the interface for working with these modules in a JavaScript environment.
+
+### 31.`FinalizationRegistry`
+The `FinalizationRegistry` class in JavaScript is a relatively new addition to the language, introduced in ECMAScript 2021 (ES12). It provides a way to request a callback when an object is garbage-collected. This can be useful for performing cleanup operations or freeing resources that are not automatically managed by JavaScript's garbage collector.
+
+Here's a list of the methods available in the FinalizationRegistry class, along with explanations and examples:
+
+1. Constructor: `new FinalizationRegistry(callback)`
+   Creates a new FinalizationRegistry with the given callback.
+
+   Example:
+   ```javascript
+   const registry = new FinalizationRegistry((heldValue) => {
+     console.log(`Object associated with ${heldValue} has been garbage-collected`);
+   });
+   ```
+
+2. `FinalizationRegistry.prototype.register(target, heldValue[, unregisterToken])`
+   Registers an object for finalization.
+
+   - `target`: The object to register for finalization.
+   - `heldValue`: A value to pass to the callback when the target is garbage-collected.
+   - `unregisterToken`: An optional object that can be used to unregister the target later.
+
+   Example:
+   ```javascript
+   let obj = { data: "some data" };
+   const token = { unregisterToken: true };
+
+   registry.register(obj, "Object 1", token);
+
+   // At some point later, obj becomes unreachable
+   obj = null;
+
+   // When garbage collection occurs, the callback will be invoked
+   // Output (after GC): "Object associated with Object 1 has been garbage-collected"
+   ```
+
+3. `FinalizationRegistry.prototype.unregister(unregisterToken)`
+   Unregisters a previously registered target.
+
+   Example:
+   ```javascript
+   let obj = { data: "some data" };
+   const token = { unregisterToken: true };
+
+   registry.register(obj, "Object 2", token);
+
+   // Later, if we want to unregister the object
+   registry.unregister(token);
+
+   // Now, even if obj becomes unreachable, the callback won't be invoked for it
+   obj = null;
+   ```
+
+Here's a more complex example demonstrating the use of FinalizationRegistry:
+
+```javascript
+class ResourceManager {
+  constructor() {
+    this.resources = new Set();
+    this.registry = new FinalizationRegistry((resource) => {
+      console.log(`Resource ${resource.id} was garbage-collected`);
+      this.releaseResource(resource);
+    });
+  }
+
+  allocateResource(id) {
+    const resource = { id, data: new ArrayBuffer(1024 * 1024) }; // 1MB buffer
+    this.resources.add(resource);
+    this.registry.register(resource, resource, resource);
+    return resource;
+  }
+
+  releaseResource(resource) {
+    console.log(`Manually releasing resource ${resource.id}`);
+    this.resources.delete(resource);
+    this.registry.unregister(resource);
+  }
+
+  getResourceCount() {
+    return this.resources.size;
+  }
+}
+
+const manager = new ResourceManager();
+
+{
+  // Block scope to make resources go out of scope
+  const resource1 = manager.allocateResource(1);
+  const resource2 = manager.allocateResource(2);
+
+  console.log(`Resource count: ${manager.getResourceCount()}`); // Output: Resource count: 2
+
+  manager.releaseResource(resource1);
+  console.log(`Resource count after manual release: ${manager.getResourceCount()}`);
+  // Output: Manually releasing resource 1
+  //         Resource count after manual release: 1
+}
+
+// Force garbage collection (note: this is not standard JavaScript and may not work in all environments)
+if (global.gc) {
+  global.gc();
+}
+
+// After some time, you might see:
+// Resource 2 was garbage-collected
+
+console.log(`Final resource count: ${manager.getResourceCount()}`);
+// Output: Final resource count: 0
+```
+
+In this example, we create a ResourceManager class that uses a FinalizationRegistry to track when resources are garbage-collected. This could be useful in scenarios where you need to manage external resources that aren't automatically cleaned up by JavaScript's garbage collector.
+
+Note that the timing of finalization is not guaranteed, and you shouldn't rely on it for critical cleanup operations. It's best used for optimization or non-critical cleanup tasks.
+
+Also, be aware that FinalizationRegistry is a relatively new feature and may not be supported in all JavaScript environments. Always check compatibility before using it in production code.
+
+### Summary
+JavaScript has a number of built-in classes (also known as global objects) that provide various functionalities. Here's a comprehensive list of JavaScript's built-in classes:
+
+1. Object
+2. Function
+3. Boolean
+4. Symbol
+5. Error
+   - EvalError
+   - RangeError
+   - ReferenceError
+   - SyntaxError
+   - TypeError
+   - URIError
+   - AggregateError
+6. Number
+7. BigInt
+8. Math
+9. Date
+10. String
+11. RegExp
+12. Array
+13. Int8Array
+14. Uint8Array
+15. Uint8ClampedArray
+16. Int16Array
+17. Uint16Array
+18. Int32Array
+19. Uint32Array
+20. Float32Array
+21. Float64Array
+22. BigInt64Array
+23. BigUint64Array
+24. Map
+25. Set
+26. WeakMap
+27. WeakSet
+28. ArrayBuffer
+29. SharedArrayBuffer
+30. Atomics
+31. DataView
+32. JSON
+33. Promise
+34. Generator
+35. GeneratorFunction
+36. AsyncFunction
+37. Reflect
+38. Proxy
+39. Intl
+   - Intl.Collator
+   - Intl.DateTimeFormat
+   - Intl.ListFormat
+   - Intl.NumberFormat
+   - Intl.PluralRules
+   - Intl.RelativeTimeFormat
+   - Intl.Segmenter
+40. WebAssembly
+41. FinalizationRegistry
+42. WeakRef
+
+Additionally, there are some global functions that are not classes but are available globally:
+
+1. eval()
+2. isFinite()
+3. isNaN()
+4. parseFloat()
+5. parseInt()
+6. encodeURI()
+7. encodeURIComponent()
+8. decodeURI()
+9. decodeURIComponent()
+
+And some global properties:
+
+1. Infinity
+2. NaN
+3. undefined
+4. globalThis
+
+Note that some of these (like WebAssembly) might not be available in all JavaScript environments. Also, browser environments and Node.js may have additional built-in classes and global objects specific to their runtime.
+
+This list covers the core JavaScript language as defined by ECMAScript. The exact availability might vary slightly depending on the specific JavaScript engine and its version.
