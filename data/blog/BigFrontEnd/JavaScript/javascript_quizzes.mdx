@@ -1,7 +1,7 @@
 ---
-title: BigFrontEnd Category 19 JavaScript Quizzes
+title: BigFrontEnd JavaScript Quizzes
 date: '2024-06-19'
-tags: ['BigFrontEnd', 'category']
+tags: ['BigFrontEnd', 'JavaScript', 'Quizzes']
 draft: false
 ---
 
@@ -1028,6 +1028,12 @@ a()
 This version would successfully log 'BFE' to the console when the function is called.
 
 ## 2.Scope
+
+`Scope` defines the visibility and accessibility of variables within your code. Variables can have either global scope (accessible from anywhere in the code) or local scope (accessible only within a specific function or block).
+
+The `scope chain` is a mechanism in JavaScript that determines the order in which variable lookups are performed. When a variable is referenced, JavaScript searches for it starting from the innermost scope and moving outward until it finds the variable.
+
+The `lexical environment` consists of all the variables and functions that are in scope at a particular point in code. It contains two components: 1. Environment Record: 2. Reference to the Outer Lexical Environment:
 
 1. var is hoisted out of the block and the let is hoisted within the block.
 2. `const a = b = c = 1` is `c=1;b=c;const a = b`.
@@ -2322,6 +2328,311 @@ Key points:
 This quiz tests deep understanding of JavaScript's type coercion rules and object-to-primitive conversion mechanisms.
 
 ## 4.Closure
+
+A closure in JavaScript is created when a function is defined within another function. It allows the inner function to access the variables and parameters of the outer function, even after the outer function has finished executing.
+
+1. Encapsulation with Closures:
+
+```js
+// Outer function definition
+function createCounter() {
+  // Variable declaration in the outer function's scope
+  let count = 0
+
+  // Returning an object with methods
+  return {
+    // Increment method
+    increment: function () {
+      count++
+    },
+    // Decrement method
+    decrement: function () {
+      count--
+    },
+    // Get count method
+    getCount: function () {
+      return count
+    },
+  }
+}
+
+// Create a counter instance
+const counter = createCounter()
+
+// Increment the counter twice
+counter.increment()
+counter.increment()
+
+// Log the count to the console
+console.log(counter.getCount()) // Output: 2
+
+// Decrement the counter
+counter.decrement()
+
+// Log the count to the console
+console.log(counter.getCount()) // Output: 1
+```
+
+2. Function Factories:
+
+```js
+// Define createMultiplier
+function createMultiplier(multiplier) {
+  // Return a new function
+  return function (number) {
+    return number * multiplier // Multiply input number by multiplier
+  }
+}
+
+const double = createMultiplier(2) // Function to double a number
+const triple = createMultiplier(3) // Function to triple a number
+
+console.log(double(5)) // 10
+console.log(triple(5)) // 15
+```
+
+3. Unintended Closures:
+
+```js
+// Define fetchData
+function fetchData(apiUrl, callback) {
+  // Simulate an asynchronous operation
+  setTimeout(() => {
+    const data = { name: 'John Doe', age: 30 } // Simulated API response
+    callback(data) // Call the provided callback with the data
+  }, 1000) // Simulate network delay
+}
+
+// Define processData
+function processData(data) {
+  console.log('Received data:', data) // Process and log the data
+}
+
+fetchData('https://api.example.com/user', processData) // Fetch data and process it
+```
+
+4. Callback Functions:
+
+```js
+for (var i = 1; i <= 5; i++) {
+  setTimeout(function () {
+    console.log(i) // Log the value of i
+  }, i * 1000) // Delay based on i
+}
+
+// Output: 6, 6, 6, 6, 6
+```
+
+```js
+for (let i = 1; i <= 5; i++) {
+  setTimeout(function () {
+    console.log(i) // Log the value of i
+  }, i * 1000) // Delay based on i
+}
+
+// Output: 1, 2, 3, 4, 5
+```
+
+5. Memory Leaks:
+
+```js
+// Define createClosure:
+function createClosure() {
+  // Declare a large array largeArray
+  let largeArray = new Array(1000000).fill('x') // Large array
+  // Return a closure
+  return function () {
+    console.log(largeArray.length) // Log the length of the array
+    largeArray = null // Free up memory
+  }
+}
+// Create a closure instance
+const closure = createClosure()
+// Invoke the closure
+closure() // Output: 1000000
+```
+
+6. Memoization:
+
+```js
+// Define memoize Function
+function memoize(fn) {
+  const cache = {} // Private cache object
+  return function (...args) {
+    const key = JSON.stringify(args) // Create a key from arguments
+    if (cache[key]) {
+      return cache[key] // Return cached result
+    }
+    const result = fn(...args)
+    cache[key] = result // Store result in cache
+    return result
+  }
+}
+
+// Example usage:
+const fibonacci = memoize(function (n) {
+  if (n <= 1) return n
+  return fibonacci(n - 1) + fibonacci(n - 2)
+})
+
+console.log(fibonacci(10)) // 55
+```
+
+7. Event Handling:
+
+```js
+function createEventListener(element, eventType) {
+  return function (callback) {
+    element.addEventListener(eventType, callback)
+  }
+}
+// Example usage:
+const button = document.getElementById('myButton')
+const onClick = createEventListener(button, 'click')
+onClick(function () {
+  console.log('Button clicked!')
+})
+```
+
+8. Private Members in Constructors:
+
+```js
+function Person(name, age) {
+  const privateData = { secret: 'I have a secret!' } // Private data
+  this.name = name
+  this.age = age
+  this.getSecret = function () {
+    return privateData.secret
+  }
+}
+// Example usage:
+const john = new Person('John', 30)
+console.log(john.name) // 'John'
+console.log(john.getSecret()) // 'I have a secret!'
+console.log(john.privateData) // undefined (private)
+```
+
+9. Managing Dependencies:
+
+```js
+function createModule(dependency) {
+  // Private dependency
+  const privateDependency = dependency
+  // Public methods
+  return {
+    useDependency: function () {
+      console.log(privateDependency)
+    },
+  }
+}
+// Example usage:
+const module = createModule('Dependency')
+module.useDependency() // Output: 'Dependency'
+```
+
+10. Currying
+
+```js
+function curry(fn) {
+  return function curried(...args) {
+    if (args.length >= fn.length) {
+      return fn(...args)
+    } else {
+      return function (...moreArgs) {
+        return curried(...args, ...moreArgs)
+      }
+    }
+  }
+}
+// Example usage:
+function add(a, b, c) {
+  return a + b + c
+}
+const curriedAdd = curry(add)
+console.log(curriedAdd(1)(2)(3)) // Output: 6
+```
+
+11. Promises and Asynchronous Operations:
+
+```js
+function fetchData(url) {
+  return new Promise((resolve, reject) => {
+    fetch(url)
+      .then((response) => response.json())
+      .then((data) => {
+        resolve(data)
+      })
+      .catch((error) => {
+        reject(error)
+      })
+  })
+}
+
+// Example usage:
+const url = 'https://api.example.com/data'
+fetchData(url)
+  .then((data) => {
+    console.log('Data fetched:', data)
+  })
+  .catch((error) => {
+    console.error('Error fetching data:', error)
+  })
+```
+
+12. Iterators and Generators
+
+```js
+function createIterator(arr) {
+  let index = 0 // Private variable
+  return {
+    next: function () {
+      return index < arr.length ? { value: arr[index++], done: false } : { done: true }
+    },
+  }
+}
+// Example usage:
+const iterator = createIterator(['a', 'b', 'c'])
+console.log(iterator.next()) // Output: { value: 'a', done: false }
+console.log(iterator.next()) // Output: { value: 'b', done: false }
+console.log(iterator.next()) // Output: { value: 'c', done: false }
+console.log(iterator.next()) // Output: { done: true }
+```
+
+13. Functional Programming
+
+```js
+function compose(...fns) {
+  return function (result) {
+    return fns.reduceRight((acc, fn) => fn(acc), result)
+  }
+}
+// Example usage:
+const add1 = (x) => x + 1
+const multiply2 = (x) => x * 2
+const add1ThenMultiply2 = compose(multiply2, add1)
+console.log(add1ThenMultiply2(5)) // Output: 12 (5 + 1 = 6, 6 * 2 = 12)
+```
+
+14. Timer Functions
+
+```js
+function debounce(fn, delay) {
+  let timeoutID // Private variable
+  return function (...args) {
+    clearTimeout(timeoutID) // Clear previous timeout
+    timeoutID = setTimeout(() => {
+      fn(...args)
+    }, delay)
+  }
+}
+// Example usage:
+const handleResize = debounce(() => {
+  console.log('Window resized')
+}, 300)
+window.addEventListener('resize', handleResize)
+```
+
+Reference: https://dev.to/jahid6597/mastering-javascript-closures-a-comprehensive-guide-1gd7
 
 ### 99. closure
 
@@ -4200,6 +4511,12 @@ In summary:
 This code demonstrates some of the unique behaviors of Symbols in JavaScript, particularly how they differ from string keys when it comes to object property enumeration.
 
 ## 8.Promise
+
+Key points:
+
+1. Promise executors run synchronously. `.then` callbacks are added to the microtask queue and `setTimeout` callbacks are added to the macrotask queue. The microtask is executed firstly before the macrotask.
+2. `.then` only takes the callback as parameter. Other type parameter will be ignored. If the `.then` callback does not return, a `undefined` will be passed forward.
+3. `.finally` callbacks do not carry any value.
 
 ### 1.Promise order
 
@@ -6864,7 +7181,7 @@ This code demonstrates some interesting behavior with JavaScript's increment/dec
 
 4. `let d = 1`
    `console.log(d - - - d)`
-   - Output: `2`
+   - Output: `0`
    - This is parsed as `d - (-(-d))`
    - The rightmost `-d` negates `d`, resulting in -1
    - The next `-` negates that, resulting in 1
@@ -7749,7 +8066,6 @@ If you need to parse numbers in different bases or with specific formatting, you
 ;[1, 2, 3].reduce((a, b) => {
   console.log(a, b)
 })
-
 ;[1, 2, 3].reduce((a, b) => {
   console.log(a, b)
 }, 0)
@@ -9942,6 +10258,219 @@ This spread operator technique splits the string into an array of its actual cha
 Understanding this behavior is important for proper string manipulation, especially in applications that deal with international text or emojis.
 
 ## 16.Proxy
+
+Creating a Simple Proxy
+Let's jump in and see how to create a Proxy. We'll start with a really basic example, in case you haven't seen Proxies before.
+
+```typescript
+type MessageObject = {
+  message: string
+}
+let target: MessageObject = {
+  message: 'Hello, world!',
+}
+let handler: ProxyHandler<MessageObject> = {
+  get: (obj, prop) => {
+    return `Property ${String(prop)} is: ${obj[prop]}`
+  },
+}
+
+let proxy: MessageObject = new Proxy(target, handler)
+console.log(proxy.message) // Output: Property message is: Hello, world!
+```
+
+1. Auto-populating Properties
+
+```typescript
+type LazyProfile = {
+  firstName: string
+  lastName: string
+  fullName?: string
+}
+let lazyProfileHandler = {
+  get: (target: LazyProfile, property: keyof LazyProfile) => {
+    if (property === 'fullName' && !target[property]) {
+      target[property] = `${target.firstName} ${target.lastName}`
+    }
+    return target[property]
+  },
+}
+let profile: LazyProfile = new Proxy({ firstName: 'John', lastName: 'Doe' }, lazyProfileHandler)
+console.log(profile.fullName) // Output: John Doe
+```
+
+2. Operation Counting
+
+```typescript
+type Counter = {
+  [key: string]: any
+  _getCount: number
+}
+let countHandler = {
+  get: (target: Counter, property: keyof Counter) => {
+    if (property === '_getCount') {
+      return target[property]
+    }
+    target._getCount++
+    return target[property]
+  },
+}
+let counter: Counter = new Proxy({ a: 1, b: 2, _getCount: 0 }, countHandler)
+counter.a
+counter.b
+console.log(counter._getCount) // Output: 2
+```
+
+3. Immutable Objects
+
+```typescript
+function createImmutable<T extends object>(obj: T): T {
+  return new Proxy(obj, {
+    set: () => {
+      throw new Error('This object is immutable')
+    },
+  })
+}
+const immutableObject = createImmutable({ name: 'Jane', age: 25 })
+// immutableObject.age = 26;  // Throws error
+```
+
+4. Method Chaining and Fluent Interfaces
+
+```typescript
+type FluentPerson = {
+  setName(name: string): FluentPerson
+  setAge(age: number): FluentPerson
+  save(): void
+}
+function FluentPerson(): FluentPerson {
+  let person: any = {}
+  return new Proxy(
+    {},
+    {
+      get: (target, property) => {
+        if (property === 'save') {
+          return () => {
+            console.log(person)
+          }
+        }
+        return (value: any) => {
+          person[property] = value
+          return target
+        }
+      },
+    }
+  ) as FluentPerson
+}
+const person = FluentPerson()
+person.setName('Alice').setAge(30).save() // Output: { setName: 'Alice', setAge: 30 }
+```
+
+5. Smart Caching
+
+```typescript
+function smartCache<T extends object>(obj: T, fetcher: (key: keyof T) => any): T {
+  const cache: Partial<T> = {}
+  return new Proxy(obj, {
+    get: (target, property: keyof T) => {
+      if (!cache[property]) {
+        cache[property] = fetcher(property)
+      }
+      return cache[property]
+    },
+  })
+}
+const userData = smartCache({ userId: 1 }, (prop) => {
+  console.log(`Fetching data for ${String(prop)}`)
+  return { name: 'Bob' } // Simulated fetch
+})
+
+console.log(userData.userId) // Output: Fetching data for userId, then returns { name: "Bob" }
+```
+
+6. Dynamic Property Validation
+
+```typescript
+let user = {
+  age: 25,
+}
+let validator = {
+  set: (obj, prop, value) => {
+    if (prop === 'age' && (typeof value !== 'number' || value < 18)) {
+      throw new Error('User must be at least 18 years old.')
+    }
+    obj[prop] = value
+    return true // Indicate success
+  },
+}
+let userProxy = new Proxy(user, validator)
+userProxy.age = 30 // Works fine
+console.log(userProxy.age) // Output: 30
+// userProxy.age = 'thirty';  // Throws error
+// userProxy.age = 17;  // Throws error
+```
+
+7. Watching for Changes
+
+```typescript
+function onChange(obj, onChange) {
+  const handler = {
+    set: (target, property, value, receiver) => {
+      onChange(`Property ${String(property)} changed to ${value}`)
+      return Reflect.set(target, property, value, receiver)
+    },
+  }
+  return new Proxy(obj, handler)
+}
+const person = { name: 'John', age: 30 }
+const watchedPerson = onChange(person, console.log)
+watchedPerson.age = 31 // Console: Property age changed to 31
+```
+
+8. Tracing: Logging function calls
+
+```JavaScript
+function trace(originalFunction) {
+  return new Proxy(originalFunction, {
+    apply(target, thisArg, args) {
+      console.log('Calling function:', target.name, 'with arguments:', args);
+      // Important - don't forget the return statement or else the function's
+      // return value is lost!
+      return target.apply(thisArg, args);
+    }
+  });
+}
+```
+
+9. Data binding: Syncing multiple objects
+
+```JavaScript
+<input type="text" id="username" />
+
+const inputState = {
+    id: 'username',
+    value: ''
+}
+
+const input = document.querySelector('#username')
+const handler = {
+    set: function(target, key, value) {
+        if (target.id && key === 'username') {
+            target[key] = value;
+            document.querySelector(`#${target.id}`).value = value;
+            return true
+        }
+        return false
+    }
+}
+
+const proxy = new Proxy(inputState, handler)
+proxy.value = 'John Doe'
+console.log(proxy.value, input.value)
+// 'John Doe' will be printed for both
+```
+
+Reference: https://dev.to/mattlewandowski93/7-use-cases-for-javascript-proxies-3b29
 
 ### 80. Proxy I
 

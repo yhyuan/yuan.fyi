@@ -1,3 +1,16 @@
+---
+title: CSS Interview Questions
+date: '2024-06-20'
+tags: ['CSS', 'Interview']
+draft: false
+---
+
+### Introduction
+
+This blog post summarizes CSS Interview Questions and Answers.
+
+<TOCInline toc={props.toc} exclude="Introduction" />
+
 # CSS Interview Questions and Answers: Part 1 - Basics and Selectors
 
 1. **What does CSS stand for?**
@@ -7,7 +20,7 @@
    Answer: CSS is used to describe the presentation of a document written in HTML or XML, including colors, layout, and fonts.
 
 3. **How can you include CSS in an HTML document?**
-   Answer: CSS can be included in three ways: inline (using the style attribute), internal (using the <style> tag in the <head> section), and external (linking to a separate .css file).
+   Answer: CSS can be included in three ways: inline (using the style attribute), internal (using the `<style>` tag in the `<head>` section), and external (linking to a separate .css file).
 
 4. **What is a CSS selector?**
    Answer: A CSS selector is a pattern used to select and style HTML elements on a web page.
@@ -121,7 +134,7 @@
     Answer: You can use the attribute selector with the caret (^) symbol: `[class^="btn-"]`
 
 34. **What is the purpose of the :root pseudo-class?**
-    Answer: The :root pseudo-class matches the root element of the document tree, which is typically the <html> element. It's often used for declaring global CSS variables.
+    Answer: The :root pseudo-class matches the root element of the document tree, which is typically the `<html>` element. It's often used for declaring global CSS variables.
 
 35. **How do you select the first letter of every paragraph?**
     Answer: You can select the first letter of every paragraph using the ::first-letter pseudo-element: `p::first-letter`
@@ -289,7 +302,7 @@
     Answer: While pure CSS masonry layouts are challenging, you can approximate one using CSS Grid with 'grid-auto-flow: dense;' or using the CSS 'columns' property. For a true masonry layout, JavaScript is often used.
 
 86. **What is the purpose of the 'object-fit' property?**
-    Answer: The 'object-fit' property specifies how an <img> or <video> should be resized to fit its container. Values include fill, contain, cover, none, and scale-down.
+    Answer: The 'object-fit' property specifies how an `<img>` or `<video>` should be resized to fit its container. Values include fill, contain, cover, none, and scale-down.
 
 87. **How can you create a full-screen background image?**
     Answer: Use 'background-size: cover;' and 'background-position: center center;' on an element that takes up the full viewport (e.g., 'height: 100vh;').
@@ -542,7 +555,7 @@
      Answer: A sticky footer can be created using flexbox. Set min-height: 100vh and display: flex on the body, then flex: 1 on the main content area.
 
 169. **What is the purpose of the object-fit property?**
-     Answer: The object-fit property specifies how the contents of a replaced element (like an <img> or <video>) should be fitted to the box established by its used height and width.
+     Answer: The object-fit property specifies how the contents of a replaced element (like an `<img>` or `<video>`) should be fitted to the box established by its used height and width.
 
 170. **Explain the concept of CSS Grid.**
      Answer: CSS Grid is a two-dimensional layout system that allows you to create complex responsive web design layouts more easily and consistently across browsers.
@@ -700,7 +713,7 @@
      Answer: Theming can be implemented using CSS custom properties, separate theme stylesheets, or CSS-in-JS solutions. Custom properties are particularly useful as they can be changed dynamically.
 
 221. **What is the purpose of the :root pseudo-class?**
-     Answer: The :root pseudo-class matches the root element of the document tree, typically the <html> element. It's often used for declaring global CSS variables.
+     Answer: The :root pseudo-class matches the root element of the document tree, typically the `<html>` element. It's often used for declaring global CSS variables.
 
 222. **How can you create a CSS style guide?**
      Answer: A CSS style guide can be created by documenting naming conventions, code formatting rules, file organization, and best practices for your project. Tools like KSS or Storybook can help in creating living style guides.
@@ -940,7 +953,7 @@
      4. Use feature detection to serve different experiences
 
 278. **What is the purpose of the 'object-fit' property?**
-     Answer: The 'object-fit' property specifies how the content of a replaced element (like an <img> or <video>) should be resized to fit its container. It's used to control how images and videos are cropped or scaled within their containers.
+     Answer: The 'object-fit' property specifies how the content of a replaced element (like an `<img>` or `<video>`) should be resized to fit its container. It's used to control how images and videos are cropped or scaled within their containers.
 
 279. **How do you handle CSS columns in browsers that don't support them?**
      Answer: For browsers that don't support CSS columns, you can:

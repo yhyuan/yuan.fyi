@@ -1,9 +1,10 @@
 ---
-title: BigFrontEnd Category 21 React Coding Questions
-date: "2024-06-21"
-tags: ["BigFrontEnd", "category"]
+title: BigFrontEnd React Coding Questions
+date: '2024-06-21'
+tags: ['BigFrontEnd', 'React', 'Coding']
 draft: false
 ---
+
 ### Introduction
 
 This blog post summarizes React Coding Questions on BigFrontEnd.Dev.
@@ -17,11 +18,13 @@ This blog post summarizes React Coding Questions on BigFrontEnd.Dev.
 As the first React problem, you are asked to create the famous Counter app.
 
 counter starts from 0.
+
 - click the '+' button to increment.
 - click the '-' button to decrement.
 - data-testid is used to test your code, please do not remove them.
 
 **Solution:**
+
 ```ts
 import React, {useState, useCallback} from 'react'
 
@@ -61,23 +64,23 @@ DO NOT reset the timer if only callback changes
 We can utilize `useRef` to create a reference that stores the callback function and use `useEffect` to update the ref whenever the callback changes. Additionally, another `useEffect` can be used to update the `setTimeout` delay in the ref when the `delay` changes.
 
 ```ts
-import { useEffect, useRef } from "react";
+import { useEffect, useRef } from 'react'
 
 export function useTimeout(callback: () => void, delay: number) {
   // useRef for Callback Storage:
-  const savedCallback = useRef(callback);
+  const savedCallback = useRef(callback)
 
   // Remember the latest callback if it changes
   useEffect(() => {
-    savedCallback.current = callback;
-  }, [callback]);
+    savedCallback.current = callback
+  }, [callback])
 
   useEffect(() => {
-    const id = setTimeout(() => savedCallback.current(), delay);
+    const id = setTimeout(() => savedCallback.current(), delay)
 
     // Cleanup timeout on component unmount or when delay changes
-    return () => clearTimeout(id);
-  }, [delay]);
+    return () => clearTimeout(id)
+  }, [delay])
 }
 ```
 
@@ -86,6 +89,7 @@ export function useTimeout(callback: () => void, delay: number) {
 3.https://bigfrontend.dev/react/useIsFirstRender
 
 Create a hook to tell if it is the first render.
+
 ```js
 function App() {
   const isFirstRender = useIsFirstRender()
@@ -93,21 +97,22 @@ function App() {
   ...
 }
 ```
+
 **Solution:**
 
 We can use `useRef` to create a value initialized as `true`. After the initial render (when the component mounts), this value is then reset to `false`.
 
 ```ts
-import { useEffect, useRef } from "react";
+import { useEffect, useRef } from 'react'
 
 export function useIsFirstRender(): boolean {
-  const isFirstRender = useRef<boolean>(true);
+  const isFirstRender = useRef<boolean>(true)
 
   useEffect(() => {
-    isFirstRender.current = false;
-  }, []);
+    isFirstRender.current = false
+  }, [])
 
-  return isFirstRender.current;
+  return isFirstRender.current
 }
 ```
 
@@ -118,6 +123,7 @@ export function useIsFirstRender(): boolean {
 [SWR](https://swr.vercel.app/) is a popular library of data fetching.
 
 Let's try to implement the basic usage by ourselves.
+
 ```js
 import React from 'react'
 function App() {
@@ -127,6 +133,7 @@ function App() {
   return <div>succeeded</div>
 }
 ```
+
 this is not to replicate the true implementation of `useSWR()`
 The first argument key is for deduplication, we can safely ignore it for now
 
@@ -135,7 +142,7 @@ The first argument key is for deduplication, we can safely ignore it for now
 We can use `useState` to create two state variables, `data` and `error`, and utilize `useEffect` to trigger the data fetching callback whenever the key changes.
 
 ```ts
-import {useState, useEffect} from "react";
+import { useState, useEffect } from 'react'
 
 export function useSWR<T = any, E = any>(
   _key: string,
@@ -144,26 +151,26 @@ export function useSWR<T = any, E = any>(
   data?: T
   error?: E
 } {
-  const promise = fetcher();
+  const promise = fetcher()
   if (!(promise instanceof Promise)) {
-    return {data: promise};
+    return { data: promise }
   }
-  const [data, setData] = useState<T>();
-  const [error, setError] = useState<E>();
+  const [data, setData] = useState<T>()
+  const [error, setError] = useState<E>()
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const data = await promise;
-        setData(data);
-      } catch(e) {
-        setError(e);
+        const data = await promise
+        setData(data)
+      } catch (e) {
+        setError(e)
       }
-    };
-    fetchData();
-  }, [_key]);
+    }
+    fetchData()
+  }, [_key])
 
-  return {data, error};
+  return { data, error }
 }
 ```
 
@@ -178,17 +185,17 @@ Create a hook `usePrevious()` to return the previous value, with initial value o
 We can use `useRef` to create a variable that stores the previous value. Each time the value changes, it is saved in this variable.
 
 ```ts
-import { useRef, useEffect } from "react";
+import { useRef, useEffect } from 'react'
 
 export function usePrevious<T>(value: T): T | undefined {
-  const previousValueRef = useRef<T | undefined>();
+  const previousValueRef = useRef<T | undefined>()
 
   useEffect(() => {
     /* This line runs after every render after the value is changed*/
-    previousValueRef.current = value;
-  }, [value]);
+    previousValueRef.current = value
+  }, [value])
   // It will return the value before each render.
-  return previousValueRef.current;
+  return previousValueRef.current
 }
 ```
 
@@ -201,6 +208,7 @@ It is common to see conditional rendering based on hover state of some element.
 We can achive it by CSS pseduo class `:hover`, but for more complex cases it might be better to have state controlled by script.
 
 Now you are asked to create a `useHover()` hook.
+
 ```js
 function App() {
   const [ref, isHovered] = useHover()
@@ -211,33 +219,33 @@ function App() {
 **Solution:**
 
 ```tsx
-import { useRef, useState, useCallback } from "react";
-import type { Ref } from "react";
+import { useRef, useState, useCallback } from 'react'
+import type { Ref } from 'react'
 
 export function useHover<T extends HTMLElement>(): [Ref<T>, boolean] {
-  const elRef = useRef<T | null>(null);
-  const [isHovered, setIsHovered] = useState(false);
+  const elRef = useRef<T | null>(null)
+  const [isHovered, setIsHovered] = useState(false)
   const onMouseEnter = () => {
-    setIsHovered(true);
-  };
+    setIsHovered(true)
+  }
   const onMouseLeave = () => {
-    setIsHovered(false);
-  };
+    setIsHovered(false)
+  }
 
   const setRef = useCallback((node: T) => {
     if (elRef.current) {
-      elRef.current.removeEventListener("mouseenter", onMouseEnter);
-      elRef.current.removeEventListener("mouseleave", onMouseLeave);
+      elRef.current.removeEventListener('mouseenter', onMouseEnter)
+      elRef.current.removeEventListener('mouseleave', onMouseLeave)
     }
 
     if (node) {
-      elRef.current = node;
-      elRef.current.addEventListener("mouseenter", onMouseEnter);
-      elRef.current.addEventListener("mouseleave", onMouseLeave);
+      elRef.current = node
+      elRef.current.addEventListener('mouseenter', onMouseEnter)
+      elRef.current.addEventListener('mouseleave', onMouseLeave)
     }
-  }, []);
+  }, [])
 
-  return [setRef, isHovered];
+  return [setRef, isHovered]
 }
 ```
 
@@ -248,6 +256,7 @@ export function useHover<T extends HTMLElement>(): [Ref<T>, boolean] {
 It is quite common to see switches and checkboxes in web apps.
 
 Implement `useToggle()` to make things easier
+
 ```js
 function App() {
   const [on, toggle] = useToggle()
@@ -258,13 +267,13 @@ function App() {
 **Solution:**
 
 ```ts
-import { useState } from "react";
+import { useState } from 'react'
 export function useToggle(on: boolean = false): [boolean, () => void] {
-  const [state, setState] = useState(on);
+  const [state, setState] = useState(on)
   const toggle = () => {
-    setState((preState) => !preState);
-  };
-  return [state, toggle];
+    setState((preState) => !preState)
+  }
+  return [state, toggle]
 }
 ```
 
@@ -275,6 +284,7 @@ export function useToggle(on: boolean = false): [boolean, () => void] {
 For a frequently changing value like text input you might want to debounce the changes.
 
 Implement `useDebounce()` to achieve this.
+
 ```js
 function App() {
   const [value, setValue] = useState(...)
@@ -283,6 +293,7 @@ function App() {
   // now it is debounced
 }
 ```
+
 The logic should be similar to [6. implement basic debounce()](https://bigfrontend.dev/problem/implement-basic-debounce)
 
 **Solution:**
@@ -318,10 +329,10 @@ Here is a simple problem, implement `useEffectOnce()` as the name says itself, i
 **Solution:**
 
 ```ts
-import { useEffect, EffectCallback } from "react";
+import { useEffect, EffectCallback } from 'react'
 
 export function useEffectOnce(effect: EffectCallback) {
-  useEffect(effect, []);
+  useEffect(effect, [])
   // Empty dependency array ensures the effect runs only once
 }
 ```
@@ -336,7 +347,7 @@ Create a `PhoneNumberInput` component.
 - format the number automatically as (123)456-7890 by
 - adding the parenthesis when the 4th digit is entered
 - also adding - before 7th digit
-You can use the default text input without any styling.
+  You can use the default text input without any styling.
 
 **Follow-up**
 
@@ -345,28 +356,29 @@ What if user removes some digits in the middle, does caret jumps to the end in y
 caret position is not covered in our tests.
 
 **Solution:**
+
 ```js
-import React, { useState } from "react";
+import React, { useState } from 'react'
 
 export const PhoneNumberInput = () => {
-  const [phoneNumber, setPhoneNumber] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState('')
 
   const handleInputChange = (e) => {
     // /\D/ matches any character that is not a digit (\D stands for “non-digit”).
-    const input = e.target.value.replace(/\D/g, ""); // Remove non-numeric characters
-    let formattedPhoneNumber = "";
+    const input = e.target.value.replace(/\D/g, '') // Remove non-numeric characters
+    let formattedPhoneNumber = ''
     // Format the phone number
     if (input.length <= 3) {
-      formattedPhoneNumber = input;
+      formattedPhoneNumber = input
     } else if (input.length >= 4 && input.length <= 6) {
-      formattedPhoneNumber = `(${input.slice(0, 3)})${input.slice(3)}`;
+      formattedPhoneNumber = `(${input.slice(0, 3)})${input.slice(3)}`
     } else if (input.length >= 7 && input.length <= 10) {
-      formattedPhoneNumber = `(${input.slice(0, 3)})${input.slice(3, 6)}-${input.slice(6)}`;
+      formattedPhoneNumber = `(${input.slice(0, 3)})${input.slice(3, 6)}-${input.slice(6)}`
     } else {
-      formattedPhoneNumber = `(${input.slice(0, 3)})${input.slice(3, 6)}-${input.slice(6, 10)}`;
+      formattedPhoneNumber = `(${input.slice(0, 3)})${input.slice(3, 6)}-${input.slice(6, 10)}`
     }
-    setPhoneNumber(formattedPhoneNumber);
-  };
+    setPhoneNumber(formattedPhoneNumber)
+  }
 
   return (
     <input
@@ -375,8 +387,8 @@ export const PhoneNumberInput = () => {
       value={phoneNumber}
       onChange={handleInputChange}
     />
-  );
-};
+  )
+}
 ```
 
 ### 11.`useFocus()` Hook
@@ -388,47 +400,50 @@ CSS pseudo-class [:focus-within](https://developer.mozilla.org/en-US/docs/Web/CS
 While it is cool, in complex web apps, it might be better to control the state in script.
 
 Now please create `useFocus()` to support this.
+
 ```js
 function App() {
   const [ref, isFocused] = useFocus()
-  return <div>
-    <input ref={ref}/>
-    {isFocused && <p>focused</p>}
-  </div>
+  return (
+    <div>
+      <input ref={ref} />
+      {isFocused && <p>focused</p>}
+    </div>
+  )
 }
 ```
 
 **Solution:**
 
 ```ts
-import React, { Ref, useState, useRef, useEffect, RefObject } from "react";
+import React, { Ref, useState, useRef, useEffect, RefObject } from 'react'
 
 export function useFocus<T extends HTMLElement>(): [Ref<T>, boolean] {
-  const [isFocused, setIsFocused] = useState<boolean>(false);
-  const ref = useRef<T>(null);
+  const [isFocused, setIsFocused] = useState<boolean>(false)
+  const ref = useRef<T>(null)
 
   useEffect(() => {
-    const handleFocusIn = () => setIsFocused(true);
-    const handleFocusOut = () => setIsFocused(false);
+    const handleFocusIn = () => setIsFocused(true)
+    const handleFocusOut = () => setIsFocused(false)
 
-    const element = ref.current;
+    const element = ref.current
     // !!IMPORTANT!!
     // initialize the focus state when currentElement changes.
-    setIsFocused(document.activeElement === element);
+    setIsFocused(document.activeElement === element)
     if (element) {
-      element.addEventListener("focus", handleFocusIn);
-      element.addEventListener("blur", handleFocusOut);
+      element.addEventListener('focus', handleFocusIn)
+      element.addEventListener('blur', handleFocusOut)
     }
 
     return () => {
       if (element) {
-        element.removeEventListener("focus", handleFocusIn);
-        element.removeEventListener("blur", handleFocusOut);
+        element.removeEventListener('focus', handleFocusIn)
+        element.removeEventListener('blur', handleFocusOut)
       }
-    };
-  }, [ref.current]);
+    }
+  }, [ref.current])
 
-  return [ref, isFocused];
+  return [ref, isFocused]
 }
 ```
 
@@ -439,42 +454,41 @@ export function useFocus<T extends HTMLElement>(): [Ref<T>, boolean] {
 When array is used in React state, we need to deal with actions such as push and remove.
 
 Implement `useArray()` to make life easier.
+
 ```js
-const {value, push, removeByIndex} = useArray([1, 2, 3])
+const { value, push, removeByIndex } = useArray([1, 2, 3])
 ```
 
 **Solution:**
 
 ```ts
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback } from 'react'
 
 type UseArrayActions<T> = {
-  push: (item: T) => void;
-  removeByIndex: (index: number) => void;
-};
+  push: (item: T) => void
+  removeByIndex: (index: number) => void
+}
 
-export function useArray<T>(
-  initialValue: T[],
-): { value: T[] } & UseArrayActions<T> {
-  const [array, setArray] = useState(initialValue);
+export function useArray<T>(initialValue: T[]): { value: T[] } & UseArrayActions<T> {
+  const [array, setArray] = useState(initialValue)
 
   const push = useCallback((element: T) => {
-    setArray((prevArray) => [...prevArray, element]);
-  }, []);
+    setArray((prevArray) => [...prevArray, element])
+  }, [])
 
   const removeByIndex = useCallback((index: number) => {
     setArray((prevArray) => {
-      const newArray = [...prevArray];
-      newArray.splice(index, 1);
-      return newArray;
-    });
-  }, []);
+      const newArray = [...prevArray]
+      newArray.splice(index, 1)
+      return newArray
+    })
+  }, [])
 
   return {
     value: array,
     push,
     removeByIndex,
-  };
+  }
 }
 ```
 
@@ -485,6 +499,7 @@ export function useArray<T>(
 [valtio](https://github.com/pmndrs/valtio) claims to make proxy-state simple.
 
 Let's take a look at the basic example.
+
 ```js
 import { proxy, useSnapshot } from 'valtio'
 const state = proxy({ count: 0, text: 'hello' })
@@ -495,9 +510,7 @@ function Counter() {
   return (
     <div>
       {snap.count}
-      <button onClick={() => ++state.count}>
-        +1
-      </button>
+      <button onClick={() => ++state.count}>+1</button>
     </div>
   )
 }
@@ -506,6 +519,7 @@ setInterval(() => {
   ++state.count
 }, 1000)
 ```
+
 Now you are asked to implement `proxy()` and `useSnapshot()` to make above code example work.
 
 This question is **NOT** to re-implement `valtio`, rather it is to test your understanding of proxy-state. The test cases on BFE.dev only covers the basic usage of above two functions, not the full abilities of `valtio`.
@@ -519,16 +533,21 @@ This solution provides a function named `proxy` and a hook named `useSnapshot`, 
 This function creates a proxy object that intercepts `get` and `set` operations on the object's properties. The goal is to monitor and react to changes in the object's properties.
 
 ##### Breakdown:
+
 - **Generics**:
+
   - The function is defined with a generic type `<T extends object>`. This means it can work with any object type `T`, ensuring type safety.
 
 - **`keys` Set**:
+
   - A `Set` called `keys` is used to track which properties of the object are accessed. The set only allows unique keys.
 
 - **`setState` Reference**:
+
   - A reference to React's `setState` function is stored in the `setState` variable. This is used later to trigger React re-renders.
 
 - **Proxy Creation**:
+
   - A `Proxy` object is created around the initial value. This proxy intercepts `get` and `set` operations:
     - **`get` Trap**:
       - Whenever a property on the proxy is accessed, the `get` trap is triggered. It adds the accessed key to the `keys` set and returns the value of that property.
@@ -546,10 +565,13 @@ This function creates a proxy object that intercepts `get` and `set` operations 
 This hook links the proxy object to React’s state system, enabling reactivity when properties on the proxy are modified.
 
 ##### Breakdown:
+
 - **State Initialization**:
+
   - `useState` is called with the proxy object. This initializes React state, and `setState` is used to update the state later.
 
 - **Injecting `setState`**:
+
   - The `setState` function is injected into the proxy object by setting a special `"setState"` property on the proxy. This allows the proxy's `set` trap to trigger React updates.
 
 - **Return**:
@@ -558,62 +580,63 @@ This hook links the proxy object to React’s state system, enabling reactivity 
 #### **How It Works Together**
 
 - **Proxy**:
+
   - The `proxy` function creates a proxied object that monitors changes to its properties. It triggers re-renders when those properties change, as long as they have been accessed before.
 
 - **useSnapshot**:
   - The `useSnapshot` hook connects this proxy to React's state system, enabling components to reactively update when the proxy's properties are modified.
 
 ```ts
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react'
 
 export function proxy<T extends object>(initialValue: T): T {
-  const keys = new Set<string>();
-  let setState: React.Dispatch<React.SetStateAction<T>>;
+  const keys = new Set<string>()
+  let setState: React.Dispatch<React.SetStateAction<T>>
 
   const proxy = new Proxy<T>(
     { ...initialValue },
     {
       get(target: T, key: string) {
-        keys.add(key);
-        return Reflect.get(target, key);
+        keys.add(key)
+        return Reflect.get(target, key)
       },
       set(target: T, key: string, value) {
-        if (key === "setState") {
+        if (key === 'setState') {
           // This is just to update the dispatch reference in this method, won't be required
-          setState = value;
-          return false;
+          setState = value
+          return false
         }
 
         if (Reflect.get(target, key) === value) {
           // no-change occured w.r.t prev value
-          return true;
+          return true
         }
 
-        const status = Reflect.set(target, key, value);
+        const status = Reflect.set(target, key, value)
 
         if (status && keys.has(key)) {
-          keys.clear();
+          keys.clear()
           setState((prev) => ({
             ...prev,
             [key]: value,
-          }));
+          }))
         }
 
-        return status;
+        return status
       },
-    },
-  );
+    }
+  )
 
-  return proxy;
+  return proxy
 }
 
 export function useSnapshot<T extends object>(proxy: T): T {
-  const [_, setState] = useState(proxy);
+  const [_, setState] = useState(proxy)
 
   // Pass dispatch handler to set interceptor in proxy method
-  Reflect.set(proxy, "setState", setState);
+  Reflect.set(proxy, 'setState', setState)
 
-  return proxy;
+  return proxy
 }
 ```
 
@@ -626,20 +649,21 @@ When we handle async requests in React, we need to pay attention if the componen
 Please implement `useIsMounted()` for us to easily tell if the component is still not unmounted.
 
 **Solution:**
+
 ```ts
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect } from 'react'
 
 export function useIsMounted(): () => boolean {
-  const isMountedRef = useRef(false);
+  const isMountedRef = useRef(false)
 
   useEffect(() => {
-    isMountedRef.current = true;
+    isMountedRef.current = true
     return () => {
-      isMountedRef.current = false;
-    };
-  }, []);
+      isMountedRef.current = false
+    }
+  }, [])
 
-  return () => isMountedRef.current;
+  return () => isMountedRef.current
 }
 ```
 
@@ -650,36 +674,38 @@ export function useIsMounted(): () => boolean {
 Click above header menu on this page, you can see that the dropdown menu is dismissed after clicking outside.
 
 Now you are asked to implement a React hook to make it eaiser to implement such behavior.
+
 ```js
 function Component() {
   const ref = useClickOutside(() => {
     alert('clicked outside')
-  });
+  })
   return <div ref={ref}>..</div>
 }
 ```
 
 **Solution:**
+
 ```ts
-import { useEffect, useRef } from "react";
+import { useEffect, useRef } from 'react'
 
 export function useClickOutside(callback: () => void) {
-  const ref = useRef<HTMLDivElement | null>(null);
+  const ref = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (ref.current && !ref.current.contains(event.target as Node)) {
-        callback();
+        callback()
       }
     }
 
-    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside)
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [callback]);
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [callback])
 
-  return ref;
+  return ref
 }
 ```
 
@@ -706,3 +732,133 @@ export function useUpdateEffect(effect: EffectCallback, deps?: DependencyList) {
   }, deps); // Only re-run effect if dependencies change
 }
 ```
+
+### 17.`useWindowWidth` Hook
+
+```js
+import { useState, useEffect } from 'react'
+function useWindowWidth() {
+  const [width, setWidth] = useState(window.innerWidth)
+  useEffect(() => {
+    const handleResize = () => setWidth(window.innerWidth)
+    window.addEventListener('resize', handleResize)
+    return () => {
+      window.removeEventListener('resize', handleResize)
+    }
+  }, [])
+  return width
+}
+export default useWindowWidth
+```
+
+Reference: Mastering Custom Hooks in React: A Comprehensive Guide
+
+### 18.`useFetch` Hook
+
+```js
+import { useState, useEffect } from 'react'
+function useFetch(url) {
+  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch(url)
+        if (!response.ok) throw new Error('Network response was not ok')
+        const result = await response.json()
+        setData(result)
+      } catch (err) {
+        setError(err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
+  }, [url])
+  return { data, loading, error }
+}
+export default useFetch
+```
+
+Usage:
+
+```js
+import React from 'react'
+import useFetch from './useFetch'
+function App() {
+  const { data, loading, error } = useFetch('https://api.example.com/data')
+  if (loading) return <div>Loading...</div>
+  if (error) return <div>Error: {error.message}</div>
+  return (
+    <div>
+      <h1>Data</h1>
+      <pre>{JSON.stringify(data, null, 2)}</pre>
+    </div>
+  )
+}
+export default App
+```
+
+Reference: Mastering Custom Hooks in React: A Comprehensive Guide
+
+### 19.`useForm` Hook
+
+```js
+import { useState } from 'react'
+function useForm(initialValues, onSubmit) {
+  const [values, setValues] = useState(initialValues)
+  const handleChange = (event) => {
+    const { name, value } = event.target
+    setValues({
+      ...values,
+      [name]: value,
+    })
+  }
+  const handleSubmit = (event) => {
+    event.preventDefault()
+    onSubmit(values)
+  }
+  return {
+    values,
+    handleChange,
+    handleSubmit,
+  }
+}
+export default useForm
+```
+
+Usage:
+
+```js
+import React from 'react'
+import useForm from './useForm'
+function App() {
+  const initialValues = { username: '', email: '' }
+  const onSubmit = (values) => {
+    console.log('Form Submitted:', values)
+  }
+  const { values, handleChange, handleSubmit } = useForm(initialValues, onSubmit)
+  return (
+    <form onSubmit={handleSubmit}>
+      <div>
+        <label>
+          Username:
+          <input type="text" name="username" value={values.username} onChange={handleChange} />
+        </label>
+      </div>
+      <div>
+        <label>
+          Email:
+          <input type="email" name="email" value={values.email} onChange={handleChange} />
+        </label>
+      </div>
+      <button type="submit">Submit</button>
+    </form>
+  )
+}
+
+export default App
+```
+
+Reference: Mastering Custom Hooks in React: A Comprehensive Guide

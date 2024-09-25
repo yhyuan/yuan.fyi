@@ -1,9 +1,10 @@
 ---
 title: BigFrontEnd Category 13 Object Implementation Questions
-date: "2024-06-10"
-tags: ["BigFrontEnd", "category"]
+date: '2024-06-10'
+tags: ['BigFrontEnd', 'category']
 draft: false
 ---
+
 ### Introduction
 
 This blog post summarizes the Object implementation related questions found on BigFrontEnd.Dev.
@@ -24,10 +25,10 @@ The goal is not to list up all the data types but to show us how to solve the pr
 The type should be lowercase
 
 ```js
-detectType(1); // 'number'
-detectType(new Map()); // 'map'
-detectType([]); // 'array'
-detectType(null); // 'null'
+detectType(1) // 'number'
+detectType(new Map()) // 'map'
+detectType([]) // 'array'
+detectType(null) // 'null'
 // more in judging step
 ```
 
@@ -39,26 +40,26 @@ detectType(null); // 'null'
 ```js
 function detectType(data) {
   if (typeof data !== `object`) {
-    return typeof data;
+    return typeof data
   }
   if (data === null) {
-    return "null";
+    return 'null'
   }
   const types = [
-    [Number, "number"],
-    [String, "string"],
-    [Boolean, "boolean"],
-    [Array, "array"],
-    [ArrayBuffer, "arraybuffer"],
-    [Date, "date"],
-    [Map, "map"],
-    [Set, "set"],
-  ];
-  const type = types.find((type) => data instanceof type[0]);
+    [Number, 'number'],
+    [String, 'string'],
+    [Boolean, 'boolean'],
+    [Array, 'array'],
+    [ArrayBuffer, 'arraybuffer'],
+    [Date, 'date'],
+    [Map, 'map'],
+    [Set, 'set'],
+  ]
+  const type = types.find((type) => data instanceof type[0])
   if (type !== -1) {
-    return type[1];
+    return type[1]
   }
-  return "object";
+  return 'object'
 }
 ```
 
@@ -81,8 +82,8 @@ The Object.assign() method copies all enumerable own properties from one or more
 It is widely used, Object Spread operator actually is internally the same as Object.assign() ([source](https://github.com/tc39/proposal-object-rest-spread/blob/master/Spread.md)). Following 2 lines of code are totally the same.
 
 ```js
-let aClone = { ...a };
-let aClone = Object.assign({}, a);
+let aClone = { ...a }
+let aClone = Object.assign({}, a)
 ```
 
 This is an easy one, could you implement Object.assign() with your own implementation ?
@@ -99,61 +100,58 @@ Don't use Object.assign() in your code It doesn't help improve your skills
  */
 function objectAssign(target, ...sources) {
   if (!target) {
-    throw new Error();
+    throw new Error()
   }
   // If the target is not an object (i.e., it's a primitive type like a number, string, or boolean),
   // it creates a new instance of the same type using its constructor.
   // This effectively converts the primitive target to an object wrapper (e.g., new Number(target) if target is a number).
-  if (typeof target !== "object") {
-    const constructor = Object.getPrototypeOf(target).constructor;
-    target = new constructor(target);
+  if (typeof target !== 'object') {
+    const constructor = Object.getPrototypeOf(target).constructor
+    target = new constructor(target)
   }
 
   for (const source of sources) {
     if (!source) {
-      continue;
+      continue
     }
     // collects all enumerable property names and symbol properties using Object.keys and Object.getOwnPropertySymbols.
-    const keys = [
-      ...Object.keys(source),
-      ...Object.getOwnPropertySymbols(source),
-    ];
+    const keys = [...Object.keys(source), ...Object.getOwnPropertySymbols(source)]
     for (const key of keys) {
-      const descriptor = Object.getOwnPropertyDescriptor(target, key);
+      const descriptor = Object.getOwnPropertyDescriptor(target, key)
       // If the property is non-configurable (i.e., it cannot be changed), the function throws an error to prevent modification of non-configurable properties.
       if (descriptor && !descriptor.configurable) {
-        throw new Error();
+        throw new Error()
       }
 
-      target[key] = source[key];
+      target[key] = source[key]
     }
   }
 
-  return target;
+  return target
 }
 ```
 
 ```js
 function objectAssign(target, ...sources) {
   if (!target) {
-    throw new TypeError("Cannot convert undefined or null to object");
+    throw new TypeError('Cannot convert undefined or null to object')
   }
-  const to = Object(target);
+  const to = Object(target)
   for (const source of sources) {
     if (source != null) {
       // Get symbol properties
       Object.keys(source)
         .concat(Object.getOwnPropertySymbols(source))
         .forEach((key) => {
-          to[key] = source[key];
+          to[key] = source[key]
           // Make sure the copy is successful.
           if (to[key] !== source[key]) {
-            throw new TypeError(`Cannot assign the property ${key}`);
+            throw new TypeError(`Cannot assign the property ${key}`)
           }
-        });
+        })
     }
   }
-  return to;
+  return to
 }
 ```
 
@@ -162,34 +160,31 @@ function objectAssign(target, ...sources) {
 ```js
 function completeAssign(target, ...sources) {
   if (!target) {
-    throw new Error();
+    throw new Error()
   }
   // If the target is not an object (i.e., it's a primitive type like a number, string, or boolean),
   // it creates a new instance of the same type using its constructor.
   // This effectively converts the primitive target to an object wrapper (e.g., new Number(target) if target is a number).
-  if (typeof target !== "object") {
-    const constructor = Object.getPrototypeOf(target).constructor;
-    target = new constructor(target);
+  if (typeof target !== 'object') {
+    const constructor = Object.getPrototypeOf(target).constructor
+    target = new constructor(target)
   }
 
   for (const source of sources) {
     if (!source) {
-      continue;
+      continue
     }
 
-    const descriptors = Object.getOwnPropertyDescriptors(source);
+    const descriptors = Object.getOwnPropertyDescriptors(source)
     // collects all property names (including non-enumerable properties) and symbol properties
-    const keys = [
-      ...Object.getOwnPropertyNames(source),
-      ...Object.getOwnPropertySymbols(source),
-    ];
+    const keys = [...Object.getOwnPropertyNames(source), ...Object.getOwnPropertySymbols(source)]
     for (const key of keys) {
       // defines the property on the target object using Object.defineProperty
-      Object.defineProperty(target, key, descriptors[key]);
+      Object.defineProperty(target, key, descriptors[key])
     }
   }
 
-  return target;
+  return target
 }
 ```
 
@@ -203,11 +198,11 @@ Could you implement a `myExtends()` function in ES5 to mimic the behavior of ext
 `myExtends()` takes a `SubType` and `SuperType`, and return a new type.
 
 ```js
-const InheritedSubType = myExtends(SuperType, SubType);
-const instance = new InheritedSubType();
+const InheritedSubType = myExtends(SuperType, SubType)
+const instance = new InheritedSubType()
 // above should work (almost) the same as follows
 class SubType extends SuperType {}
-const instance = new SubType();
+const instance = new SubType()
 ```
 
 To solve this problem, you need to fully understand what is Inheritance
@@ -218,31 +213,31 @@ Your code will be test against following SuperType and SubType
 
 ```js
 function SuperType(name) {
-  this.name = name;
-  this.forSuper = [1, 2];
-  this.from = "super";
+  this.name = name
+  this.forSuper = [1, 2]
+  this.from = 'super'
 }
-SuperType.prototype.superMethod = function () {};
-SuperType.prototype.method = function () {};
-SuperType.staticSuper = "staticSuper";
+SuperType.prototype.superMethod = function () {}
+SuperType.prototype.method = function () {}
+SuperType.staticSuper = 'staticSuper'
 
 function SubType(name) {
-  this.name = name;
-  this.forSub = [3, 4];
-  this.from = "sub";
+  this.name = name
+  this.forSub = [3, 4]
+  this.from = 'sub'
 }
 
-SubType.prototype.subMethod = function () {};
-SubType.prototype.method = function () {};
-SubType.staticSub = "staticSub";
+SubType.prototype.subMethod = function () {}
+SubType.prototype.method = function () {}
+SubType.staticSub = 'staticSub'
 ```
 
 ```js
-const InheritedSubType = myExtends(SuperType, SubType);
-const instance = new InheritedSubType();
+const InheritedSubType = myExtends(SuperType, SubType)
+const instance = new InheritedSubType()
 // above should work (almost) the same as follows
 class SubType extends SuperType {}
-const instance = new SubType();
+const instance = new SubType()
 ```
 
 ```js
@@ -252,25 +247,26 @@ const myExtends = (SuperType, SubType) => {
     // Call the original Constructors with the constructor
     // instance as their context
     // This ensures that any initialization code in SuperType is executed.
-    SuperType.apply(this, args);
+    SuperType.apply(this, args)
     // This ensures that any initialization code in SubType is also executed.
-    SubType.apply(this, args);
+    SubType.apply(this, args)
     // This sets the prototype of the new instance to SubType.prototype, ensuring that instance methods from SubType are available on the instance.
-    Object.setPrototypeOf(this, SubType.prototype);
-  };
+    Object.setPrototypeOf(this, SubType.prototype)
+  }
 
-  Object.setPrototypeOf(SubType.prototype, SuperType.prototype);
-  Object.setPrototypeOf(constructor.prototype, SubType.prototype);
+  Object.setPrototypeOf(SubType.prototype, SuperType.prototype)
+  Object.setPrototypeOf(constructor.prototype, SubType.prototype)
 
   // Inherit static properties
-  Object.setPrototypeOf(constructor, SuperType);
-  return constructor;
-};
+  Object.setPrototypeOf(constructor, SuperType)
+  return constructor
+}
 ```
 
 ### 6.create your own `new` operator
 
 60.https://bigfrontend.dev/problem/create-your-own-new-operator
+
 new [operator](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/new) is used to create new instance objects.
 
 Do you know exactly what new does?
@@ -282,37 +278,37 @@ Pay attention to the return type of constructor.
 ```javascript
 function myNew(constructor, ...args) {
   // Step 1: Create a new object
-  const obj = {};
+  const obj = {}
 
   // Step 2: Set the prototype of the new object to the constructor's prototype
   // obj.__proto__ = constructor.prototype;
-  Object.setPrototypeOf(obj, constructor.prototype);
+  Object.setPrototypeOf(obj, constructor.prototype)
 
   // Step 3: Execute the constructor with `this` bound to the new object
-  const result = constructor.apply(obj, args);
+  const result = constructor.apply(obj, args)
 
   // Step 4: If the constructor returns an object, return that object
   // Otherwise, return the newly created object
-  return result instanceof Object ? result : obj;
+  return result instanceof Object ? result : obj
 }
 
 // Example usage:
 
 function Person(name, age) {
-  this.name = name;
-  this.age = age;
+  this.name = name
+  this.age = age
 }
 
 Person.prototype.greet = function () {
-  console.log(`Hello, my name is ${this.name} and I am ${this.age} years old.`);
-};
+  console.log(`Hello, my name is ${this.name} and I am ${this.age} years old.`)
+}
 
-const john = myNew(Person, "John", 30);
-john.greet(); // Hello, my name is John and I am 30 years old.
+const john = myNew(Person, 'John', 30)
+john.greet() // Hello, my name is John and I am 30 years old.
 
-console.log(john instanceof Person); // true
-console.log(john.name); // John
-console.log(john.age); // 30
+console.log(john instanceof Person) // true
+console.log(john.name) // John
+console.log(john.age) // 30
 ```
 
 ### 7.write your own `instanceof`
@@ -326,18 +322,20 @@ If so, please write you own `myInstanceOf()`.
 class A {}
 class B extends A {}
 
-const b = new B();
-myInstanceOf(b, B); // true
-myInstanceOf(b, A); // true
-myInstanceOf(b, Object); // true
+const b = new B()
+myInstanceOf(b, B) // true
+myInstanceOf(b, A) // true
+myInstanceOf(b, Object) // true
 
 function C() {}
-myInstanceOf(b, C); // false
-C.prototype = B.prototype;
-myInstanceOf(b, C); // true
-C.prototype = {};
-myInstanceOf(b, C); // false
+myInstanceOf(b, C) // false
+C.prototype = B.prototype
+myInstanceOf(b, C) // true
+C.prototype = {}
+myInstanceOf(b, C) // false
 ```
+
+**Solution:**
 
 Use `Object.getPrototypeOf` to go up the proto chain to find whether it matchs the `constructor.prototype.`
 
@@ -348,15 +346,11 @@ Use `Object.getPrototypeOf` to go up the proto chain to find whether it matchs t
  * @return {boolean}
  */
 function myInstanceOf(instance, constructor) {
-  if (
-    typeof instance !== "object" ||
-    instance === null ||
-    typeof constructor !== "function"
-  ) {
-    return false;
+  if (typeof instance !== 'object' || instance === null || typeof constructor !== 'function') {
+    return false
   }
   // Get the prototype of the instance
-  let proto = Object.getPrototypeOf(instance);
+  let proto = Object.getPrototypeOf(instance)
 
   // Get the prototype property of the constructor
   // const prototype = constructor.prototype;
@@ -365,14 +359,37 @@ function myInstanceOf(instance, constructor) {
   while (proto) {
     // If we find a match, return true
     if (proto === constructor.prototype) {
-      return true;
+      return true
     }
     // Move up the prototype chain
-    proto = Object.getPrototypeOf(proto);
+    proto = Object.getPrototypeOf(proto)
   }
 
   // If we reach the end of the chain without finding a match, return false
-  return false;
+  return false
+}
+```
+
+Recurisve solution:
+
+```js
+/**
+ * @param {any} obj
+ * @param {target} target
+ * @return {boolean}
+ */
+function myInstanceOf(obj, target) {
+  if (typeof obj !== 'object' || obj === null || typeof target !== 'function') {
+    return false
+  }
+  let proto = Object.getPrototypeOf(obj)
+  if (proto) {
+    if (proto === target.prototype) {
+      return true
+    }
+    return myInstanceOf(proto, target)
+  }
+  return false
 }
 ```
 
@@ -395,16 +412,13 @@ throw an Error if non-object is passed in. ([why](https://stackoverflow.com/ques
  * @return {object}
  */
 function myObjectCreate(proto) {
-  if (
-    (typeof proto !== "object" && typeof proto !== "function") ||
-    proto === null
-  ) {
-    throw new TypeError("Object prototype may only be an Object or null");
+  if ((typeof proto !== 'object' && typeof proto !== 'function') || proto === null) {
+    throw new TypeError('Object prototype may only be an Object or null')
   }
 
   function F() {}
-  F.prototype = proto;
-  return new F();
+  F.prototype = proto
+  return new F()
 }
 ```
 
@@ -429,11 +443,11 @@ labrador.speak(); // Output: 'Animal speaks'
 [Object.is()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/is) is similar to === except following cases
 
 ```js
-Object.is(0, -0); // false
-0 === -0; // true
+Object.is(0, -0) // false
+0 === -0 // true
 
-Object.is(NaN, NaN); // true
-NaN === NaN; // false
+Object.is(NaN, NaN) // true
+NaN === NaN // false
 ```
 
 Here is the detailed spec, can you implement your own is()?
@@ -447,13 +461,13 @@ Here is the detailed spec, can you implement your own is()?
 function is(a, b) {
   // check NaN. Do not use isNaN.
   if (Number.isNaN(a) && Number.isNaN(b)) {
-    return true;
+    return true
   }
   // Convert a, b to Infinity
   if (a === 0 && b === 0) {
-    return 1 / a === 1 / b;
+    return 1 / a === 1 / b
   }
-  return a === b;
+  return a === b
 }
 ```
 
@@ -463,12 +477,12 @@ function is(a, b) {
 Create an object with property count, which increments every time count is accessed, initial value is 0.
 
 ```js
-const counter = createCounter();
-counter.count; // 0, then it should increment
-counter.count; // 1
-counter.count; // 2
-counter.count = 100; // it cannot be altered
-counter.count; // 3
+const counter = createCounter()
+counter.count // 0, then it should increment
+counter.count // 1
+counter.count // 2
+counter.count = 100 // it cannot be altered
+counter.count // 3
 ```
 
 ```js
@@ -479,11 +493,11 @@ function createCounter() {
   const counter = {
     c: -1,
     get count() {
-      this.c += 1;
-      return this.c;
+      this.c += 1
+      return this.c
     },
-  };
-  return counter;
+  }
+  return counter
 }
 ```
 
@@ -493,26 +507,26 @@ function createCounter() {
 Please create a function count(), when called it should return how many times it has been called, count.reset() should also implemented.
 
 ```js
-count(); // 1
-count(); // 2
-count(); // 3
+count() // 1
+count() // 2
+count() // 3
 
-count.reset();
+count.reset()
 
-count(); // 1
-count(); // 2
-count(); // 3
+count() // 1
+count() // 2
+count() // 3
 ```
 
 ```js
-let countTimes = 0;
+let countTimes = 0
 function count() {
-  countTimes += 1;
-  return countTimes;
+  countTimes += 1
+  return countTimes
 }
 count.reset = () => {
-  countTimes = 0;
-};
+  countTimes = 0
+}
 ```
 
 ### 12.`undefined` to `null`
@@ -521,11 +535,11 @@ count.reset = () => {
 One of the differences between null and undefined is how they are treated differently in `JSON.stringify()`.
 
 ```js
-JSON.stringify({ a: null }); // '{"a":null}'
-JSON.stringify({ a: undefined }); // '{}'
+JSON.stringify({ a: null }) // '{"a":null}'
+JSON.stringify({ a: undefined }) // '{}'
 
-JSON.stringify([null]); // '[null]'
-JSON.stringify([undefined]); // '[null]'
+JSON.stringify([null]) // '[null]'
+JSON.stringify([undefined]) // '[null]'
 ```
 
 This difference might create troubles if there are missing alignments between client and server. It might be helpful to enforce using only one of them.
@@ -533,10 +547,10 @@ This difference might create troubles if there are missing alignments between cl
 You are asked to implement `undefinedToNull()` to return a copy that has all undefined replaced with null.
 
 ```js
-undefinedToNull({ a: undefined, b: "BFE.dev" });
+undefinedToNull({ a: undefined, b: 'BFE.dev' })
 // {a: null, b: 'BFE.dev'}
 
-undefinedToNull({ a: ["BFE.dev", undefined, "bigfrontend.dev"] });
+undefinedToNull({ a: ['BFE.dev', undefined, 'bigfrontend.dev'] })
 // {a: ['BFE.dev', null, 'bigfrontend.dev']}
 ```
 
@@ -547,19 +561,19 @@ undefinedToNull({ a: ["BFE.dev", undefined, "bigfrontend.dev"] });
  */
 function undefinedToNull(arg) {
   if (Array.isArray(arg)) {
-    return arg.map(undefinedToNull);
+    return arg.map(undefinedToNull)
   }
-  if (typeof arg === "object" && arg !== null) {
-    const ans = {};
+  if (typeof arg === 'object' && arg !== null) {
+    const ans = {}
     Object.keys(arg).forEach((key) => {
-      ans[key] = undefinedToNull(arg[key]);
-    });
-    return ans;
+      ans[key] = undefinedToNull(arg[key])
+    })
+    return ans
   }
   if (arg === undefined) {
-    return null;
+    return null
   }
-  return arg;
+  return arg
 }
 ```
 
@@ -574,6 +588,7 @@ A compact object is the same as the original object, except with keys containing
 You may assume the obj is the output of JSON.parse. In other words, it is valid JSON.
 
 Example 1:
+
 ```js
 Input: obj = [null, 0, false, 1]
 Output: [1]
@@ -589,6 +604,7 @@ Input: obj = [null, 0, 5, [0], [false, 16]]
 Output: [5, [], [16]]
 Explanation: obj[0], obj[1], obj[3][0], and obj[4][0] were falsy and removed.
 ```
+
 Constraints:
 
 obj is a valid JSON object
@@ -632,24 +648,26 @@ function compactObject(obj: Obj): Obj {
  */
 var compactObject = function (obj) {
   if (Array.isArray(obj)) {
-    return obj.filter((item) => !!item).map(compactObject);
+    return obj.filter((item) => !!item).map(compactObject)
   }
-  if (typeof obj === "object" && obj !== null) {
-    const ans = {};
+  if (typeof obj === 'object' && obj !== null) {
+    const ans = {}
     Object.keys(obj)
       .filter((key) => !!obj[key])
       .forEach((key) => {
-        ans[key] = compactObject(obj[key]);
-      });
-    return ans;
+        ans[key] = compactObject(obj[key])
+      })
+    return ans
   }
-  return obj;
-};
+  return obj
+}
 ```
 
 ### 14.Implement Object.groupBy()
+
 177. https://bigfrontend.dev/problem/implement-groupby
-`Object.groupBy()` allows us to easily group array items, please try to implement it by yourself.
+     `Object.groupBy()` allows us to easily group array items, please try to implement it by yourself.
+
 ```JavaScript
 const items = [
   {
@@ -697,14 +715,14 @@ const groups = Object.groupBy(items, ({kind}) => kind)
 function ObjectGroupBy(items, callback) {
   // Your code here
   // const ans = {};
-  const ans = Object.create(null);
-  items.forEach(item => {
-    const key = callback(item);
+  const ans = Object.create(null)
+  items.forEach((item) => {
+    const key = callback(item)
     if (!ans[key]) {
-      ans[key] = [];
+      ans[key] = []
     }
-    ans[key].push(item);
-  });
-  return ans;
+    ans[key].push(item)
+  })
+  return ans
 }
 ```

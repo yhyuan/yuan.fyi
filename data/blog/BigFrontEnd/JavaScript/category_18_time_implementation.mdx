@@ -1,12 +1,13 @@
 ---
 title: BigFrontEnd Category 18 Time Implementation Questions
-date: "2024-06-15"
-tags: ["BigFrontEnd", "category"]
+date: '2024-06-15'
+tags: ['BigFrontEnd', 'category']
 draft: false
 ---
+
 ### Introduction
 
-This blog post summarizes the String implementation related questions found on BigFrontEnd.Dev.
+This blog post summarizes the time implementation related questions found on BigFrontEnd.Dev.
 
 <TOCInline toc={props.toc} exclude="Introduction" />
 
@@ -16,6 +17,56 @@ This blog post summarizes the String implementation related questions found on B
 
 4 https://bigfrontend.dev/problem/implement-basic-throttle
 
+Throttling is a common technique used in Web apps, in most cases using [lodash solution](https://lodash.com/docs/4.17.15#throttle) would be a good choice.
+
+In case you forgot, `throttle(func, delay)` returns a throttled function, which invokes `func` at a max frequency no matter how throttled one is called.
+
+Here is an example.
+
+Before throttling we have following series of calls.
+
+```
+─ A ─ B ─ C ─ ─ D ─ ─ ─ ─ ─ ─ E ─ ─ F ─ G
+```
+
+After throttling at wait time of 3 dashes, it becomes like this.
+
+```
+─ A ─ ─ ─ C ─ ─ ─ D ─ ─ ─ ─ E ─ ─ ─ G
+```
+
+A is triggered right way because not in waiting time. B is swallowed because B, C are in the cooling time from A, and C is called after B.
+
+Could you implement your own version of basic `throttle()`?
+
+notes
+
+Please follow above spec, the behavior is not exactly the same as `lodash.throttle()`.
+
+Since `window.setTimeout` and `window.clearTimeout` are not accurate in browser environment, they are replaced with other implementation when judging your code. They still have the same interfaces, and internally keep track of the timing for testing purpose.
+
+Some code like below is used to test your implementation.
+
+```js
+let currentTime = 0
+const run = (input) => {
+  currentTime = 0
+  const calls = []
+  const func = (arg) => {
+    calls.push(`${arg}@${currentTime}`)
+  }
+  const throttled = throttle(func, 3)
+  input.forEach((call) => {
+    const [arg, time] = call.split('@')
+    setTimeout(() => throttled(arg), time)
+  })
+  return calls
+}
+expect(run(['A@0', 'B@2', 'C@3'])).toEqual(['A@0', 'C@3'])
+```
+
+**Solution:**
+
 ```js
 /**
  * @param {Function} func
@@ -23,42 +74,42 @@ This blog post summarizes the String implementation related questions found on B
  */
 function throttle(func, wait) {
   // Track if we are waiting. Initially, we are not.
-  let isWaiting = false;
+  let isWaiting = false
   // Track arguments of last call
-  let lastCallArgs = null;
-  let timeId = null;
+  let lastCallArgs = null
+  let timeId = null
   const later = () => {
     // ...allow execution of 'func'
-    isWaiting = false;
+    isWaiting = false
     // If arguments of last call exists,
     if (lastCallArgs) {
       // ...execute function throttled and pass last call's arguments
       // to it. Since now we are not waiting, 'func' will be executed
       // and isWaiting will be reset to true.
-      throttled(...lastCallArgs);
+      throttled(...lastCallArgs)
       // ...reset arguments of last call to null.
-      lastCallArgs = null;
+      lastCallArgs = null
     }
-  };
+  }
   const throttled = (...args) => {
     // If we are waiting,
     if (isWaiting) {
       // ...store arguments of last call
-      lastCallArgs = args;
-      return;
+      lastCallArgs = args
+      return
     }
     // If we are not waiting, execute 'func' with passed arguments
-    func(...args);
+    func(...args)
     // Prevent future execution of 'func'
-    isWaiting = true;
+    isWaiting = true
     if (timeId) {
-      clearTimeout(timeId);
-      timeId = null;
+      clearTimeout(timeId)
+      timeId = null
     }
     // After wait time,
-    timeId = setTimeout(later, wait);
-  };
-  return throttled;
+    timeId = setTimeout(later, wait)
+  }
+  return throttled
 }
 ```
 
@@ -102,40 +153,40 @@ function throttle(fn: F, delay: number): F {
  * @param {boolean} option.trailing
  */
 function throttle(func, wait, option = { leading: true, trailing: true }) {
-  let timeout = null;
-  let lastCallContext = null;
-  let lastCallArgs = null;
+  let timeout = null
+  let lastCallContext = null
+  let lastCallArgs = null
 
   const later = () => {
     if (option.trailing && lastCallArgs) {
-      func.apply(lastCallContext, lastCallArgs);
-      lastCallContext = null;
-      lastCallArgs = null;
+      func.apply(lastCallContext, lastCallArgs)
+      lastCallContext = null
+      lastCallArgs = null
       // Set the timeout for trailing.
       // The func will execute only if the event was triggered again after
       // this execution, in other words, only if arguments of last function call
       // is stored.
-      timeout = setTimeout(later, wait);
+      timeout = setTimeout(later, wait)
     } else {
-      timeout = null;
+      timeout = null
     }
-  };
+  }
 
   return function (...args) {
     if (timeout) {
-      lastCallContext = this;
-      lastCallArgs = args;
-      return;
+      lastCallContext = this
+      lastCallArgs = args
+      return
     }
     if (option.leading) {
-      func.apply(this, args);
+      func.apply(this, args)
     } else {
-      lastCallContext = this;
-      lastCallArgs = args;
+      lastCallContext = this
+      lastCallArgs = args
     }
 
-    timeout = setTimeout(later, wait);
-  };
+    timeout = setTimeout(later, wait)
+  }
 }
 ```
 
@@ -149,33 +200,33 @@ function throttle(func, wait, option = { leading: true, trailing: true }) {
  * @param {number} wait
  */
 function debounce(func, wait) {
-  let timer;
+  let timer
   return function debounced(...args) {
     if (timer) {
-      clearTimeout(timer);
+      clearTimeout(timer)
     }
     timer = setTimeout(() => {
-      func.apply(null, args);
-    }, wait);
-  };
+      func.apply(null, args)
+    }, wait)
+  }
 }
 ```
 
 ```typescript
-type F = (...args: number[]) => void;
+type F = (...args: number[]) => void
 
 function debounce(fn: F, t: number): F {
-  let timeoutId: NodeJS.Timeout | null = null;
+  let timeoutId: NodeJS.Timeout | null = null
   return (...args) => {
     if (timeoutId !== null) {
-      clearTimeout(timeoutId);
-      timeoutId = null;
+      clearTimeout(timeoutId)
+      timeoutId = null
     }
     timeoutId = setTimeout(() => {
-      fn(...args);
-      timeoutId = null;
-    }, t);
-  };
+      fn(...args)
+      timeoutId = null
+    }, t)
+  }
 }
 ```
 
@@ -191,30 +242,30 @@ function debounce(fn: F, t: number): F {
  * @param {boolean} option.trailing
  */
 function debounce(func, wait, option = { leading: false, trailing: true }) {
-  let timeout = null;
+  let timeout = null
   // Flag to skip the trailing if leading is true
   // and the debounced function isn't called again after the initial execution.
-  let isCalledForLeading = false;
+  let isCalledForLeading = false
 
   return (...args) => {
     if (timeout) {
-      clearTimeout(timeout);
+      clearTimeout(timeout)
     }
 
     if (option.leading && timeout === null) {
-      func.apply(null, args);
-      isCalledForLeading = true;
+      func.apply(null, args)
+      isCalledForLeading = true
     } else {
-      isCalledForLeading = false;
+      isCalledForLeading = false
     }
 
     timeout = setTimeout(() => {
       if (option.trailing && !isCalledForLeading) {
-        func.apply(null, args);
+        func.apply(null, args)
       }
-      timeout = null;
-    }, wait);
-  };
+      timeout = null
+    }, wait)
+  }
 }
 ```
 
@@ -222,23 +273,44 @@ function debounce(func, wait, option = { leading: false, trailing: true }) {
 
 28.https://bigfrontend.dev/problem/implement-clearAllTimeout
 
+window.setTimeout() could be used to schedule some task in the future.
+
+Could you implement clearAllTimeout() to clear all the timers ? This might be useful when we want to clear things up before page transition.
+
+For example
+
+```js
+setTimeout(func1, 10000)
+setTimeout(func2, 10000)
+setTimeout(func3, 10000)
+// all 3 functions are scheduled 10 seconds later
+clearAllTimeout()
+// all scheduled tasks are cancelled.
+```
+
+note
+
+You need to keep the interface of window.setTimeout and window.clearTimeout the same, but you could replace them with new logic
+
+**Solution:**
+
 ```js
 // Store timeID
-const timerCache = new Set();
-const originalSetTimeout = window.setTimeout;
+const timerCache = new Set()
+const originalSetTimeout = window.setTimeout
 
 window.setTimeout = (cb, delay) => {
-  const timeId = originalSetTimeout(cb, delay);
-  timerCache.add(timeId);
-  return timeId;
-};
+  const timeId = originalSetTimeout(cb, delay)
+  timerCache.add(timeId)
+  return timeId
+}
 
 /**
  * cancel all timer from window.setTimeout
  */
 function clearAllTimeout() {
   for (const timeId of timerCache) {
-    clearTimeout(timeId);
+    clearTimeout(timeId)
   }
 }
 ```
@@ -247,57 +319,113 @@ function clearAllTimeout() {
 
 36.https://bigfrontend.dev/problem/create-a-fake-timer
 
+setTimeout adds task in to a task queue to be handled later, the time actually is no accurate. ([Event Loop](https://javascript.info/event-loop)).
+
+This is OK in general web application, but might be problematic in test.
+
+For example, at [5. implement throttle() with leading & trailing option](https://bigfrontend.dev/problem/implement-throttle-with-leading-and-trailing-option) we need to test the timer with more accurate approach.
+
+Could you implement your own `setTimeout()` and `clearTimeout()` to be sync? so that they have accurate timing for test. This is what [FakeTimes](https://github.com/sinonjs/fake-timers) are for.
+
+By "accurate", it means **suppose all functions cost no time**, we start our function at time 0, then `setTimeout(func1, 100)` would schedule `func1` exactly at 100.
+
+You need to replace `Date.now()` as well to provide the time.
+
+```js
+class FakeTimer {
+  install() {
+    // setTimeout(), clearTimeout(), and Date.now()
+    // are replaced
+  }
+  uninstall() {
+    // restore the original APIs
+    // setTimeout(), clearTimeout() and Date.now()
+  }
+  tick() {
+    // run all the schedule functions in order
+  }
+}
+```
+
+Your code is tested like this
+
+```js
+const fakeTimer = new FakeTimer()
+fakeTimer.install()
+const logs = []
+const log = (arg) => {
+  logs.push([Date.now(), arg])
+}
+setTimeout(() => log('A'), 100)
+// log 'A' at 100
+const b = setTimeout(() => log('B'), 110)
+clearTimeout(b)
+// b is set but cleared
+setTimeout(() => log('C'), 200)
+expect(logs).toEqual([
+  [100, 'A'],
+  [200, 'C'],
+])
+fakeTimer.uninstall()
+```
+
+Note
+
+Only Date.now() is used when judging your code, you can ignore other time related apis.
+
+**Solution:**
+
 ```js
 class FakeTimer {
   constructor() {
-    this.currentTime = 0;
-    this.originalSetTimeout = null;
-    this.originalClearTimeout = null;
-    this.originalDateNow = null;
-    this.timers = [];
-    this.nextId = 1;
+    this.currentTime = 0
+    this.originalSetTimeout = null
+    this.originalClearTimeout = null
+    this.originalDateNow = null
+    this.timers = []
+    this.nextId = 1
   }
 
   install() {
     // Save the original implementations
-    this.originalSetTimeout = window.setTimeout;
-    this.originalClearTimeout = window.clearTimeout;
-    this.originalDateNow = Date.now;
+    this.originalSetTimeout = window.setTimeout
+    this.originalClearTimeout = window.clearTimeout
+    this.originalDateNow = Date.now
 
     // Override setTimeout
     global.setTimeout = (callback, delay) => {
-      const id = this.nextId++;
-      this.timers.push({ id, callback, time: this.currentTime + delay });
-      this.timers.sort((a, b) => a.time - b.time); // Ensure timers are sorted by time
-      return id;
-    };
+      const id = this.nextId++
+      this.timers.push({ id, callback, time: this.currentTime + delay })
+      this.timers.sort((a, b) => a.time - b.time) // Ensure timers are sorted by time
+      return id
+    }
 
     // Override clearTimeout
     global.clearTimeout = (id) => {
-      this.timers = this.timers.filter((timer) => timer.id !== id);
-    };
+      this.timers = this.timers.filter((timer) => timer.id !== id)
+    }
 
     // Override Date.now
-    Date.now = () => this.currentTime;
+    Date.now = () => this.currentTime
   }
 
   uninstall() {
     // Restore the original implementations
-    window.setTimeout = this.originalSetTimeout;
-    window.clearTimeout = this.originalClearTimeout;
-    Date.now = this.originalDateNow;
+    window.setTimeout = this.originalSetTimeout
+    window.clearTimeout = this.originalClearTimeout
+    Date.now = this.originalDateNow
 
     // Reset internal state
-    this.currentTime = 0;
-    this.timers = [];
-    this.nextId = 1;
+    this.currentTime = 0
+    this.timers = []
+    this.nextId = 1
   }
 
   tick() {
     while (this.timers.length > 0) {
-      const nextTimer = this.timers.shift();
-      this.currentTime = nextTimer.time;
-      nextTimer.callback();
+      const nextTimer = this.timers.shift()
+      this.currentTime = nextTimer.time
+      nextTimer.callback()
     }
   }
 }
@@ -307,6 +435,59 @@ class FakeTimer {
 
 83.https://bigfrontend.dev/problem/create-an-interval
 
+You are asked to create a new `mySetInterval(a, b)` which has a different behavior from `window.setInterval`, the time between calls is a linear function, growing larger and larger `period = a + b * count`.
+
+```js
+let prev = Date.now()
+const func = () => {
+  const now = Date.now()
+  console.log('roughly ', Date.now() - prev)
+  prev = now
+}
+const id = mySetInterval(func, 100, 200)
+// roughly 100, 100 + 200 * 0
+// roughly 400,  100 + 200 * 1
+// roughly 900,  100 + 200 * 2
+// roughly 1600,  100 + 200 * 3
+myClearInterval(id) // stop the interval
+```
+
+1. Interface is `mySetInterval(delay, period)`, the first `delay` is used for the first call, and then `period` is used.
+
+2. because `window.setTimeout` and `window.setInterval` are not accurate in browser environment, they are replaced to other implementation when judging your code. They still have the same interface, and internally keep track of the timing for testing purpose.
+
+Something like below will be used to do the test. (You don't need to read following code to accomplish this task)
+
+```js
+let currentTime = 0
+const run = (delay, period, clearAt) => {
+  currentTime = 0
+  pipeline.length = 0
+
+  const logs = []
+  const func = () => {
+    logs.push(currentTime)
+  }
+  mySetInterval(func, delay, period)
+  if (clearAt !== undefined) {
+    setTimeout(() => {
+      myClearInterval(id)
+    }, clearAt)
+  }
+  while (pipeline.length > 0 && calls.length < 5) {
+    const [time, callback] = pipeline.shift()
+    currentTime = time
+    callback()
+  }
+  return calls
+}
+expect(run(100, 200)).toEqual([100, 400, 900, 1600, 2500])
+expect(run(100, 200, 450)).toEqual([100, 400])
+expect(run(100, 200, 50)).toEqual([])
+```
+
+**Solution:**
+
 ```js
 /**
  * @param {Function} func
@@ -314,35 +495,35 @@ class FakeTimer {
  * @param {number} period
  * @return {number}
  */
-const intervals = new Map();
-let idCounter = 0;
+const intervals = new Map()
+let idCounter = 0
 
 function mySetInterval(func, delay, period) {
-  let count = 0;
-  const id = idCounter++;
+  let count = 0
+  const id = idCounter++
 
   function scheduleNext() {
-    const nextDelay = delay + period * count;
+    const nextDelay = delay + period * count
     const timeoutId = setTimeout(() => {
-      func();
-      count++;
-      scheduleNext();
-    }, nextDelay);
-    intervals.set(id, timeoutId);
+      func()
+      count++
+      scheduleNext()
+    }, nextDelay)
+    intervals.set(id, timeoutId)
   }
 
-  scheduleNext();
-  return id;
+  scheduleNext()
+  return id
 }
 
 /**
  * @param { number } id
  */
 function myClearInterval(id) {
-  const timeoutId = intervals.get(id);
+  const timeoutId = intervals.get(id)
   if (timeoutId !== undefined) {
-    clearTimeout(timeoutId);
-    intervals.delete(id);
+    clearTimeout(timeoutId)
+    intervals.delete(id)
   }
 }
 ```
@@ -351,50 +532,111 @@ function myClearInterval(id) {
 
 84.https://bigfrontend.dev/problem/create-a-fake-timer-setInterval
 
+This is a follow-up on [36. create a fake timer(setTimeout)](https://bigfrontend.dev/problem/create-a-fake-timer)
+
+Like `setTimeout`, `setInterval` also is not accurate. (please refer Event Loop for detail).
+
+This is OK in general web application, but might be problematic in test.
+
+Could you implement your own `setInterval()` and `clearInterval()` to be sync? so that they have accurate timing for test. This is what [FakeTimes](https://github.com/sinonjs/fake-timers) are for.
+
+By "accurate", it means suppose **all functions cost no time**, we start our function at time 0, then `setInterval(func1, 100)` would schedule `func1` exactly at 100, 200, 300 .etc.
+
+You need to replace `Date.now()`as well to provide the time.
+
+```js
+class FakeTimer {
+  install() {
+    // replace window.setInterval, window.clearInterval, Date.now
+    // with your implementation
+  }
+
+  uninstall() {
+    // restore the original implementation of
+    // window.setInterval, window.clearInterval, Date.now
+  }
+
+  tick() {
+    // run the scheduled functions without waiting
+  }
+}
+```
+
+** Be careful about the infinite loops **. Your code is tested like this:
+
+```js
+const fakeTimer = new FakeTimer()
+fakeTimer.install()
+const logs = []
+const log = () => {
+  logs.push(Date.now())
+}
+let count = 0
+const id = setInterval(() => {
+  if (count > 1) {
+    clearInterval(id)
+  } else {
+    log()
+  }
+  count += 1
+}, 100)
+// log 'A' at every 100, stop at 200
+fakeTimer.tick()
+fakeTimer.uninstall()
+
+expect(logs).toEqual([100, 200])
+```
+
+Note
+
+Only `Date.now()` is used when judging your code, you can ignore other time related apis.
+
+**Solution:**
+
 ```js
 class FakeTimer {
   constructor() {
-    this.origSetInterval = window.setInterval;
-    this.origClearInterval = window.clearInterval;
-    this.origDateNow = Date.now;
+    this.origSetInterval = window.setInterval
+    this.origClearInterval = window.clearInterval
+    this.origDateNow = Date.now
 
-    this.taskQueue = [];
-    this.currTime = 0;
+    this.taskQueue = []
+    this.currTime = 0
   }
 
   install() {
     window.setInterval = (fn, delay) => {
-      const id = this.taskQueue.length;
+      const id = this.taskQueue.length
       this.taskQueue.push({
         id,
         fn,
         delay,
-      });
-      return id;
-    };
+      })
+      return id
+    }
 
     window.clearInterval = (id) => {
-      this.taskQueue = this.taskQueue.filter((task) => task.id !== id);
-    };
+      this.taskQueue = this.taskQueue.filter((task) => task.id !== id)
+    }
 
-    Date.now = () => this.currTime;
+    Date.now = () => this.currTime
   }
 
   uninstall() {
-    window.setInterval = this.origSetInterval;
-    window.clearInterval = this.origClearInterval;
-    Date.now = this.origDateNow;
+    window.setInterval = this.origSetInterval
+    window.clearInterval = this.origClearInterval
+    Date.now = this.origDateNow
   }
 
   tick() {
     while (this.taskQueue.length > 0) {
-      const task = this.taskQueue.shift();
-      this.currTime = task.delay;
+      const task = this.taskQueue.shift()
+      this.currTime = task.delay
       this.taskQueue.push({
         ...task,
         delay: this.currTime + task.delay,
-      });
-      task.fn();
+      })
+      task.fn()
     }
   }
 }
@@ -405,58 +647,60 @@ Here's an implementation of `FakeTimer` that provides accurate timing for `setIn
 ```javascript
 class FakeTimer {
   constructor() {
-    this.currentTime = 0;
-    this.intervals = new Map();
-    this.nextIntervalId = 1;
-    this.originalSetInterval = null;
-    this.originalClearInterval = null;
-    this.originalDateNow = null;
+    this.currentTime = 0
+    this.intervals = new Map()
+    this.nextIntervalId = 1
+    this.originalSetInterval = null
+    this.originalClearInterval = null
+    this.originalDateNow = null
   }
 
   install() {
-    this.originalSetInterval = window.setInterval;
-    this.originalClearInterval = window.clearInterval;
-    this.originalDateNow = Date.now;
+    this.originalSetInterval = window.setInterval
+    this.originalClearInterval = window.clearInterval
+    this.originalDateNow = Date.now
 
     window.setInterval = (callback, delay) => {
-      const id = this.nextIntervalId++;
-      this.intervals.set(id, { callback, delay, nextCall: this.currentTime + delay });
-      return id;
-    };
+      const id = this.nextIntervalId++
+      this.intervals.set(id, { callback, delay, nextCall: this.currentTime + delay })
+      return id
+    }
 
     window.clearInterval = (id) => {
-      this.intervals.delete(id);
-    };
+      this.intervals.delete(id)
+    }
 
-    Date.now = () => this.currentTime;
+    Date.now = () => this.currentTime
   }
 
   uninstall() {
-    window.setInterval = this.originalSetInterval;
-    window.clearInterval = this.originalClearInterval;
-    Date.now = this.originalDateNow;
+    window.setInterval = this.originalSetInterval
+    window.clearInterval = this.originalClearInterval
+    Date.now = this.originalDateNow
 
-    this.intervals.clear();
-    this.currentTime = 0;
-    this.nextIntervalId = 1;
+    this.intervals.clear()
+    this.currentTime = 0
+    this.nextIntervalId = 1
   }
 
   tick() {
-    const sortedIntervals = [...this.intervals.entries()].sort((a, b) => a[1].nextCall - b[1].nextCall);
+    const sortedIntervals = [...this.intervals.entries()].sort(
+      (a, b) => a[1].nextCall - b[1].nextCall
+    )
 
     while (sortedIntervals.length > 0) {
-      const [id, interval] = sortedIntervals.shift();
+      const [id, interval] = sortedIntervals.shift()
 
-      this.currentTime = interval.nextCall;
-      interval.callback();
+      this.currentTime = interval.nextCall
+      interval.callback()
 
       if (this.intervals.has(id)) {
-        interval.nextCall += interval.delay;
-        const insertIndex = sortedIntervals.findIndex(([, i]) => i.nextCall > interval.nextCall);
+        interval.nextCall += interval.delay
+        const insertIndex = sortedIntervals.findIndex(([, i]) => i.nextCall > interval.nextCall)
         if (insertIndex === -1) {
-          sortedIntervals.push([id, interval]);
+          sortedIntervals.push([id, interval])
         } else {
-          sortedIntervals.splice(insertIndex, 0, [id, interval]);
+          sortedIntervals.splice(insertIndex, 0, [id, interval])
         }
       }
     }
@@ -467,18 +711,21 @@ class FakeTimer {
 Let's break down this implementation:
 
 1. The `constructor` initializes the necessary properties:
+
    - `currentTime`: Tracks the current fake time.
    - `intervals`: A Map to store all active intervals.
    - `nextIntervalId`: A counter for generating unique interval IDs.
    - Original function references to restore later.
 
 2. The `install` method:
+
    - Stores the original `setInterval`, `clearInterval`, and `Date.now` functions.
    - Replaces `setInterval` with a custom implementation that adds intervals to our `intervals` Map.
    - Replaces `clearInterval` with a function that removes intervals from our Map.
    - Replaces `Date.now` to return our `currentTime`.
 
 3. The `uninstall` method:
+
    - Restores the original functions.
    - Clears all intervals and resets the timer state.
 
@@ -490,6 +737,7 @@ Let's break down this implementation:
      - If the interval still exists (wasn't cleared in the callback), updates its next call time and re-inserts it into the sorted list.
 
 This implementation ensures accurate timing because:
+
 - It doesn't actually wait for time to pass; it immediately jumps to the next scheduled callback.
 - It processes intervals in the exact order they should be called.
 - The `currentTime` is always set to the exact time an interval should be called.
@@ -501,6 +749,50 @@ This implementation should pass the test case you provided, accurately logging a
 ### 9.create LazyMan()
 
 130.https://bigfrontend.dev/problem/create-lazyman
+
+`LazyMan` is very lazy, he only eats and sleeps.
+
+`LazyMan(name: string, logFn: (log: string) => void)` would output a message, the passed `logFn` is used.
+
+```js
+LazyMan('Jack', console.log)
+// Hi, I'm Jack.
+```
+
+He can eat(food: string)
+
+```js
+LazyMan('Jack', console.log).eat('banana').eat('apple')
+// Hi, I'm Jack.
+// Eat banana.
+// Eat Apple.
+```
+
+He also sleep(time: number), time is based on seconds.
+
+```js
+LazyMan('Jack', console.log).eat('banana').sleep(10).eat('apple').sleep(1)
+// Hi, I'm Jack.
+// Eat banana.
+// Wake up after 10 seconds.
+// Eat Apple.
+// Wake up after 1 second.
+```
+
+He can sleepFirst(time: number), which has the highest priority among all tasks, no matter what the order is.
+
+```js
+LazyMan('Jack', console.log).eat('banana').sleepFirst(10).eat('apple').sleep(1)
+// Wake up after 10 seconds.
+// Hi, I'm Jack.
+// Eat banana
+// Eat apple
+// Wake up after 1 second.
+```
+
+Please create such `LazyMan()`
+
+**Solution: **
 
 ```js
 // interface Laziness {
@@ -515,52 +807,50 @@ This implementation should pass the test case you provided, accurately logging a
  * @returns {Laziness}
  */
 function LazyMan(name, logFn) {
-  const tasks = [{ type: "hi", name }];
+  const tasks = [{ type: 'hi', name }]
   const createLaziness = () => {
     return {
       sleep: (time) => {
-        tasks.push({ type: "sleep", time });
-        console.log(tasks);
-        return createLaziness();
+        tasks.push({ type: 'sleep', time })
+        console.log(tasks)
+        return createLaziness()
       },
       sleepFirst: (time) => {
-        tasks.unshift({ type: "sleep", time });
-        return createLaziness();
+        tasks.unshift({ type: 'sleep', time })
+        return createLaziness()
       },
       eat: (food) => {
-        tasks.push({ type: "eat", food });
-        console.log(tasks);
-        return createLaziness();
+        tasks.push({ type: 'eat', food })
+        console.log(tasks)
+        return createLaziness()
       },
-    };
-  };
+    }
+  }
   const delay = (delayInSeconds) =>
     new Promise((resolve, reject) => {
       setTimeout(() => {
-        resolve();
-      }, delayInSeconds * 1000);
-    });
+        resolve()
+      }, delayInSeconds * 1000)
+    })
 
   setTimeout(async () => {
     for (let i = 0; i < tasks.length; i++) {
-      const task = tasks[i];
-      if (task.type === "hi") {
-        logFn(`Hi, I'm ${task.name}.`);
-      } else if (task.type === "sleep") {
-        await delay(task.time);
-        logFn(
-          `Wake up after ${task.time === 1 ? `1 second` : `${task.time} seconds`}.`,
-        );
-      } else if (task.type === "eat") {
-        logFn(`Eat ${task.food}.`);
+      const task = tasks[i]
+      if (task.type === 'hi') {
+        logFn(`Hi, I'm ${task.name}.`)
+      } else if (task.type === 'sleep') {
+        await delay(task.time)
+        logFn(`Wake up after ${task.time === 1 ? `1 second` : `${task.time} seconds`}.`)
+      } else if (task.type === 'eat') {
+        logFn(`Eat ${task.food}.`)
       } else {
-        throw new Error(`unexisted task type: ${task.type}`);
+        throw new Error(`unexisted task type: ${task.type}`)
       }
     }
-  });
+  })
 
-  return createLaziness();
+  return createLaziness()
 }
 
-LazyMan("Jack", console.log).eat("banana").sleepFirst(10).eat("apple").sleep(1);
+LazyMan('Jack', console.log).eat('banana').sleepFirst(10).eat('apple').sleep(1)
 ```
