@@ -14,6 +14,7 @@ This blog post summarizes the Object implementation related questions found on B
 ### 1.Detect data type in JavaScript
 
 20.https://bigfrontend.dev/problem/detect-data-type-in-JavaScript
+
 This is an easy problem.
 
 For all the basic data types in JavaScript, how could you write a function to detect the type of arbitrary data?
@@ -31,6 +32,8 @@ detectType([]) // 'array'
 detectType(null) // 'null'
 // more in judging step
 ```
+
+**Solution:**
 
 1. Use `typeof` for every type except `object`.
 2. Use `=== null` to test `null`.
@@ -65,6 +68,39 @@ function detectType(data) {
 
 ### 2.Is Object Empty(2727)
 
+https://leetcode.com/problems/is-object-empty/description/
+
+Given an object or an array, return if it is empty.
+
+An empty object contains no key-value pairs.
+An empty array contains no elements.
+You may assume the object or array is the output of JSON.parse.
+
+Example 1:
+
+Input: `obj = {"x": 5, "y": 42}`
+Output: false
+Explanation: The object has 2 key-value pairs so it is not empty.
+Example 2:
+
+Input: `obj = {}`
+Output: true
+Explanation: The object doesn't have any key-value pairs so it is empty.
+Example 3:
+
+Input: `obj = [null, false, 0]`
+Output: false
+Explanation: The array has 3 elements so it is not empty.
+
+Constraints:
+
+obj is a valid JSON object or array
+`2 <= JSON.stringify(obj).length <= 105`
+
+Can you solve it in O(1) time?
+
+**Solution:**
+
 ```TypeScript
 type JSONValue = null | boolean | number | string | JSONValue[] | { [key: string]: JSONValue };
 type Obj = Record<string, JSONValue> | JSONValue[]
@@ -77,7 +113,8 @@ function isEmpty(obj: Obj): boolean {
 ### 3.implement Object.assign()
 
 26.https://bigfrontend.dev/problem/implement-object-assign
-The Object.assign() method copies all enumerable own properties from one or more source objects to a target object. It returns the target object. (source: [MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/assign))
+
+The `Object.assign()` method copies all enumerable own properties from one or more source objects to a target object. It returns the target object. (source: [MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/assign))
 
 It is widely used, Object Spread operator actually is internally the same as Object.assign() ([source](https://github.com/tc39/proposal-object-rest-spread/blob/master/Spread.md)). Following 2 lines of code are totally the same.
 
@@ -86,11 +123,13 @@ let aClone = { ...a }
 let aClone = Object.assign({}, a)
 ```
 
-This is an easy one, could you implement Object.assign() with your own implementation ?
+This is an easy one, could you implement `Object.assign()` with your own implementation ?
 
 note
 
-Don't use Object.assign() in your code It doesn't help improve your skills
+Don't use `Object.assign()` in your code It doesn't help improve your skills
+
+**Solution:**
 
 ```js
 /**
@@ -191,6 +230,7 @@ function completeAssign(target, ...sources) {
 ### 5.write your own `extends` in es5
 
 53.https://bigfrontend.dev/problem/write-your-own-extends-in-es5
+
 I believe you've used extends keyword in you JavaScript programs before.
 
 Could you implement a `myExtends()` function in ES5 to mimic the behavior of extends?
@@ -231,6 +271,8 @@ SubType.prototype.subMethod = function () {}
 SubType.prototype.method = function () {}
 SubType.staticSub = 'staticSub'
 ```
+
+**Solution:**
 
 ```js
 const InheritedSubType = myExtends(SuperType, SubType)
@@ -275,6 +317,8 @@ You are asked to implement `myNew()`, which should return an object just as what
 
 Pay attention to the return type of constructor.
 
+**Solution:**
+
 ```javascript
 function myNew(constructor, ...args) {
   // Step 1: Create a new object
@@ -314,6 +358,7 @@ console.log(john.age) // 30
 ### 7.write your own `instanceof`
 
 90.https://bigfrontend.dev/problem/write-your-own-instanceof
+
 Do you know how [instanceOf](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/instanceof) works ?
 
 If so, please write you own `myInstanceOf()`.
@@ -396,15 +441,18 @@ function myInstanceOf(obj, target) {
 ### 8.implement your own `Object.create`
 
 94.https://bigfrontend.dev/problem/implement-your-own-Object-create
+
 You can use [Object.create()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/create) to create a new object.
 
 Can you write your own `myObjectCreate()` to do the same(well for the basic usage) ?
 
 Note
 
-you don't need to support propertiesObject - 2nd parameter of Object.create
-throw an Error if non-object is passed in. ([why](https://stackoverflow.com/questions/18198178/null-prototype-object-prototype-and-object-create)?)
-`Object.create()` and `Object.setPrototypeOf()` should not be used.
+1. you don't need to support propertiesObject - 2nd parameter of Object.create
+2. throw an Error if non-object is passed in. ([why](https://stackoverflow.com/questions/18198178/null-prototype-object-prototype-and-object-create)?)
+3. `Object.create()` and `Object.setPrototypeOf()` should not be used.
+
+**Solution:**
 
 ```js
 /**
@@ -440,7 +488,7 @@ labrador.speak(); // Output: 'Animal speaks'
 
 116.https://bigfrontend.dev/problem/implement-Object.is
 
-[Object.is()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/is) is similar to === except following cases
+[Object.is()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/is) is similar to `===` except following cases
 
 ```js
 Object.is(0, -0) // false
@@ -450,7 +498,9 @@ Object.is(NaN, NaN) // true
 NaN === NaN // false
 ```
 
-Here is the detailed spec, can you implement your own is()?
+Here is the [detailed spec](https://www.ecma-international.org/ecma-262/6.0/#sec-samevalue), can you implement your own `is()`?
+
+**Solution:**
 
 ```js
 /**
@@ -474,6 +524,7 @@ function is(a, b) {
 ### 10.create a counter object
 
 148.https://bigfrontend.dev/problem/create-a-counter-object
+
 Create an object with property count, which increments every time count is accessed, initial value is 0.
 
 ```js
@@ -484,6 +535,8 @@ counter.count // 2
 counter.count = 100 // it cannot be altered
 counter.count // 3
 ```
+
+**Solution:**
 
 ```js
 /**
@@ -504,6 +557,7 @@ function createCounter() {
 ### 11.create a count function
 
 155.https://bigfrontend.dev/problem/count-function
+
 Please create a function count(), when called it should return how many times it has been called, count.reset() should also implemented.
 
 ```js
@@ -517,6 +571,8 @@ count() // 1
 count() // 2
 count() // 3
 ```
+
+**Solution:**
 
 ```js
 let countTimes = 0
@@ -532,6 +588,7 @@ count.reset = () => {
 ### 12.`undefined` to `null`
 
 176.https://bigfrontend.dev/problem/undefined-to-null
+
 One of the differences between null and undefined is how they are treated differently in `JSON.stringify()`.
 
 ```js
@@ -553,6 +610,8 @@ undefinedToNull({ a: undefined, b: 'BFE.dev' })
 undefinedToNull({ a: ['BFE.dev', undefined, 'bigfrontend.dev'] })
 // {a: ['BFE.dev', null, 'bigfrontend.dev']}
 ```
+
+**Solution:**
 
 ```js
 /**
@@ -610,6 +669,8 @@ Constraints:
 obj is a valid JSON object
 `2 <= JSON.stringify(obj).length <= 106`
 
+**Solution:**
+
 ```TypeScript
 type JSONValue = null | boolean | number | string | JSONValue[] | { [key: string]: JSONValue };
 type Obj = Record<string, JSONValue> | Array<JSONValue>;
@@ -665,8 +726,9 @@ var compactObject = function (obj) {
 
 ### 14.Implement Object.groupBy()
 
-177. https://bigfrontend.dev/problem/implement-groupby
-     `Object.groupBy()` allows us to easily group array items, please try to implement it by yourself.
+177.https://bigfrontend.dev/problem/implement-groupby
+
+`Object.groupBy()` allows us to easily group array items, please try to implement it by yourself.
 
 ```JavaScript
 const items = [
@@ -703,6 +765,8 @@ const groups = Object.groupBy(items, ({kind}) => kind)
 //   ]
 // }
 ```
+
+**Solution:**
 
 ```js
 /**

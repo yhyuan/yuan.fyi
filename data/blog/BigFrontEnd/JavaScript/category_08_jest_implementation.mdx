@@ -1,7 +1,7 @@
 ---
 title: BigFrontEnd Category 8 Jest Implementation Questions
-date: "2024-06-05"
-tags: ["BigFrontEnd", "category"]
+date: '2024-06-05'
+tags: ['BigFrontEnd', 'category']
 draft: false
 ---
 
@@ -28,17 +28,19 @@ Code to explain everything.
 const obj = {
   data: 1,
   increment(num) {
-    this.data += num;
+    this.data += num
   },
-};
-const spy = spyOn(obj, "increment");
-obj.increment(1);
-console.log(obj.data); // 2
-obj.increment(2);
-console.log(obj.data); // 4
-console.log(spy.calls);
+}
+const spy = spyOn(obj, 'increment')
+obj.increment(1)
+console.log(obj.data) // 2
+obj.increment(2)
+console.log(obj.data) // 4
+console.log(spy.calls)
 // [ [1], [2] ]
 ```
+
+**Solution:**
 
 ```js
 /**
@@ -46,16 +48,16 @@ console.log(spy.calls);
  * @param {string} methodName
  */
 function spyOn(obj, methodName) {
-  const calls = [];
-  const originalMethod = obj[methodName];
-  if (!originalMethod || typeof originalMethod !== "function") {
-    throw new Error(`${methodName} does not exist`);
+  const calls = []
+  const originalMethod = obj[methodName]
+  if (!originalMethod || typeof originalMethod !== 'function') {
+    throw new Error(`${methodName} does not exist`)
   }
   obj[methodName] = (...args) => {
-    calls.push(args);
-    originalMethod(...args);
-  };
-  return { calls };
+    calls.push(args)
+    originalMethod(...args)
+  }
+  return { calls }
 }
 ```
 
@@ -65,18 +67,20 @@ function spyOn(obj, methodName) {
 Here are some simple Jest test code.
 
 ```js
-expect(3).toBe(3); // ✅
-expect(4).toBe(3); // ❌
+expect(3).toBe(3) // ✅
+expect(4).toBe(3) // ❌
 ```
 
 We can reverse it with not.
 
 ```js
-expect(3).not.toBe(3); // ❌
-expect(4).not.toBe(3); // ✅
+expect(3).not.toBe(3) // ❌
+expect(4).not.toBe(3) // ✅
 ```
 
 Please implement myExpect() to support toBe() and also not.
+
+**Solution:**
 
 ```js
 /**
@@ -91,21 +95,21 @@ Please implement myExpect() to support toBe() and also not.
 function myExpect(input) {
   // x === input will fail with 0, -0 (return true) and NaN, NaN (return false)
   const isEqual = (x, input) => {
-    return Object.is(x, input);
-  };
+    return Object.is(x, input)
+  }
   return {
     toBe: (x) => {
       if (!isEqual(x, input)) {
-        throw new Error();
+        throw new Error()
       }
     },
     not: {
       toBe: (x) => {
         if (isEqual(x, input)) {
-          throw new Error();
+          throw new Error()
         }
       },
     },
-  };
+  }
 }
 ```

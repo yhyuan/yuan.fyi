@@ -1,7 +1,7 @@
 ---
 title: BigFrontEnd Category 4 Binary Operations Questions
-date: "2024-05-30"
-tags: ["BigFrontEnd", "category"]
+date: '2024-05-30'
+tags: ['BigFrontEnd', 'category']
 draft: false
 ---
 
@@ -31,22 +31,22 @@ Actually this could be easily done by counting the digit one by one. Could you t
  * @return {number} count of 1 bit
  */
 function countOne(num) {
-  return num.toString(2).replace(/0/g, "").length;
+  return num.toString(2).replace(/0/g, '').length
 }
 
 function countOne(num) {
-  return num.toString(2).replaceAll("0", "").length;
+  return num.toString(2).replaceAll('0', '').length
 }
 ```
 
 ```js
 function countOne(num) {
-  let ans = 0;
+  let ans = 0
   while (num > 0) {
-    num = num & (num - 1);
-    ans += 1;
+    num = num & (num - 1)
+    ans += 1
   }
-  return ans;
+  return ans
 }
 ```
 
@@ -57,18 +57,18 @@ function countOne(num) {
  */
 function countOne(num) {
   // Convert the number to a 32-bit unsigned integer
-  num = num >>> 0;
-  let count = 0;
+  num = num >>> 0
+  let count = 0
   // Check each bit from the most significant to the least significant
   for (let i = 31; i >= 0; i--) {
     // Check last bit
     if ((num & 1) === 1) {
-      count++;
+      count++
     }
     // Shift right
-    num = num >> 1;
+    num = num >> 1
   }
-  return count;
+  return count
 }
 ```
 
@@ -77,6 +77,7 @@ function countOne(num) {
 109.https://bigfrontend.dev/problem/implement-Math-pow
 
 Can you write your own Math.pow() ? The power would only be integers.
+
 ```js
 pow(1, 2)
 // 1
@@ -99,52 +100,56 @@ You can easily solve this problem by multiplying the base one after another, but
  * @return {number}
  */
 function pow(base, power) {
-  const negative = power < 0 ? true : false;
-  power = negative ? -power : power;
-  let ans = 1;
-  let temp = base;
+  const negative = power < 0 ? true : false
+  power = negative ? -power : power
+  let ans = 1
+  let temp = base
   while (power > 0) {
     // check the last bit is 1 or not
     if ((power & 1) === 1) {
       // power % 2 === 1
-      ans = ans * temp;
+      ans = ans * temp
     }
-    temp = temp * temp;
-    power = power >> 1; // power = power // 2
+    temp = temp * temp
+    power = power >> 1 // power = power // 2
   }
-  return negative ? 1 / ans : ans;
+  return negative ? 1 / ans : ans
 }
 
 function pow(base, power) {
   const helper = (base, power) => {
-    if (power === 0) return 1;
-    const ans = helper(base, Math.floor(power / 2));
-    return power % 2 === 1 ? base * ans * ans : ans * ans;
-  };
-  return power < 0 ? 1 / helper(base, -power) : helper(base, power);
+    if (power === 0) return 1
+    const ans = helper(base, Math.floor(power / 2))
+    return power % 2 === 1 ? base * ans * ans : ans * ans
+  }
+  return power < 0 ? 1 / helper(base, -power) : helper(base, power)
 }
 ```
 
 ### 3.find the single integer
 
 162.https://bigfrontend.dev/problem/find-the-single-integer
+
 Given an array of integers, all integers appear twice except one integer, could you quickly target it ?
+
 ```js
-const arr = [10, 2, 2 , 1, 0, 0, 10]
+const arr = [10, 2, 2, 1, 0, 0, 10]
 findSingle(arr) // 1
 ```
+
 What is time & space cost of your approach ? Could you do better ?
 
-Solution:
+**Solution:**
+
 Because of `0 ^ a = a`, we can choose `0` as the initial value.
 
 ```js
 function findSingle(arr) {
-  let ans = 0;
+  let ans = 0
   arr.forEach((val) => {
-    ans = ans ^ val;
-  });
-  return ans;
+    ans = ans ^ val
+  })
+  return ans
 }
 ```
 
@@ -155,13 +160,15 @@ function findSingle(arr) {
 `Math.clz32()` returns the number of leading zero bits in the 32-bit binary representation of a number.
 
 Let's try to implement it by ourselves.
+
 ```js
 clz32(1) // 31
 clz32(10000) // 18
 clz32(25.45) // 27
 ```
 
-Solution:
+**Solution:**
+
 Use `num & (1 << i)` to every bit.
 
 ```js
@@ -171,32 +178,34 @@ Use `num & (1 << i)` to every bit.
  */
 function clz32(num) {
   // Convert the number to a 32-bit unsigned integer
-  num = num >>> 0;
+  num = num >>> 0
   // If the number is 0, all 32 bits are zeros
   if (num === 0) {
-    return 32;
+    return 32
   }
-  let count = 0;
+  let count = 0
   // Check each bit from the most significant to the least significant
   for (let i = 31; i >= 0; i--) {
     // (1 << i)
     // num & (1 << i)
     if ((num & (1 << i)) !== 0) {
-      break;
+      break
     }
-    count++;
+    count++
   }
-  return count;
+  return count
 }
 ```
 
-Solution 2: Convert it to binary string and counting the leading zeroes.
+**Solution 2:**
+
+Convert it to binary string and counting the leading zeroes.
 
 ```js
 function clz32(num) {
-   num = num >>> 0;
-  const s = [...num.toString(2).padStart(32, "0")];
-  const index = s.findIndex(val => val === "1");
-  return index === -1 ? 32 : index;
+  num = num >>> 0
+  const s = [...num.toString(2).padStart(32, '0')]
+  const index = s.findIndex((val) => val === '1')
+  return index === -1 ? 32 : index
 }
 ```

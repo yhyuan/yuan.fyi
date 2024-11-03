@@ -1,0 +1,264 @@
+---
+title: Mastering TypeScript Decorators A Comprehensive Guide
+date: '2024-07-10'
+tags: ['TypeScript']
+draft: false
+---
+
+### Introduction
+
+TypeScript decorators are a powerful feature that allows you to add both annotations and metadata to existing code. They provide a way to modify classes and properties at design time. In this blog post, we'll explore what decorators are, how to use them, and some practical examples of their application.
+
+<TOCInline toc={props.toc} exclude="Introduction" />{' '}
+
+#### What are Decorators?
+
+Decorators are a way to add new functionality to classes, methods, properties, or parameters without modifying their original code. They are a form of metaprogramming, allowing you to modify or enhance the behavior of code at design time.
+
+In TypeScript, a decorator is simply a function that is called with specific arguments depending on where it is applied.
+
+#### Enabling Decorators
+
+To use decorators in TypeScript, you need to enable them in your `tsconfig.json` file:
+
+```json
+{
+  "compilerOptions": {
+    "target": "ES5",
+    "experimentalDecorators": true
+  }
+}
+```
+
+#### Types of Decorators
+
+TypeScript supports five types of decorators:
+
+1. Class Decorators
+2. Method Decorators
+3. Property Decorators
+4. Accessor Decorators
+5. Parameter Decorators
+
+Let's explore each type with examples.
+
+##### 1. Class Decorators
+
+Class decorators are applied to the constructor of the class and can be used to observe, modify, or replace a class definition.
+
+```typescript
+function sealed(constructor: Function) {
+  Object.seal(constructor)
+  Object.seal(constructor.prototype)
+}
+
+@sealed
+class Greeter {
+  greeting: string
+  constructor(message: string) {
+    this.greeting = message
+  }
+  greet() {
+    return 'Hello, ' + this.greeting
+  }
+}
+```
+
+In this example, the `@sealed` decorator seals both the constructor and its prototype, preventing new properties from being added to them.
+
+##### 2. Method Decorators
+
+Method decorators are applied to methods within a class. They can be used to observe, modify, or replace a method definition.
+
+```typescript
+function enumerable(value: boolean) {
+  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+    descriptor.enumerable = value
+  }
+}
+
+class Greeter {
+  greeting: string
+  constructor(message: string) {
+    this.greeting = message
+  }
+
+  @enumerable(false)
+  greet() {
+    return 'Hello, ' + this.greeting
+  }
+}
+```
+
+Here, the `@enumerable(false)` decorator makes the `greet` method non-enumerable.
+
+##### 3. Property Decorators
+
+Property decorators are used to observe, modify, or replace a property definition.
+
+```typescript
+function format(formatString: string) {
+  return function (target: any, propertyKey: string): any {
+    let value = target[propertyKey]
+
+    const getter = function () {
+      return `${formatString} ${value}`
+    }
+
+    const setter = function (newVal: string) {
+      value = newVal
+    }
+
+    return {
+      get: getter,
+      set: setter,
+      enumerable: true,
+      configurable: true,
+    }
+  }
+}
+
+class Greeter {
+  @format('Hello,')
+  greeting: string
+}
+
+const greeter = new Greeter()
+greeter.greeting = 'World'
+console.log(greeter.greeting) // Outputs: "Hello, World"
+```
+
+In this example, the `@format` decorator prefixes the `greeting` property with "Hello,".
+
+##### 4. Accessor Decorators
+
+Accessor decorators are applied to the accessor of a property (getter or setter). They can be used to observe, modify, or replace an accessor's definitions.
+
+```typescript
+function configurable(value: boolean) {
+  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+    descriptor.configurable = value
+  }
+}
+
+class Point {
+  private _x: number
+  private _y: number
+  constructor(x: number, y: number) {
+    this._x = x
+    this._y = y
+  }
+
+  @configurable(false)
+  get x() {
+    return this._x
+  }
+
+  @configurable(false)
+  get y() {
+    return this._y
+  }
+}
+```
+
+Here, the `@configurable(false)` decorator makes the accessors non-configurable.
+
+##### 5. Parameter Decorators
+
+Parameter decorators are applied to the parameters of a method or constructor. They can be used to observe the parameters.
+
+```typescript
+function required(target: Object, propertyKey: string | symbol, parameterIndex: number) {
+  let existingRequiredParameters: number[] =
+    Reflect.getOwnMetadata('required', target, propertyKey) || []
+  existingRequiredParameters.push(parameterIndex)
+  Reflect.defineMetadata('required', existingRequiredParameters, target, propertyKey)
+}
+
+class Greeter {
+  greet(@required name: string) {
+    return 'Hello ' + name
+  }
+}
+```
+
+In this example, the `@required` decorator marks the parameter as required. Note that this example uses `reflect-metadata`, which needs to be imported and configured separately.
+
+#### Decorator Factories
+
+A decorator factory is simply a function that returns the expression that will be called by the decorator at runtime. It allows you to customize how a decorator is applied to a declaration.
+
+```typescript
+function color(value: string) {
+  return function (target) {
+    // This is the decorator factory
+    return class extends target {
+      color = value
+    }
+  }
+}
+
+@color('red')
+class Car {
+  constructor(
+    public make: string,
+    public model: string
+  ) {}
+}
+
+let car = new Car('Toyota', 'Corolla')
+console.log(car.color) // Outputs: "red"
+```
+
+#### Decorator Composition
+
+Multiple decorators can be applied to a declaration. They are evaluated in the order they appear in the code, from top to bottom.
+
+```typescript
+function first() {
+  console.log('first(): factory evaluated')
+  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+    console.log('first(): called')
+  }
+}
+
+function second() {
+  console.log('second(): factory evaluated')
+  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+    console.log('second(): called')
+  }
+}
+
+class ExampleClass {
+  @first()
+  @second()
+  method() {}
+}
+```
+
+This will output:
+
+```
+first(): factory evaluated
+second(): factory evaluated
+second(): called
+first(): called
+```
+
+#### Practical Use Cases
+
+1. **Memoization**: Caching the results of expensive computations.
+2. **Logging**: Automatically logging method calls or property access.
+3. **Validation**: Ensuring that parameters or properties meet certain criteria.
+4. **Authorization**: Checking if a user has permission to call a method.
+5. **Lazy Loading**: Deferring the initialization of a property until it's first accessed.
+
+#### Conclusion
+
+Decorators are a powerful feature in TypeScript that enable you to write more expressive and maintainable code. They provide a clean way to modify or enhance the behavior of your classes, methods, properties, and parameters.
+
+While decorators are still technically an experimental feature in TypeScript, they are widely used in many popular frameworks and libraries, such as Angular and MobX.
+
+As you start using decorators in your TypeScript projects, remember that with great power comes great responsibility. Use them judiciously to enhance your code without making it overly complex or hard to understand.
+
+Happy coding with TypeScript decorators

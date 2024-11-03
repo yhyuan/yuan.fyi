@@ -1,7 +1,7 @@
 ---
 title: BigFrontEnd Category 12 node Implementation Questions
-date: "2024-06-09"
-tags: ["BigFrontEnd", "category"]
+date: '2024-06-09'
+tags: ['BigFrontEnd', 'category']
 draft: false
 ---
 
@@ -19,80 +19,82 @@ There is Event Emitter in Node.js, Facebook once had its own implementation but 
 You are asked to create an Event Emitter Class
 
 ```js
-const emitter = new Emitter();
+const emitter = new Emitter()
 ```
 
 It should support event subscribing
 
 ```js
-const sub1 = emitter.subscribe("event1", callback1);
-const sub2 = emitter.subscribe("event2", callback2);
+const sub1 = emitter.subscribe('event1', callback1)
+const sub2 = emitter.subscribe('event2', callback2)
 
 // same callback could subscribe
 // on same event multiple times
-const sub3 = emitter.subscribe("event1", callback1);
+const sub3 = emitter.subscribe('event1', callback1)
 ```
 
 emit(eventName, ...args) is used to trigger the callbacks, with args relayed
 
 ```js
-emitter.emit("event1", 1, 2);
+emitter.emit('event1', 1, 2)
 // callback1 will be called twice
 ```
 
 Subscription returned by subscribe() has a release() method that could be used to unsubscribe
 
 ```js
-sub1.release();
-sub3.release();
+sub1.release()
+sub3.release()
 // now even if we emit 'event1' again,
 // callback1 is not called anymore
 ```
+
+**Solution:**
 
 ```js
 // Add this to access the class property
 // callbacks.splice(index, 1); delete the number of elements after index.
 class EventEmitter {
-  #eventHandlers = new Map();
+  #eventHandlers = new Map()
   subscribe(eventName, callback) {
     if (this.#eventHandlers.has(eventName)) {
-      this.#eventHandlers.get(eventName).push(callback);
+      this.#eventHandlers.get(eventName).push(callback)
     } else {
-      this.#eventHandlers.set(eventName, [callback]);
+      this.#eventHandlers.set(eventName, [callback])
     }
     return {
       release: () => {
-        const callbacks = this.#eventHandlers.get(eventName);
-        const index = callbacks.indexOf(callback);
+        const callbacks = this.#eventHandlers.get(eventName)
+        const index = callbacks.indexOf(callback)
         if (index === -1) {
-          return;
+          return
         }
-        callbacks.splice(index, 1);
+        callbacks.splice(index, 1)
       },
-    };
+    }
   }
 
   emit(eventName, ...args) {
     if (this.#eventHandlers.has(eventName)) {
       this.#eventHandlers.get(eventName).forEach((callback) => {
-        callback(...args);
-      });
+        callback(...args)
+      })
     }
   }
 }
 ```
 
 ```js
-const emitter = new Emitter();
-const sub1 = emitter.subscribe("event1", callback1);
-const sub2 = emitter.subscribe("event2", callback2);
+const emitter = new Emitter()
+const sub1 = emitter.subscribe('event1', callback1)
+const sub2 = emitter.subscribe('event2', callback2)
 // same callback could subscribe
 // on same event multiple times
-const sub3 = emitter.subscribe("event1", callback1);
-emitter.emit("event1", 1, 2);
+const sub3 = emitter.subscribe('event1', callback1)
+emitter.emit('event1', 1, 2)
 // callback1 will be called twice
-sub1.release();
-sub3.release();
+sub1.release()
+sub3.release()
 // now even if we emit 'event1' again,
 // callback1 is not called anymore
 ```
@@ -103,8 +105,8 @@ sub3.release();
 We have Map in es6, so we could use any data as key, such as DOM element.
 
 ```js
-const map = new Map();
-map.set(domNode, somedata);
+const map = new Map()
+map.set(domNode, somedata)
 ```
 
 What if we need to support old JavaScript env like es5, how would you create your own Node Store as above?
@@ -127,25 +129,27 @@ You can create a simple general Map polyfill. Or since you are asked to support 
 
 What is the Time / Space cost of your solution?
 
+**Solution:**
+
 ```js
 class NodeStore {
   constructor() {
-    this.nodes = {};
+    this.nodes = {}
   }
   /**
    * @param {Node} node
    * @param {any} value
    */
   set(node, value) {
-    node.__id__ = Symbol();
-    this.nodes[node.__id__] = value;
+    node.__id__ = Symbol()
+    this.nodes[node.__id__] = value
   }
   /**
    * @param {Node} node
    * @return {any}
    */
   get(node) {
-    return this.nodes[node.__id__];
+    return this.nodes[node.__id__]
   }
 
   /**
@@ -154,7 +158,7 @@ class NodeStore {
    */
   has(node) {
     // coerce to boolean value
-    return !!this.nodes[node.__id__];
+    return !!this.nodes[node.__id__]
   }
 }
 ```
@@ -169,14 +173,14 @@ Middleware functions are functions with fixed interface that could be chained up
 
 ```js
 app.use(
-  "/user/:id",
+  '/user/:id',
   function (req, res, next) {
-    next();
+    next()
   },
   function (req, res, next) {
-    next(new Error("sth wrong"));
-  },
-);
+    next(new Error('sth wrong'))
+  }
+)
 ```
 
 You are asked to create simplified Middleware system:
@@ -206,111 +210,111 @@ class Middleware {
 Now we can do something similar with Express
 
 ```js
-const middleware = new Middleware();
+const middleware = new Middleware()
 
 middleware.use((req, next) => {
-  req.a = 1;
-  next();
-});
+  req.a = 1
+  next()
+})
 
 middleware.use((req, next) => {
-  req.b = 2;
-  next();
-});
+  req.b = 2
+  next()
+})
 
 middleware.use((req, next) => {
-  console.log(req);
-});
+  console.log(req)
+})
 
-middleware.start({});
+middleware.start({})
 // {a: 1, b: 2}
 ```
 
 Notice that use() could also accept an ErrorHandler which has 3 arguments. The error handler is triggered if next() is called with an extra argument or uncaught error happens, like following.
 
 ```js
-const middleware = new Middleware();
+const middleware = new Middleware()
 
 // throw an error at first function
 middleware.use((req, next) => {
-  req.a = 1;
-  throw new Error("sth wrong");
+  req.a = 1
+  throw new Error('sth wrong')
   // or `next(new Error('sth wrong'))`
-});
+})
 
 // since error occurs, this is skipped
 middleware.use((req, next) => {
-  req.b = 2;
-});
+  req.b = 2
+})
 
 // since error occurs, this is skipped
 middleware.use((req, next) => {
-  console.log(req);
-});
+  console.log(req)
+})
 
 // since error occurs, this is called
 middleware.use((error, req, next) => {
-  console.log(error);
-  console.log(req);
-});
+  console.log(error)
+  console.log(req)
+})
 
-middleware.start({});
+middleware.start({})
 // Error: sth wrong
 // {a: 1}
 ```
 
-Solution:
+**Solution:**
 
 ```js
 class Middleware {
   constructor() {
-    this.middlewareFuncs = [];
-    this.errorHandlerFuncs = [];
+    this.middlewareFuncs = []
+    this.errorHandlerFuncs = []
   }
 
   use(func) {
     // func.length returns the number of function parameters.
     if (func.length < 3) {
       // (req, next)
-      this.middlewareFuncs.push(func);
+      this.middlewareFuncs.push(func)
     } else {
       // (error, req, next)
-      this.errorHandlerFuncs.push(func);
+      this.errorHandlerFuncs.push(func)
     }
   }
 
   start(req) {
-    let middlewareIndex = 0;
-    let errorHandlerIndex = 0;
+    let middlewareIndex = 0
+    let errorHandlerIndex = 0
     const next = (error) => {
       if (error) {
         // If an error is passed, find the next error handler
         if (errorHandlerIndex >= this.errorHandlerFuncs.length) {
-          return;
+          return
         }
-        const fn = this.errorHandlerFuncs[errorHandlerIndex];
-        errorHandlerIndex += 1;
+        const fn = this.errorHandlerFuncs[errorHandlerIndex]
+        errorHandlerIndex += 1
         try {
-          fn(error, req, next);
+          fn(error, req, next)
         } catch (e) {
-          next(e);
+          next(e)
         }
       } else {
         // Otherwise, execute the next middleware function
         if (middlewareIndex >= this.middlewareFuncs.length) {
-          return;
+          return
         }
-        const fn = this.middlewareFuncs[middlewareIndex];
-        middlewareIndex += 1;
+        const fn = this.middlewareFuncs[middlewareIndex]
+        middlewareIndex += 1
         try {
-          fn(req, next);
+          fn(req, next)
         } catch (e) {
-          next(e);
+          next(e)
         }
       }
-    };
+    }
 
-    next();
+    next()
   }
 }
 ```

@@ -1,0 +1,354 @@
+---
+title: Understanding TypeScript's Type Hierarchy From Any to Never
+date: '2024-07-07'
+tags: ['TypeScript']
+draft: false
+---
+
+### Introduction
+
+TypeScript, a statically typed superset of JavaScript, introduces a rich type system that helps developers write more robust and maintainable code. At the heart of this system lies a fascinating type hierarchy. In this post, we'll explore this hierarchy from top to bottom, understanding how different types relate to each other and how you can leverage this knowledge in your TypeScript projects.
+
+<TOCInline toc={props.toc} exclude="Introduction" />{' '}
+
+#### The Top: `any` and `unknown`
+
+At the very top of TypeScript's type hierarchy, we find two special types: `any` and `unknown`.
+
+##### `any`
+
+The `any` type is the most flexible in TypeScript. It essentially opts out of type checking, allowing you to do anything you want with variables of this type. While useful in certain scenarios (like working with dynamic content or migrating from JavaScript), overuse of `any` can negate the benefits of using TypeScript.
+
+```typescript
+let anyVar: any = 4
+anyVar.nonExistentMethod() // No error
+```
+
+##### `unknown`
+
+Introduced in TypeScript 3.0, `unknown` is a type-safe counterpart of `any`. It's the type-safe top type, meaning you can assign anything to an `unknown` variable, but you can't do anything with it without first asserting or narrowing its type.
+
+```typescript
+let unknownVar: unknown = 4
+// unknownVar.toFixed();  // Error: Object is of type 'unknown'
+if (typeof unknownVar === 'number') {
+  unknownVar.toFixed() // OK
+}
+```
+
+##### Null and Undefined
+
+`null` and `undefined` are subtypes of all other types when the `strictNullChecks` flag is not used. With `strictNullChecks` (recommended), they're only assignable to themselves and `any` (and `undefined` is also assignable to `void`).
+
+```typescript
+let nullValue: null = null
+let undefinedValue: undefined = undefined
+```
+
+##### Void
+
+`void` represents the return type of functions that don't return a value:
+
+```typescript
+function logMessage(message: string): void {
+  console.log(message)
+}
+```
+
+#### The Middle: Object Types and Primitives
+
+In the middle of the hierarchy, we find various object types and primitives.
+
+##### Object Types
+
+These include interfaces, classes, and literal object types. They form the backbone of TypeScript's structural type system.
+
+```typescript
+interface Person {
+  name: string
+  age: number
+}
+
+class Employee implements Person {
+  constructor(
+    public name: string,
+    public age: number
+  ) {}
+}
+
+let person: Person = new Employee('Alice', 30)
+```
+
+##### Primitive Types
+
+TypeScript includes several primitive types that correspond to the basic types in JavaScript:
+
+- `number`
+- `string`
+- `boolean`
+- `symbol`
+- `bigint`
+
+```typescript
+let num: number = 42
+let str: string = 'Hello, TypeScript!'
+let bool: boolean = true
+```
+
+#### The Bottom: `never`
+
+At the very bottom of the type hierarchy is the `never` type. It represents the type of values that never occur. You might use `never` when you're sure that something is impossible.
+
+```typescript
+function throwError(message: string): never {
+  throw new Error(message)
+}
+
+function infiniteLoop(): never {
+  while (true) {}
+}
+```
+
+#### Union and Intersection Types
+
+TypeScript allows you to combine types using union (`|`) and intersection (`&`) operators.
+
+```typescript
+type StringOrNumber = string | number
+type NameAndAge = { name: string } & { age: number }
+```
+
+#### Arrays, Tuples, and Readonly Types
+
+TypeScript provides robust support for array types, tuples, and readonly variations of these.
+
+##### Arrays
+
+In TypeScript, you can define an array type in two ways:
+
+```typescript
+let numbers: number[] = [1, 2, 3]
+let strings: Array<string> = ['a', 'b', 'c']
+```
+
+##### Tuples
+
+Tuples are arrays with a fixed number of elements whose types are known:
+
+```typescript
+let tuple: [string, number] = ['hello', 42]
+```
+
+##### Readonly Arrays and Tuples
+
+TypeScript allows you to create readonly versions of arrays and tuples:
+
+```typescript
+let readonlyArray: ReadonlyArray<number> = [1, 2, 3]
+// Or using an alternative syntax:
+let anotherReadonlyArray: readonly number[] = [4, 5, 6]
+
+let readonlyTuple: readonly [string, number] = ['hello', 42]
+```
+
+Readonly arrays and tuples cannot be modified after creation, providing an extra layer of immutability to your code.
+
+#### Enums
+
+Enums allow us to define a set of named constants. TypeScript provides both numeric and string-based enums:
+
+```typescript
+enum Direction {
+  Up,
+  Down,
+  Left,
+  Right,
+}
+
+enum Color {
+  Red = '#FF0000',
+  Green = '#00FF00',
+  Blue = '#0000FF',
+}
+```
+
+Enums can be particularly useful for representing a fixed set of options or states in your application.
+
+##### Basic Enum Syntax
+
+Here's the basic syntax for creating an enum in TypeScript:
+
+```typescript
+enum Direction {
+  North,
+  South,
+  East,
+  West,
+}
+```
+
+By default, enums will initialize the first value to 0 and add 1 to each additional value:
+
+```typescript
+console.log(Direction.North) // 0
+console.log(Direction.South) // 1
+console.log(Direction.East) // 2
+console.log(Direction.West) // 3
+```
+
+##### Customizing Enum Values
+
+You can set custom values for enum members:
+
+```typescript
+enum StatusCodes {
+  OK = 200,
+  BadRequest = 400,
+  Unauthorized = 401,
+  PaymentRequired = 402,
+  Forbidden = 403,
+  NotFound = 404,
+}
+
+console.log(StatusCodes.OK) // 200
+console.log(StatusCodes.NotFound) // 404
+```
+
+##### String Enums
+
+TypeScript also supports string enums. These are useful when you want to give a more meaningful value to your enum members:
+
+```typescript
+enum Direction {
+  North = 'NORTH',
+  South = 'SOUTH',
+  East = 'EAST',
+  West = 'WEST',
+}
+
+console.log(Direction.North) // "NORTH"
+```
+
+##### Heterogeneous Enums
+
+While it's not common, TypeScript does allow mixing string and numeric members in the same enum:
+
+```typescript
+enum BooleanLikeHeterogeneousEnum {
+  No = 0,
+  Yes = 'YES',
+}
+```
+
+However, it's generally recommended to stick to either all numeric values or all string values for consistency.
+
+##### Enum as Types
+
+One of the powerful features of enums is that they can be used as types in TypeScript:
+
+```typescript
+enum UserRole {
+  Admin,
+  Editor,
+  Viewer,
+}
+
+function checkAccess(user: { role: UserRole }) {
+  switch (user.role) {
+    case UserRole.Admin:
+      console.log('Welcome, Admin!')
+      break
+    case UserRole.Editor:
+      console.log('You can edit, but not delete.')
+      break
+    case UserRole.Viewer:
+      console.log('You can only view.')
+      break
+  }
+}
+
+checkAccess({ role: UserRole.Admin }) // "Welcome, Admin!"
+```
+
+##### Reverse Mappings
+
+Numeric enums come with a handy feature called reverse mapping. This means you can access the enum member name by its value:
+
+```typescript
+enum Direction {
+  North,
+  South,
+  East,
+  West,
+}
+
+console.log(Direction[2]) // "East"
+```
+
+Note that this doesn't work for string enums.
+
+##### const Enums
+
+TypeScript provides a special kind of enum called a `const enum`. These are completely removed during compilation and inlined at use sites:
+
+```typescript
+const enum Direction {
+  North,
+  South,
+  East,
+  West,
+}
+
+let dir = Direction.South
+```
+
+This compiles to:
+
+```javascript
+let dir = 1 /* South */
+```
+
+`const enums` can provide a performance benefit, but they can't be used in all scenarios, such as when you need to iterate over an enum.
+
+##### Computed and Constant Members
+
+Enum members can be constant or computed. Constant members are calculated at compile time, while computed members are calculated at runtime.
+
+```typescript
+enum FileAccess {
+  // constant members
+  Read = 1 << 1,
+  Write = 1 << 2,
+  ReadWrite = Read | Write,
+  // computed member
+  G = '123'.length,
+}
+```
+
+##### Ambient Enums
+
+When working with enums from external libraries, you might encounter ambient enums. These are used to describe the shape of already existing enum types.
+
+```typescript
+declare enum Enum {
+  A = 1,
+  B,
+  C = 2,
+}
+```
+
+##### Best Practices
+
+1. **Use PascalCase for enum names and enum members.**
+2. **Consider using string enums for better readability in debugging and logging.**
+3. **Use `const enums` when you don't need to iterate over the enum and want better performance.**
+4. **Avoid using heterogeneous enums unless you have a specific reason to do so.**
+5. **When possible, specify values for all enum members to avoid unintended consequences of auto-incrementing values.**
+
+#### Conclusion
+
+Understanding TypeScript's type hierarchy is crucial for writing effective TypeScript code. From the all-permissive `any` at the top, through the rich landscape of object and primitive types in the middle, down to the `never` type at the bottom, this hierarchy provides the foundation for TypeScript's powerful type system.
+
+By leveraging this hierarchy, you can write more precise, safer, and self-documenting code. Remember, the goal is to use the most specific type possible for your use case, avoiding `any` when possible and using `unknown` when you need top-type behavior.
+
+Happy TypeScripting!

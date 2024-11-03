@@ -1,7 +1,7 @@
 ---
 title: BigFrontEnd Category 2 Array Methods Questions
-date: "2024-05-26"
-tags: ["BigFrontEnd", "category"]
+date: '2024-05-26'
+tags: ['BigFrontEnd', 'category']
 draft: false
 ---
 
@@ -22,11 +22,12 @@ Could you manage to implement your own one?
 Here is an example to illustrate
 
 ```js
-const arr = [1, [2], [3, [4]]];
+const arr = [1, [2], [3, [4]]]
 flat(arr)
 flat(arr, 1)
 flat(arr, 2)
 ```
+
 follow up
 
 Are you able to solve it both recursively and iteratively?
@@ -58,11 +59,9 @@ function flat(arr, depth = 1) {
 function flat(arr, depth = 1) {
   return arr.reduce(
     (acc, item) =>
-      Array.isArray(item) && depth > 0
-        ? acc.concat(flat(item, depth - 1))
-        : [...acc, item],
-    [],
-  );
+      Array.isArray(item) && depth > 0 ? acc.concat(flat(item, depth - 1)) : [...acc, item],
+    []
+  )
 }
 ```
 
@@ -70,19 +69,19 @@ function flat(arr, depth = 1) {
 
 ```js
 function flat(arr, depth = 1) {
-  const flatArray = [];
-  let stack = [...arr.map((item) => [item, depth])];
+  const flatArray = []
+  let stack = [...arr.map((item) => [item, depth])]
 
   while (stack.length > 0) {
-    const [item, depth] = stack.pop();
+    const [item, depth] = stack.pop()
     if (Array.isArray(item) && depth > 0) {
-      stack.push(...item.map((el) => [el, depth - 1]));
+      stack.push(...item.map((el) => [el, depth - 1]))
     } else {
-      flatArray.push(item);
+      flatArray.push(item)
     }
   }
 
-  return flatArray.reverse();
+  return flatArray.reverse()
 }
 ```
 
@@ -95,9 +94,11 @@ How would you implement a shuffle() ?
 When passed with an array, it should modify the array inline to generate a randomly picked permutation at the same probability.
 
 for an array like this:
+
 ```js
 const arr = [1, 2, 3, 4]
 ```
+
 there would be possibly 4! = 24 permutations
 
 [1, 2, 3, 4]
@@ -156,10 +157,12 @@ console.log(shuffleArray(myArray)); // Output: shuffled array
 `Array.prototype.reduce()` is a handy method to process arrays.
 
 Here is a simple task - Could you implement it by yourself?
+
 ```js
-[1,2,3].myReduce((sum, item) => sum + item)
+;[1, 2, 3].myReduce((sum, item) => sum + item)
 // 6
 ```
+
 do not use native Array.prototype.reduce() in your code
 your function is only tested against valid array (no array-like objects)
 thanks to pajadev for suggesting this
@@ -202,9 +205,11 @@ console.log(sum); // Output: 15
 151.https://bigfrontend.dev/problem/implement-Array-prototype-map
 
 Please implement your own `Array.prototype.map()`.
+
 ```js
-[1,2,3].myMap(num => num * 2)
+;[1, 2, 3].myMap((num) => num * 2)
 ```
+
 please avoid using Array.prototype.map() directly in your code.
 
 **Solution:** The `callback` function takes `cur`, `index`, and `array` as parameters.
@@ -250,13 +255,13 @@ Input: nums = []
 Output: -1
 Explanation: Because there are no elements, return -1.
 
-
 Constraints:
 
 arr is a valid JSON array
 `0 <= arr.length <= 1000`
 
 **Solution:**
+
 ```TypeScript
 // 2619. Array Prototype Last
 Array.prototype.last = function() {
@@ -278,11 +283,12 @@ The provided callback fn will accept an item in the array and return a string ke
 
 The order of each value list should be the order the items appear in the array. Any order of keys is acceptable.
 
-Please solve it without lodash's _.groupBy function.
+Please solve it without lodash's \_.groupBy function.
 
 Example 1:
 
 Input:
+
 ```
 array = [
   {"id":"1"},
@@ -293,13 +299,16 @@ fn = function (item) {
   return item.id;
 }
 ```
+
 Output:
+
 ```
 {
   "1": [{"id": "1"}, {"id": "1"}],
   "2": [{"id": "2"}]
 }
 ```
+
 Explanation:
 Output is from array.groupBy(fn).
 The selector function gets the "id" out of each item in the array.
@@ -308,6 +317,7 @@ There is one object with an "id" of 2. That object is put in the second array.
 Example 2:
 
 Input:
+
 ```
 array = [
   [1, 2, 3],
@@ -318,39 +328,47 @@ fn = function (list) {
   return String(list[0]);
 }
 ```
+
 Output:
+
 ```
 {
   "1": [[1, 2, 3], [1, 3, 5], [1, 5, 9]]
 }
 ```
+
 Explanation:
 The array can be of any type. In this case, the selector function defines the key as being the first element in the array.
 All the arrays have 1 as their first element so they are grouped together.
+
 ```
 {
   "1": [[1, 2, 3], [1, 3, 5], [1, 5, 9]]
 }
 ```
+
 Example 3:
 
 Input:
+
 ```
 array = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 fn = function (n) {
   return String(n > 5);
 }
 ```
+
 Output:
+
 ```
 {
   "true": [6, 7, 8, 9, 10],
   "false": [1, 2, 3, 4, 5]
 }
 ```
+
 Explanation:
 The selector function splits the array by whether each number is greater than 5.
-
 
 Constraints:
 
@@ -358,6 +376,7 @@ Constraints:
 fn returns a string
 
 **Solution:**
+
 ```TypeScript
 // 2631. Group By
 declare global {
@@ -379,6 +398,7 @@ Array.prototype.groupBy = function<T>(fn: (item: T) => string): Record<string, T
 ```
 
 ### 7.Implement `sortBy`
+
 https://leetcode.com/problems/sort-by/description/
 
 Given an array arr and a function fn, return a sorted array sortedArr. You can assume fn only returns numbers and those numbers determine the sort order of sortedArr. sortedArray must be sorted in ascending order by fn output.
@@ -408,6 +428,7 @@ fn is a function that returns a number
 `1 <= arr.length <= 5 * 10^5`
 
 **Solution:**
+
 ```TypeScript
 // 2724. Sort By
 type JSONValue = null | boolean | number | string | JSONValue[] | { [key: string]: JSONValue };
@@ -454,6 +475,7 @@ note
 we only judge by the result, not the time cost. please submit the best approach you can.
 
 **Solution:**
+
 ```js
 /**
  * @param {object[]} items
@@ -499,16 +521,20 @@ const excludes = [
 25.https://bigfrontend.dev/problem/reorder-array-with-new-indexes
 
 Suppose we have an array of items - A, and another array of indexes in numbers - B
+
 ```js
 const A = ['A', 'B', 'C', 'D', 'E', 'F']
-const B = [1,   5,   4,   3,   2,   0]
+const B = [1, 5, 4, 3, 2, 0]
 ```
+
 You need to reorder A, so that the A[i] is put at index of B[i], which means B is the new index for each item of A.
 
 For above example A should be modified inline to following
+
 ```js
-['F', 'A', 'E', 'D', 'C', 'B']
+;['F', 'A', 'E', 'D', 'C', 'B']
 ```
+
 The input are always valid.
 
 follow-up
@@ -523,17 +549,19 @@ It is fairly easy to do this by using extra O(n) space, could you solve it with 
 Example:
 
 Initial arrays:
+
 ```
 const A = ['A', 'B', 'C', 'D', 'E', 'F'];
 const B = [ 1, 5, 4, 3, 2, 0];
 ```
+
 Step-by-step process:
+
 ```
 => i = 0
 const A = ['B', 'A', 'C', 'D', 'E', 'F'];
 const B = [ 5, 1, 4, 3, 2, 0];
 ```
-
 
 ```js
 /**
@@ -543,16 +571,16 @@ const B = [ 5, 1, 4, 3, 2, 0];
  */
 function sort(items, newOrder) {
   for (let i = 0; i < newOrder.length; i++) {
-    const newIndex = newOrder[i];
+    const newIndex = newOrder[i]
     if (newIndex !== i) {
-      swap(newOrder, newIndex, i);
-      swap(items, newIndex, i);
+      swap(newOrder, newIndex, i)
+      swap(items, newIndex, i)
     }
   }
 }
 
 function swap(arr, i, j) {
-  [arr[i], arr[j]] = [arr[j], arr[i]];
+  ;[arr[i], arr[j]] = [arr[j], arr[i]]
 }
 ```
 
@@ -570,19 +598,19 @@ What is time & space cost of your approach?
 
 ```js
 function deduplicate(arr) {
-  let i = 0; // explore
-  let j = 0; // write
-  const n = arr.length;
-  const seen = new Set();
+  let i = 0 // explore
+  let j = 0 // write
+  const n = arr.length
+  const seen = new Set()
   while (i < n) {
     if (!seen.has(arr[i])) {
-      seen.add(arr[i]);
-      arr[j] = arr[i];
-      j += 1;
+      seen.add(arr[i])
+      arr[j] = arr[i]
+      j += 1
     }
-    i += 1;
+    i += 1
   }
-  arr.length = j;
+  arr.length = j
 }
 ```
 
@@ -595,7 +623,7 @@ Python supports negative list index , while JavaScript doesn't.
 Can you write a wrapper function to make negative array index possible?
 
 ```js
-const originalArr = [1,2,3]
+const originalArr = [1, 2, 3]
 const arr = wrap(originalArr)
 arr[0] // 1
 arr[1] // 2
@@ -626,7 +654,9 @@ arr // [2,3,6]
 originalArr // [2,3,6]
 ```
 
-**Solution:** Define a handler for the `Proxy` to wrap the array. In the handler, define `get` and `set` methods to check whether the prop is a number and convert it if necessary.
+**Solution:**
+
+Define a handler for the `Proxy` to wrap the array. In the handler, define `get` and `set` methods to check whether the prop is a number and convert it if necessary.
 
 ```js
 /**
@@ -634,37 +664,37 @@ originalArr // [2,3,6]
  * @returns {?} - sorry no type hint for this
  */
 function wrap(arr) {
-  const isIndex = (prop) => typeof prop === "string" && !isNaN(prop);
+  const isIndex = (prop) => typeof prop === 'string' && !isNaN(prop)
   const convertIndex = (prop, length) => {
-    let index = Number(prop);
+    let index = Number(prop)
     if (index < 0) {
-      index = length + index;
+      index = length + index
     }
-    return index;
-  };
+    return index
+  }
   const handler = {
     get(target, prop, receiver) {
       // Handle negative indices
       if (isIndex(prop)) {
-        return Reflect.get(target, convertIndex(prop, target.length), receiver);
+        return Reflect.get(target, convertIndex(prop, target.length), receiver)
       }
       // Handle all other properties normally
-      return Reflect.get(target, prop, receiver);
+      return Reflect.get(target, prop, receiver)
     },
     set(target, prop, value, receiver) {
       // Handle negative indices
       if (isIndex(prop)) {
-        const index = convertIndex(prop, target.length);
+        const index = convertIndex(prop, target.length)
         if (index < 0) {
-          throw new Error("Negative index out of bounds");
+          throw new Error('Negative index out of bounds')
         }
-        return Reflect.set(target, index, value, receiver);
+        return Reflect.set(target, index, value, receiver)
       }
       // Handle all other properties normally
-      return Reflect.set(target, prop, value, receiver);
+      return Reflect.set(target, prop, value, receiver)
     },
-  };
-  return new Proxy(arr, handler);
+  }
+  return new Proxy(arr, handler)
 }
 ```
 
@@ -677,6 +707,7 @@ In [12. implement Immutability helper](https://bigfrontend.dev/problem/implement
 These helpers requires extra effort for us to remember how to use them, while Immer takes another approach which might be easier to use.
 
 For example, we have a base state as below.
+
 ```js
 const state = [
   {
@@ -684,95 +715,48 @@ const state = [
   },
   {
     name: '.',
-  }
+  },
 ]
 ```
+
 We can use `produce()` to patch our modification and get a new state.
+
 ```js
-const newState = produce(state, draft => {
-  draft.push({name: 'dev'})
+const newState = produce(state, (draft) => {
+  draft.push({ name: 'dev' })
   draft[0].name = 'bigfrontend'
   draft[1].name = '.' // set with the same value
 })
 ```
+
 Unchanged parts are not cloned.
+
 ```js
-expect(newState).not.toBe(state);
-expect(newState).toEqual(
-  [
-    {
-      name: 'bigfrontend',
-    },
-    {
-      name: '.',
-    },
-    {
-      name: 'dev'
-    }
-  ]
-);
+expect(newState).not.toBe(state)
+expect(newState).toEqual([
+  {
+    name: 'bigfrontend',
+  },
+  {
+    name: '.',
+  },
+  {
+    name: 'dev',
+  },
+])
 expect(newState[0]).not.toBe(state[0])
 expect(newState[1]).toBe(state[1])
 expect(newState[2]).not.toBe(state[2])
 ```
+
 Please implement your `produce()`.
 
 This is not to recreate Immer, test cases only cover the basic usage.
 You only need to support basic usage on plain object and array, things like Map/Set, Auto freezing .etc are out of scope.
 You need to make sure unchanged parts are not cloned.
 
-**Initial Solution:** We create a proxy to wrap the access to the base object.
+**Solution:**
 
-```JavaScript
-/**
- * @param {any} base
- * @param {(draft: any) => any} recipe
- * @returns {any}
- */
-function produce(base, recipe) {
-    // Use a flag to determine if any changes were made
-    let isModified = false;
-
-    // Create a proxy to track changes
-    const proxy = (function createProxy(value) {
-        // Handle objects and arrays separately
-        if (typeof value === 'object' && value !== null) {
-            return new Proxy(value, {
-                get(target, key) {
-                    // Return a proxied version of nested objects or arrays
-                    return createProxy(target[key]);
-                },
-                set(target, key, newValue) {
-                    if (target[key] !== newValue) {
-                        if (!isModified) {
-                            // Clone the base state when the first modification is detected
-                            isModified = true;
-                        }
-                        target[key] = newValue;
-                    }
-                    return true;
-                }
-            });
-        } else {
-            // Return primitive values directly
-            return value;
-        }
-    })(Array.isArray(base) ? [...base] : { ...base });
-
-    // Apply the recipe function to the draft
-    recipe(proxy);
-
-    // If no changes were made, return the original state
-    if (!isModified) {
-        return base;
-    }
-
-    // If changes were made, return the modified draft
-    return proxy;
-}
-```
-
-Checking Solution at https://bigfrontend.dev/problem/immerjs/discuss
 This code implements a recursive proxy-based system for creating an immutable data structure with efficient updates. Let's break it down:
 
 1. `proxify` function:
@@ -782,6 +766,7 @@ This code implements a recursive proxy-based system for creating an immutable da
    It returns a new `Proxy` object wrapping the `data`.
 
 3. Get trap:
+
    - If the accessed property is an object or array (but not a function), it creates a clone.
    - For arrays, it uses spread syntax (`[...val]`), and for objects, it uses object spread (`{...val}`).
    - It creates an `updater` function that will be used to propagate changes up the object tree.
@@ -789,6 +774,7 @@ This code implements a recursive proxy-based system for creating an immutable da
    - For primitive values, it returns the value as-is.
 
 4. Set trap:
+
    - If the new value is different from the current value, it updates the target.
    - It then calls all the `updaters` in reverse order, propagating the change up the object tree.
 

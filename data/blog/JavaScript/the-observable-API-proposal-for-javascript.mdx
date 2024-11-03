@@ -1,0 +1,127 @@
+---
+title: The Observable API Proposal for JavaScript
+date: '2024-07-03'
+tags: ['JavaScript']
+draft: false
+---
+
+### Introduction
+
+JavaScript is constantly evolving, and one exciting proposal on the horizon is the Observable API. This API aims to bring native support for observables directly into the language, providing a standardized way to handle streams of asynchronous data. In this blog post, we'll explore the Observable API proposal, its potential benefits, and how it might be used in future JavaScript applications.
+
+<TOCInline toc={props.toc} exclude="Introduction" />{' '}
+
+#### What is the Observable API?
+
+The Observable API is a proposal for adding native support for observables to JavaScript. Observables represent a push-based data source that can emit multiple values over time. This is in contrast to Promises, which resolve to a single value.
+
+While libraries like RxJS have popularized the observable pattern, the Observable API proposal aims to bring this functionality directly into the language, much like how Promises were standardized in ES6.
+
+#### Current Status of the Proposal
+
+As of now, the Observable API is at Stage 1 in the TC39 process. This means it's still an early proposal and subject to significant changes. It's important to note that the final implementation, if accepted, may differ from what we'll discuss here.
+
+#### Basic Concepts of the Observable API
+
+The proposed Observable API consists of a few key components:
+
+1. **Observable**: An object that pushes values to observers.
+2. **Observer**: An object with methods for receiving values from an Observable.
+3. **Subscription**: Represents the execution of an Observable, which can be cancelled.
+
+#### Creating an Observable
+
+Here's how you might create an Observable using the proposed API:
+
+```javascript
+const observable = new Observable((subscriber) => {
+  subscriber.next(1)
+  subscriber.next(2)
+  subscriber.next(3)
+  setTimeout(() => {
+    subscriber.next(4)
+    subscriber.complete()
+  }, 1000)
+})
+```
+
+#### Subscribing to an Observable
+
+To consume values from an Observable, you would subscribe to it:
+
+```javascript
+const subscription = observable.subscribe({
+  next(value) {
+    console.log(value)
+  },
+  error(err) {
+    console.error('Something went wrong: ' + err)
+  },
+  complete() {
+    console.log('Done')
+  },
+})
+```
+
+#### Cancelling a Subscription
+
+One of the key features of Observables is the ability to cancel them:
+
+```javascript
+// Later, when you want to stop receiving values
+subscription.unsubscribe()
+```
+
+#### Potential Use Cases
+
+The Observable API could be particularly useful for:
+
+1. **Event streams**: Handling user interactions like mouse moves or key presses.
+2. **WebSocket connections**: Managing real-time data from a server.
+3. **Long-polling**: Implementing efficient long-polling mechanisms.
+4. **Animations**: Controlling complex animation sequences.
+
+#### Comparison with Promises
+
+While Promises and Observables might seem similar, they serve different purposes:
+
+- Promises represent a single asynchronous value.
+- Observables represent a stream of values over time.
+
+Here's a quick comparison:
+
+```javascript
+// Promise
+const promise = new Promise((resolve, reject) => {
+  setTimeout(() => resolve('Hello'), 1000)
+})
+
+promise.then(console.log) // Logs 'Hello' after 1 second
+
+// Observable
+const observable = new Observable((subscriber) => {
+  setInterval(() => subscriber.next('Hello'), 1000)
+})
+
+const subscription = observable.subscribe(console.log) // Logs 'Hello' every second
+
+// Later
+subscription.unsubscribe() // Stops logging
+```
+
+#### Potential Benefits of Native Observables
+
+1. **Standardization**: A common API for all JavaScript environments.
+2. **Performance**: Native implementation could offer performance benefits.
+3. **Ecosystem growth**: Standard Observables could lead to more libraries and tools built around them.
+4. **Simplified async programming**: A powerful tool for complex asynchronous scenarios.
+
+#### Conclusion
+
+The Observable API proposal represents an exciting potential addition to JavaScript. By providing a standardized way to work with streams of asynchronous data, it could simplify many complex programming tasks and open up new possibilities for JavaScript developers.
+
+However, it's important to remember that this is still a proposal. The final implementation, if accepted, may look different from what we've discussed here. Developers interested in using Observables today might want to look at libraries like RxJS, which provide similar functionality.
+
+As JavaScript continues to evolve, proposals like the Observable API show the language's commitment to handling the complex, asynchronous nature of modern web development. Whether you're building real-time applications, handling complex user interactions, or managing streams of data, the Observable API could become a powerful tool in your JavaScript toolkit.
+
+Stay tuned to the TC39 process to follow the progress of this exciting proposal!

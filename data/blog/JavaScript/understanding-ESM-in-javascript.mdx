@@ -1,0 +1,125 @@
+---
+title: Understanding ECMAScript Modules (ESM) in JavaScript
+date: '2024-06-30'
+tags: ['JavaScript']
+draft: false
+---
+
+### Introduction
+
+JavaScript has come a long way since its inception, and one of the most significant improvements in recent years has been the introduction of ECMAScript Modules (ESM). In this blog post, we'll dive deep into what ESM is, why it's important, and how to use it effectively in your JavaScript projects.
+
+<TOCInline toc={props.toc} exclude="Introduction" />
+
+#### What are ECMAScript Modules?
+
+ECMAScript Modules, or ESM for short, is the official standard format to package JavaScript code for reuse. Modules are defined using a variety of `import` and `export` statements.
+
+#### Why ESM?
+
+Before ESM, JavaScript didn't have a standard module system. Developers relied on various workarounds like CommonJS (`require` and `module.exports`) or AMD (Asynchronous Module Definition). ESM brings several advantages:
+
+1. **Standardization**: It's part of the ECMAScript specification, ensuring consistent behavior across environments.
+2. **Static structure**: Imports and exports are static, allowing for better static analysis, optimizations, and error checking.
+3. **Asynchronous by default**: ESM is designed with asynchronous loading in mind, which is crucial for performance in web applications.
+4. **Tree-shaking**: The static nature of ESM allows tools to easily detect and eliminate unused code, reducing bundle sizes.
+
+#### How to Use ESM
+
+Let's look at some examples of how to use ESM in your JavaScript code.
+
+##### Exporting from a Module
+
+You can export functions, objects, or primitive values from a module using the `export` keyword:
+
+```javascript
+// math.js
+export function add(x, y) {
+  return x + y
+}
+
+export function subtract(x, y) {
+  return x - y
+}
+
+export const PI = 3.14159
+```
+
+You can also have a default export:
+
+```javascript
+// greet.js
+export default function greet(name) {
+  return `Hello, ${name}!`
+}
+```
+
+##### Importing in a Module
+
+To use the exported items in another file, you use the `import` keyword:
+
+```javascript
+// app.js
+import { add, subtract, PI } from './math.js'
+import greet from './greet.js'
+
+console.log(add(5, 3)) // 8
+console.log(subtract(10, 4)) // 6
+console.log(PI) // 3.14159
+console.log(greet('Alice')) // "Hello, Alice!"
+```
+
+#### ESM in Node.js
+
+Node.js has supported ESM since version 13, but it requires either using the `.mjs` file extension or setting `"type": "module"` in your `package.json`. Here's how you might use ESM in a Node.js project:
+
+```json
+// package.json
+{
+  "type": "module"
+}
+```
+
+```javascript
+// server.js
+import express from 'express'
+
+const app = express()
+
+app.get('/', (req, res) => {
+  res.send('Hello, ESM!')
+})
+
+app.listen(3000, () => console.log('Server running on port 3000'))
+```
+
+#### ESM in the Browser
+
+Modern browsers support ESM natively. You can use it by adding `type="module"` to your script tag:
+
+```html
+<script type="module">
+  import { add } from './math.js'
+  console.log(add(2, 3))
+</script>
+```
+
+#### Dynamic Imports
+
+ESM also supports dynamic imports, allowing you to load modules on demand:
+
+```javascript
+button.addEventListener('click', async () => {
+  const { default: Dialog } = await import('./dialog.js')
+  const dialog = new Dialog('Welcome!')
+  dialog.show()
+})
+```
+
+#### Conclusion
+
+ECMAScript Modules represent a significant step forward for JavaScript. They provide a standard, efficient way to organize and share code, improving performance and developer experience. As you build your next JavaScript project, consider leveraging the power of ESM to create more modular, maintainable, and efficient code.
+
+Remember, while ESM is the future of JavaScript modules, it's important to be aware of your target environments. Some older browsers or Node.js versions might require transpilation or different strategies. Always check the compatibility and choose the right tools for your specific use case.
+
+Happy coding with ESM!

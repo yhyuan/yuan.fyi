@@ -1,0 +1,206 @@
+---
+title: Understanding Hoisting in JavaScript
+date: '2024-07-04'
+tags: ['JavaScript']
+draft: false
+---
+
+### Introduction
+
+If you've been coding in JavaScript for a while, you might have encountered some seemingly bizarre behavior where variables appear to be used before they're declared. This phenomenon is known as hoisting, and understanding it is crucial for writing predictable JavaScript code. In this blog post, we'll dive deep into what hoisting is, how it works, and its implications for different types of declarations.
+
+<TOCInline toc={props.toc} exclude="Introduction" />{' '}
+
+#### What is Hoisting?
+
+Hoisting is a behavior in JavaScript where variable and function declarations are moved to the top of their respective scopes during the compilation phase, before the code is executed. This means that regardless of where variables and functions are declared in the code, they are moved to the top of their scope (global or local).
+
+It's important to note that only the declarations are hoisted, not the initializations or assignments.
+
+#### Variable Hoisting
+
+Let's start by looking at how hoisting affects variables declared with `var`, `let`, and `const`.
+
+##### Hoisting with var
+
+Variables declared with `var` are hoisted to the top of their scope and initialized with `undefined`.
+
+```javascript
+console.log(x) // undefined
+var x = 5
+console.log(x) // 5
+```
+
+This is equivalent to:
+
+```javascript
+var x
+console.log(x) // undefined
+x = 5
+console.log(x) // 5
+```
+
+##### Hoisting with let and const
+
+Variables declared with `let` and `const` are hoisted to the top of their block, but are not initialized. Accessing them before the actual declaration results in a ReferenceError. This behavior is often referred to as the "Temporal Dead Zone" (TDZ).
+
+```javascript
+console.log(x) // ReferenceError: Cannot access 'x' before initialization
+let x = 5
+```
+
+The same applies to `const`:
+
+```javascript
+console.log(y) // ReferenceError: Cannot access 'y' before initialization
+const y = 10
+```
+
+#### Function Hoisting
+
+Function declarations are completely hoisted, meaning both the function name and the function body are moved to the top of their scope.
+
+```javascript
+sayHello() // "Hello, World!"
+
+function sayHello() {
+  console.log('Hello, World!')
+}
+```
+
+However, function expressions are not hoisted in the same way:
+
+```javascript
+sayHi() // TypeError: sayHi is not a function
+
+var sayHi = function () {
+  console.log('Hi, there!')
+}
+```
+
+In this case, only the variable declaration `var sayHi` is hoisted, not the function assignment.
+
+##### Function Declarations Inside Blocks
+
+Function declarations inside blocks deserve special attention when discussing hoisting, as their behavior can be counterintuitive and varies depending on strict mode and the JavaScript environment.
+
+###### In Non-Strict Mode
+
+In non-strict mode, function declarations inside blocks are hoisted to the top of the enclosing function or global scope, not to the top of the block. This can lead to some surprising behavior:
+
+```javascript
+console.log(typeof myFunc) // "function"
+
+if (true) {
+  function myFunc() {
+    return 'Hello from myFunc!'
+  }
+}
+
+console.log(myFunc()) // "Hello from myFunc!"
+```
+
+In this example, `myFunc` is hoisted to the top of the global scope, making it available even before the `if` block.
+
+###### In Strict Mode
+
+In strict mode, function declarations inside blocks are block-scoped, meaning they're not hoisted outside of the block:
+
+```javascript
+'use strict'
+
+console.log(typeof myFunc) // "undefined"
+
+if (true) {
+  function myFunc() {
+    return 'Hello from myFunc!'
+  }
+}
+
+console.log(typeof myFunc) // "function"
+myFunc() // "Hello from myFunc!"
+```
+
+Here, `myFunc` is only defined within the `if` block and after it.
+
+###### Inconsistent Behavior Across Environments
+
+It's crucial to note that the behavior of function declarations in blocks can vary across different JavaScript environments. Some browsers might hoist the function in strict mode, while others might not. This inconsistency is one of the reasons why it's generally recommended to avoid function declarations in blocks.
+
+###### Best Practice: Use Function Expressions
+
+To avoid the ambiguity and potential issues caused by function declarations in blocks, it's best to use function expressions with `let` or `const`:
+
+```javascript
+console.log(typeof myFunc) // "undefined"
+
+if (true) {
+  const myFunc = function () {
+    return 'Hello from myFunc!'
+  }
+  console.log(myFunc()) // "Hello from myFunc!"
+}
+
+console.log(typeof myFunc) // "undefined"
+```
+
+This approach ensures consistent behavior across environments and clearly defines the scope of the function.
+
+#### Classes and Hoisting
+
+Class declarations, like `let` and `const`, are hoisted but not initialized. Attempting to use a class before its declaration results in a ReferenceError:
+
+```javascript
+new MyClass() // ReferenceError: Cannot access 'MyClass' before initialization
+
+class MyClass {}
+```
+
+Class expressions, similar to function expressions, are not hoisted:
+
+```javascript
+new MyClass() // ReferenceError: MyClass is not defined
+
+var MyClass = class {}
+```
+
+#### Best Practices to Avoid Hoisting Issues
+
+While understanding hoisting is important, it's generally best to write code that doesn't rely on it. Here are some best practices:
+
+1. Always declare variables at the top of their scope.
+2. Use `let` and `const` instead of `var` to catch potential issues early.
+3. Declare functions before you use them.
+4. Be aware of the differences between function declarations and function expressions.
+
+#### The "use strict" Directive
+
+Using strict mode can help catch some issues related to hoisting. In strict mode, variables must be declared before they can be used:
+
+```javascript
+'use strict'
+
+x = 5 // ReferenceError: x is not defined
+console.log(x)
+
+var x
+```
+
+#### Conclusion
+
+Hoisting is a fundamental concept in JavaScript that can be the source of both convenience and confusion. By understanding how hoisting works with different types of declarations, you can write more predictable code and avoid potential bugs.
+
+Remember:
+
+- Variable declarations with `var` are hoisted and initialized with `undefined`.
+- `let` and `const` declarations are hoisted but not initialized, resulting in a Temporal Dead Zone.
+- Function declarations are fully hoisted.
+- Function expressions, class declarations, and class expressions have their own unique hoisting behaviors.
+
+As you continue to work with JavaScript, keep these hoisting rules in mind. They'll help you understand why your code behaves the way it does and how to structure it for maximum clarity and predictability.
+
+As we've seen with function declarations inside blocks, hoisting can sometimes lead to unexpected and inconsistent behavior. This reinforces the importance of understanding hoisting thoroughly and adopting coding practices that promote clarity and predictability. By being aware of these nuances, you can write more robust JavaScript code that behaves consistently across different environments.
+
+Remember, when in doubt about hoisting behavior, especially with function declarations in blocks, opt for clearer alternatives like function expressions. Your future self (and your team members) will thank you for the increased readability and reduced potential for bugs.
+
+Happy coding, and may your variables always be in scope when you need them!

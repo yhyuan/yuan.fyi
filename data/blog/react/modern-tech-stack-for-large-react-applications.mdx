@@ -1,0 +1,503 @@
+---
+title: Complete Guide to MUI (Material UI) for React
+date: '2024-07-21'
+tags: ['React']
+draft: false
+---
+
+### Introduction
+
+Material UI (now known as MUI) has become one of the most popular UI component libraries for React.
+
+<TOCInline toc={props.toc} exclude="Introduction" />{' '}
+
+#### 1. Installation and Setup
+
+##### Basic Installation
+
+```bash
+npm install @mui/material @emotion/react @emotion/styled
+npm install @mui/icons-material
+```
+
+##### Basic Setup
+
+```jsx
+// index.jsx
+import React from 'react'
+import { ThemeProvider } from '@mui/material/styles'
+import CssBaseline from '@mui/material/CssBaseline'
+import theme from './theme'
+
+function App() {
+  return (
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      {/* Your app content */}
+    </ThemeProvider>
+  )
+}
+```
+
+#### 2. Basic Components
+
+##### Button
+
+```jsx
+import Button from '@mui/material/Button';
+
+// Variants
+<Button variant="text">Text</Button>
+<Button variant="contained">Contained</Button>
+<Button variant="outlined">Outlined</Button>
+
+// Colors
+<Button color="primary">Primary</Button>
+<Button color="secondary">Secondary</Button>
+<Button color="error">Error</Button>
+
+// Sizes
+<Button size="small">Small</Button>
+<Button size="medium">Medium</Button>
+<Button size="large">Large</Button>
+```
+
+##### Typography
+
+```jsx
+import Typography from '@mui/material/Typography';
+
+<Typography variant="h1">h1 Heading</Typography>
+<Typography variant="h2">h2 Heading</Typography>
+<Typography variant="body1">Regular text</Typography>
+<Typography variant="body2">Smaller text</Typography>
+<Typography variant="button">Button text</Typography>
+```
+
+##### Icons
+
+```jsx
+import HomeIcon from '@mui/icons-material/Home'
+import IconButton from '@mui/material/IconButton'
+
+;<IconButton>
+  <HomeIcon />
+</IconButton>
+```
+
+#### 3. Layout Components
+
+##### Container
+
+```jsx
+import Container from '@mui/material/Container'
+
+;<Container maxWidth="sm">{/* Content */}</Container>
+```
+
+##### Grid
+
+```jsx
+import Grid from '@mui/material/Grid'
+
+;<Grid container spacing={2}>
+  <Grid item xs={12} md={6}>
+    {/* Content */}
+  </Grid>
+  <Grid item xs={12} md={6}>
+    {/* Content */}
+  </Grid>
+</Grid>
+```
+
+##### Box
+
+```jsx
+import Box from '@mui/material/Box'
+
+;<Box
+  sx={{
+    p: 2,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 2,
+  }}
+>
+  {/* Content */}
+</Box>
+```
+
+##### Stack
+
+```jsx
+import Stack from '@mui/material/Stack'
+
+;<Stack spacing={2} direction="row">
+  <Button variant="text">Text</Button>
+  <Button variant="contained">Contained</Button>
+  <Button variant="outlined">Outlined</Button>
+</Stack>
+```
+
+#### 4. Navigation
+
+##### AppBar and Toolbar
+
+```jsx
+import AppBar from '@mui/material/AppBar'
+import Toolbar from '@mui/material/Toolbar'
+import Typography from '@mui/material/Typography'
+
+;<AppBar position="static">
+  <Toolbar>
+    <Typography variant="h6">My App</Typography>
+  </Toolbar>
+</AppBar>
+```
+
+##### Drawer
+
+```jsx
+import Drawer from '@mui/material/Drawer'
+import List from '@mui/material/List'
+import ListItem from '@mui/material/ListItem'
+
+;<Drawer variant="permanent" anchor="left">
+  <List>
+    <ListItem button>
+      <ListItemText primary="Item 1" />
+    </ListItem>
+  </List>
+</Drawer>
+```
+
+##### Tabs
+
+```jsx
+import Tabs from '@mui/material/Tabs'
+import Tab from '@mui/material/Tab'
+
+function TabPanel({ children, value, index }) {
+  return <div hidden={value !== index}>{value === index && children}</div>
+}
+
+function TabsExample() {
+  const [value, setValue] = React.useState(0)
+
+  return (
+    <>
+      <Tabs value={value} onChange={(e, newValue) => setValue(newValue)}>
+        <Tab label="Item 1" />
+        <Tab label="Item 2" />
+      </Tabs>
+      <TabPanel value={value} index={0}>
+        Content 1
+      </TabPanel>
+      <TabPanel value={value} index={1}>
+        Content 2
+      </TabPanel>
+    </>
+  )
+}
+```
+
+#### 5. Inputs
+
+##### TextField
+
+```jsx
+import TextField from '@mui/material/TextField';
+
+<TextField
+  label="Standard"
+  variant="standard"
+/>
+<TextField
+  label="Outlined"
+  variant="outlined"
+/>
+<TextField
+  label="Filled"
+  variant="filled"
+/>
+
+// With validation
+<TextField
+  error={hasError}
+  helperText={hasError ? "Error message" : "Helper text"}
+/>
+```
+
+##### Select
+
+```jsx
+import Select from '@mui/material/Select'
+import MenuItem from '@mui/material/MenuItem'
+
+function SelectExample() {
+  const [value, setValue] = React.useState('')
+
+  return (
+    <Select value={value} onChange={(e) => setValue(e.target.value)}>
+      <MenuItem value={10}>Ten</MenuItem>
+      <MenuItem value={20}>Twenty</MenuItem>
+    </Select>
+  )
+}
+```
+
+##### Checkbox and Radio
+
+```jsx
+import Checkbox from '@mui/material/Checkbox';
+import Radio from '@mui/material/Radio';
+import RadioGroup from '@mui/material/RadioGroup';
+import FormControlLabel from '@mui/material/FormControlLabel';
+
+<FormControlLabel
+  control={<Checkbox />}
+  label="Label"
+/>
+
+<RadioGroup value={value} onChange={handleChange}>
+  <FormControlLabel value="a" control={<Radio />} label="Option A" />
+  <FormControlLabel value="b" control={<Radio />} label="Option B" />
+</RadioGroup>
+```
+
+#### 6. Data Display
+
+##### Table
+
+```jsx
+import Table from '@mui/material/Table'
+import TableBody from '@mui/material/TableBody'
+import TableCell from '@mui/material/TableCell'
+import TableHead from '@mui/material/TableHead'
+import TableRow from '@mui/material/TableRow'
+
+;<Table>
+  <TableHead>
+    <TableRow>
+      <TableCell>Name</TableCell>
+      <TableCell>Age</TableCell>
+    </TableRow>
+  </TableHead>
+  <TableBody>
+    <TableRow>
+      <TableCell>John</TableCell>
+      <TableCell>25</TableCell>
+    </TableRow>
+  </TableBody>
+</Table>
+```
+
+##### List
+
+```jsx
+import List from '@mui/material/List'
+import ListItem from '@mui/material/ListItem'
+import ListItemText from '@mui/material/ListItemText'
+import ListItemIcon from '@mui/material/ListItemIcon'
+
+;<List>
+  <ListItem>
+    <ListItemIcon>
+      <HomeIcon />
+    </ListItemIcon>
+    <ListItemText primary="Primary text" secondary="Secondary text" />
+  </ListItem>
+</List>
+```
+
+##### Card
+
+```jsx
+import Card from '@mui/material/Card'
+import CardContent from '@mui/material/CardContent'
+import CardActions from '@mui/material/CardActions'
+import CardMedia from '@mui/material/CardMedia'
+
+;<Card>
+  <CardMedia
+    component="img"
+    height="140"
+    image="/static/images/cards/contemplative-reptile.jpg"
+    alt="green iguana"
+  />
+  <CardContent>
+    <Typography gutterBottom variant="h5">
+      Card Title
+    </Typography>
+    <Typography variant="body2" color="text.secondary">
+      Card content
+    </Typography>
+  </CardContent>
+  <CardActions>
+    <Button size="small">Share</Button>
+    <Button size="small">Learn More</Button>
+  </CardActions>
+</Card>
+```
+
+#### 7. Feedback Components
+
+##### Snackbar
+
+```jsx
+import Snackbar from '@mui/material/Snackbar'
+import Alert from '@mui/material/Alert'
+
+function SnackbarExample() {
+  const [open, setOpen] = React.useState(false)
+
+  return (
+    <Snackbar open={open} autoHideDuration={6000} onClose={() => setOpen(false)}>
+      <Alert severity="success">This is a success message!</Alert>
+    </Snackbar>
+  )
+}
+```
+
+##### Dialog
+
+```jsx
+import Dialog from '@mui/material/Dialog'
+import DialogTitle from '@mui/material/DialogTitle'
+import DialogContent from '@mui/material/DialogContent'
+import DialogActions from '@mui/material/DialogActions'
+
+function DialogExample() {
+  const [open, setOpen] = React.useState(false)
+
+  return (
+    <Dialog open={open} onClose={() => setOpen(false)}>
+      <DialogTitle>Dialog Title</DialogTitle>
+      <DialogContent>Dialog content</DialogContent>
+      <DialogActions>
+        <Button onClick={() => setOpen(false)}>Cancel</Button>
+        <Button onClick={() => setOpen(false)}>OK</Button>
+      </DialogActions>
+    </Dialog>
+  )
+}
+```
+
+#### 8. Surfaces
+
+##### Paper
+
+```jsx
+import Paper from '@mui/material/Paper'
+
+;<Paper elevation={3} sx={{ p: 2 }}>
+  Content
+</Paper>
+```
+
+##### Accordion
+
+```jsx
+import Accordion from '@mui/material/Accordion'
+import AccordionSummary from '@mui/material/AccordionSummary'
+import AccordionDetails from '@mui/material/AccordionDetails'
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
+
+;<Accordion>
+  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+    <Typography>Accordion 1</Typography>
+  </AccordionSummary>
+  <AccordionDetails>
+    <Typography>Content</Typography>
+  </AccordionDetails>
+</Accordion>
+```
+
+#### 9. Theming
+
+##### Custom Theme
+
+```jsx
+import { createTheme } from '@mui/material/styles'
+
+const theme = createTheme({
+  palette: {
+    primary: {
+      main: '#1976d2',
+    },
+    secondary: {
+      main: '#dc004e',
+    },
+  },
+  typography: {
+    fontFamily: 'Roboto, Arial, sans-serif',
+    h1: {
+      fontSize: '2.5rem',
+    },
+  },
+  spacing: 8,
+})
+```
+
+##### Using Theme in Styles
+
+```jsx
+import { styled } from '@mui/material/styles'
+
+const CustomButton = styled(Button)(({ theme }) => ({
+  padding: theme.spacing(2),
+  [theme.breakpoints.down('sm')]: {
+    fontSize: '0.875rem',
+  },
+}))
+```
+
+#### 10. Advanced Usage
+
+##### Custom Component with Styles
+
+```jsx
+import { styled } from '@mui/material/styles'
+
+const CustomComponent = styled('div')(({ theme }) => ({
+  display: 'flex',
+  padding: theme.spacing(2),
+  backgroundColor: theme.palette.background.paper,
+  borderRadius: theme.shape.borderRadius,
+  '&:hover': {
+    backgroundColor: theme.palette.action.hover,
+  },
+  [theme.breakpoints.down('sm')]: {
+    flexDirection: 'column',
+  },
+}))
+```
+
+##### Using sx Prop
+
+```jsx
+<Box
+  sx={{
+    display: 'flex',
+    p: 2,
+    bgcolor: 'background.paper',
+    borderRadius: 1,
+    '&:hover': {
+      bgcolor: 'action.hover',
+    },
+  }}
+>
+  Content
+</Box>
+```
+
+#### Conclusion
+
+This guide covers the most commonly used components and features of MUI. Remember to:
+
+- Always check the official documentation for the most up-to-date API references
+- Use the `sx` prop for one-off styling needs
+- Leverage the theme for consistent styling across your application
+- Consider accessibility when building your components
+
+The examples provided here serve as a starting point - MUI offers many more features and customization options that you can explore based on your specific needs.
