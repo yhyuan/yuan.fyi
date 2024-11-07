@@ -1,0 +1,327 @@
+---
+title: Zustand State Management library for React Application
+date: '2024-07-24'
+tags: ['React']
+draft: false
+---
+
+### Introduction
+
+**Zustand** is a lightweight state management library for React that makes it easy to create and manage global state. Here’s how you can set up and use **Zustand** to create global state management in a React application:
+
+<TOCInline toc={props.toc} exclude="Introduction" />{' '}
+
+### Step-by-Step Guide to Using Zustand
+
+1. **Install Zustand**:
+   Begin by installing Zustand in your React project.
+
+   ```bash
+   npm install zustand
+   ```
+
+   or with Yarn:
+
+   ```bash
+   yarn add zustand
+   ```
+
+2. **Create a Zustand Store**:
+   Create a new file, for example, `useStore.js`, to define your global state store.
+
+   ```javascript
+   import { create } from 'zustand'
+
+   // Create the store with initial state and actions
+   const useStore = create((set) => ({
+     // Initial state
+     count: 0,
+     user: null,
+
+     // Actions
+     increment: () => set((state) => ({ count: state.count + 1 })),
+     decrement: () => set((state) => ({ count: state.count - 1 })),
+     setUser: (user) => set({ user }),
+   }))
+
+   export default useStore
+   ```
+
+3. **Access the Store in Your Components**:
+   Import and use the store in your React components to read or update the global state.
+
+   ```javascript
+   import React from 'react'
+   import useStore from './useStore'
+
+   function Counter() {
+     // Access state and actions from the store
+     const { count, increment, decrement } = useStore()
+
+     return (
+       <div>
+         <h1>Count: {count}</h1>
+         <button onClick={increment}>Increment</button>
+         <button onClick={decrement}>Decrement</button>
+       </div>
+     )
+   }
+
+   export default Counter
+   ```
+
+4. **Using the Store with Other Components**:
+   You can use `useStore` in multiple components without needing to pass props down or lift the state up.
+
+   ```javascript
+   import React from 'react'
+   import useStore from './useStore'
+
+   function UserProfile() {
+     const { user, setUser } = useStore()
+
+     const loginUser = () => {
+       const sampleUser = { name: 'John Doe', age: 30 }
+       setUser(sampleUser)
+     }
+
+     return (
+       <div>
+         <h2>User: {user ? user.name : 'No user logged in'}</h2>
+         <button onClick={loginUser}>Log In User</button>
+       </div>
+     )
+   }
+
+   export default UserProfile
+   ```
+
+### Advanced Tips for Zustand:
+
+1. **Persisting State**:
+   To persist state across page reloads, you can use `zustand/middleware` with localStorage.
+
+   ```javascript
+   import { create } from 'zustand'
+   import { persist } from 'zustand/middleware'
+
+   const useStore = create(
+     persist(
+       (set) => ({
+         count: 0,
+         increment: () => set((state) => ({ count: state.count + 1 })),
+       }),
+       {
+         name: 'counter-storage', // unique name
+       }
+     )
+   )
+
+   export default useStore
+   ```
+
+2. **Selectors for Better Performance**:
+   You can use selectors to read specific pieces of state to optimize re-renders.
+
+   ```javascript
+   const count = useStore((state) => state.count)
+   const increment = useStore((state) => state.increment)
+   ```
+
+3. **Combining Multiple Stores**:
+   For more complex apps, consider splitting state into multiple stores and combining them as needed.
+
+4. **DevTools Integration**:
+   For better debugging, Zustand can be integrated with Redux DevTools.
+
+   ```javascript
+   import { create } from 'zustand'
+   import { devtools } from 'zustand/middleware'
+
+   const useStore = create(
+     devtools((set) => ({
+       count: 0,
+       increment: () => set((state) => ({ count: state.count + 1 })),
+     }))
+   )
+
+   export default useStore
+   ```
+
+### Middlewares
+
+Zustand has a flexible API that supports middlewares to extend and enhance store capabilities. Here are some commonly used middleware options for Zustand:
+
+##### 1. **`persist`**:
+
+- **Purpose**: Persists the store's state to `localStorage` or `sessionStorage`, allowing the state to be retained across page reloads.
+- **Example**:
+
+  ```javascript
+  import { create } from 'zustand'
+  import { persist } from 'zustand/middleware'
+
+  const useStore = create(
+    persist(
+      (set) => ({
+        count: 0,
+        increment: () => set((state) => ({ count: state.count + 1 })),
+      }),
+      {
+        name: 'counter-storage', // unique storage key
+      }
+    )
+  )
+  ```
+
+##### 2. **`devtools`**:
+
+- **Purpose**: Integrates Zustand with the [Redux DevTools](https://github.com/reduxjs/redux-devtools) for better state debugging.
+- **Example**:
+
+  ```javascript
+  import { create } from 'zustand'
+  import { devtools } from 'zustand/middleware'
+
+  const useStore = create(
+    devtools(
+      (set) => ({
+        count: 0,
+        increment: () => set((state) => ({ count: state.count + 1 })),
+      }),
+      {
+        name: 'MyStore', // Name for DevTools label
+      }
+    )
+  )
+  ```
+
+##### 3. **`combine`**:
+
+- **Purpose**: Helps combine initial states and actions for better organization of complex stores.
+- **Example**:
+
+  ```javascript
+  import { create } from 'zustand'
+  import { combine } from 'zustand/middleware'
+
+  const useStore = create(
+    combine({ count: 0 }, (set) => ({
+      increment: () => set((state) => ({ count: state.count + 1 })),
+      decrement: () => set((state) => ({ count: state.count - 1 })),
+    }))
+  )
+  ```
+
+##### 4. **`immer`**:
+
+- **Purpose**: Uses [Immer](https://immerjs.github.io/immer/) to allow writing state updates in a mutable style while maintaining immutability under the hood.
+- **Example**:
+
+  ```javascript
+  import { create } from 'zustand'
+  import { immer } from 'zustand/middleware'
+
+  const useStore = create(
+    immer((set) => ({
+      count: 0,
+      increment: () =>
+        set((state) => {
+          state.count += 1
+        }),
+    }))
+  )
+  ```
+
+##### 5. **`redux`**:
+
+- **Purpose**: Provides a way to use Redux-style reducers and actions with Zustand.
+- **Example**:
+
+  ```javascript
+  import { create } from 'zustand'
+  import { redux } from 'zustand/middleware'
+
+  const reducer = (state, action) => {
+    switch (action.type) {
+      case 'INCREMENT':
+        return { ...state, count: state.count + 1 }
+      case 'DECREMENT':
+        return { ...state, count: state.count - 1 }
+      default:
+        return state
+    }
+  }
+
+  const useStore = create(
+    redux(reducer, { count: 0 }) // Initial state
+  )
+  ```
+
+##### 6. **`subscribeWithSelector`**:
+
+- **Purpose**: Extends the store with a `subscribe` method that allows you to listen for specific state changes using selectors.
+- **Example**:
+
+  ```javascript
+  import { create } from 'zustand'
+  import { subscribeWithSelector } from 'zustand/middleware'
+
+  const useStore = create(
+    subscribeWithSelector((set) => ({
+      count: 0,
+      increment: () => set((state) => ({ count: state.count + 1 })),
+    }))
+  )
+
+  // Subscribe to a specific value change
+  const unsub = useStore.subscribe(
+    (state) => state.count,
+    (count) => {
+      console.log('Count changed to:', count)
+    }
+  )
+  ```
+
+##### 7. **`logger`**:
+
+- **Purpose**: Logs state changes to the console for debugging purposes. This is not an official middleware but can be easily implemented.
+- **Example**:
+
+  ```javascript
+  import { create } from 'zustand'
+
+  const logger = (config) => (set, get, api) =>
+    config(
+      (args) => {
+        console.log('Applying:', args)
+        set(args)
+        console.log('New state:', get())
+      },
+      get,
+      api
+    )
+
+  const useStore = create(
+    logger((set) => ({
+      count: 0,
+      increment: () => set((state) => ({ count: state.count + 1 })),
+    }))
+  )
+  ```
+
+##### Middlewares Summary:
+
+- **`persist`**: Persist and rehydrate state.
+- **`devtools`**: Debugging with Redux DevTools.
+- **`combine`**: Combine state and actions.
+- **`immer`**: Immutable state handling.
+- **`redux`**: Redux-style reducers.
+- **`subscribeWithSelector`**: Enhanced subscriptions.
+- **`logger`**: Logs state changes (custom implementation).
+
+Each middleware extends Zustand's functionality to make it more powerful and suitable for different use cases. Choose the middlewares that fit your project's needs to create a more flexible and maintainable state management solution.
+
+##### Summary:
+
+Zustand is simple yet powerful for global state management in React. By creating a store with state and actions, you can easily share state across components without the need for a context provider or prop drilling. Its lightweight nature and flexible API make it an excellent choice for many React projects.

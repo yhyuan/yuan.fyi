@@ -1,0 +1,397 @@
+---
+title: Using Rust-WASM NPM Packages in a Vite React Application
+date: '2024-07-30'
+tags: ['Rust', 'WASM', 'NPM']
+draft: false
+---
+
+### Introduction
+
+In this guide, we'll walk through setting up a React application with Vite that uses our previously created Rust-WASM npm package. We'll create a practical example that demonstrates how to effectively use WASM in a modern web application.
+
+<TOCInline toc={props.toc} exclude="Introduction" />{' '}
+
+## Setting Up the Project
+
+First, let's create a new Vite project with React and TypeScript:
+
+```bash
+npm create vite@latest wasm-react-example -- --template react-ts
+cd wasm-react-example
+```
+
+## Installing Dependencies
+
+We need to install our WASM package and some Vite plugins to handle WASM modules:
+
+```bash
+npm install @your-npm-username/rust-wasm-example
+npm install -D vite-plugin-wasm vite-plugin-top-level-await
+```
+
+## Configuring Vite
+
+Update your `vite.config.ts` to support WASM:
+
+```typescript
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import wasm from 'vite-plugin-wasm'
+import topLevelAwait from 'vite-plugin-top-level-await'
+
+export default defineConfig({
+  plugins: [react(), wasm(), topLevelAwait()],
+})
+```
+
+## Creating a Data Visualization Component
+
+Let's create a component that uses our WASM package to analyze and visualize data. Create a new file `src/components/DataVisualizer.tsx`:
+
+```typescript
+import { useState, useEffect } from 'react';
+import init, { DataAnalyzer } from '@your-npm-username/rust-wasm-example';
+
+interface DataPoint {
+  value: number;
+  timestamp: number;
+}
+
+export const DataVisualizer = () => {
+  const [analyzer, setAnalyzer] = useState<DataAnalyzer | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [newValue, setNewValue] = useState('');
+  const [stats, setStats] = useState({
+    average: 0,
+    minMax: null as any
+  });
+
+  // Initialize WASM
+  useEffect(() => {
+    init()
+      .then(() => {
+        setAnalyzer(new DataAnalyzer());
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError('Failed to initialize WASM module: ' + err.message);
+        setLoading(false);
+      });
+  }, []);
+
+  const handleAddPoint = () => {
+    if (!analyzer || !newValue) return;
+
+    const numValue = parseFloat(newValue);
+    if (isNaN(numValue)) {
+      setError('Please enter a valid number');
+      return;
+    }
+
+    analyzer.add_point(numValue, Date.now());
+    updateStats(analyzer);
+    setNewValue('');
+    setError(null);
+  };
+
+  const updateStats = (analyzer: DataAnalyzer) => {
+    setStats({
+      average: analyzer.calculate_average(),
+      minMax: analyzer.get_min_max()
+    });
+  };
+
+  if (loading) return <div>Loading WASM module...</div>;
+  if (error) return <div className="error">{error}</div>;
+
+  return (
+    <div className="data-visualizer">
+      <h2>Data Analyzer</h2>
+
+      <div className="input-section">
+        <input
+          type="number"
+          value={newValue}
+          onChange={(e) => setNewValue(e.target.value)}
+          placeholder="Enter a number"
+        />
+        <button onClick={handleAddPoint}>Add Data Point</button>
+      </div>
+
+      <div className="stats-section">
+        <h3>Statistics</h3>
+        <p>Average: {stats.average.toFixed(2)}</p>
+        {stats.minMax && (
+          <p>
+            Min: {stats.minMax[0].value.toFixed(2)},
+            Max: {stats.minMax[1].value.toFixed(2)}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+};
+```
+
+## Styling Our Component
+
+Add some CSS in `src/components/DataVisualizer.css`:
+
+```css
+.data-visualizer {
+  padding: 20px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.input-section {
+  margin: 20px 0;
+  display: flex;
+  gap: 10px;
+}
+
+.input-section input {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  flex: 1;
+}
+
+.input-section button {
+  padding: 8px 16px;
+  background-color: #0066cc;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.input-section button:hover {
+  background-color: #0052a3;
+}
+
+.stats-section {
+  background-color: #f5f5f5;
+  padding: 15px;
+  border-radius: 4px;
+}
+
+.error {
+  color: red;
+  margin: 10px 0;
+}
+```
+
+## Updating App.tsx
+
+Now let's update our main App component to use our new DataVisualizer:
+
+```typescript
+import { DataVisualizer } from './components/DataVisualizer'
+import './App.css'
+
+function App() {
+  return (
+    <div className="App">
+      <h1>WASM Data Analysis Demo</h1>
+      <DataVisualizer />
+    </div>
+  )
+}
+
+export default App
+```
+
+## Creating a More Complex Example: Time Series Analysis
+
+Let's create another component that shows a more practical use case with charting. First, install recharts:
+
+```bash
+npm install recharts
+```
+
+Create `src/components/TimeSeriesAnalyzer.tsx`:
+
+```typescript
+import { useState, useEffect } from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import init, { DataAnalyzer } from '@your-npm-username/rust-wasm-example';
+
+interface ChartData {
+  timestamp: string;
+  value: number;
+  average: number;
+}
+
+export const TimeSeriesAnalyzer = () => {
+  const [analyzer, setAnalyzer] = useState<DataAnalyzer | null>(null);
+  const [chartData, setChartData] = useState<ChartData[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    init()
+      .then(() => {
+        setAnalyzer(new DataAnalyzer());
+        setLoading(false);
+      })
+      .catch(console.error);
+  }, []);
+
+  const addRandomData = () => {
+    if (!analyzer) return;
+
+    const value = Math.random() * 100;
+    const timestamp = new Date();
+
+    analyzer.add_point(value, timestamp.getTime());
+    const average = analyzer.calculate_average();
+
+    setChartData(prev => [...prev, {
+      timestamp: timestamp.toLocaleTimeString(),
+      value,
+      average
+    }]);
+  };
+
+  if (loading) return <div>Loading WASM module...</div>;
+
+  return (
+    <div className="time-series-analyzer">
+      <button onClick={addRandomData}>Add Random Data Point</button>
+
+      <div className="chart-container">
+        <LineChart width={600} height={400} data={chartData}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="timestamp" />
+          <YAxis />
+          <Tooltip />
+          <Legend />
+          <Line
+            type="monotone"
+            dataKey="value"
+            stroke="#8884d8"
+            name="Value"
+          />
+          <Line
+            type="monotone"
+            dataKey="average"
+            stroke="#82ca9d"
+            name="Running Average"
+          />
+        </LineChart>
+      </div>
+    </div>
+  );
+};
+```
+
+## Error Handling and Performance Optimization
+
+Here are some best practices when working with WASM in React:
+
+1. **Lazy Loading**: If your WASM module is large, consider lazy loading it:
+
+```typescript
+const DataAnalyzerPage = React.lazy(() => import('./pages/DataAnalyzerPage'));
+
+function App() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <DataAnalyzerPage />
+    </Suspense>
+  );
+}
+```
+
+2. **Error Boundaries**: Add error boundaries to handle WASM initialization failures:
+
+```typescript
+class WasmErrorBoundary extends React.Component {
+  state = { hasError: false };
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <h1>Something went wrong loading the WASM module.</h1>;
+    }
+
+    return this.props.children;
+  }
+}
+```
+
+3. **Memory Management**: Clean up WASM resources when components unmount:
+
+```typescript
+useEffect(() => {
+  let analyzer: DataAnalyzer | null = null
+
+  init()
+    .then(() => {
+      analyzer = new DataAnalyzer()
+      setAnalyzer(analyzer)
+    })
+    .catch(console.error)
+
+  return () => {
+    // Clean up WASM resources
+    if (analyzer) {
+      analyzer.free()
+    }
+  }
+}, [])
+```
+
+## Production Considerations
+
+When deploying your Vite React application with WASM:
+
+1. **WASM Loading Strategy**: Configure your server to serve `.wasm` files with the correct MIME type:
+
+```nginx
+types {
+    application/wasm wasm;
+}
+```
+
+2. **Caching**: Implement appropriate caching strategies for your WASM files:
+
+```nginx
+location /*.wasm {
+    add_header Cache-Control "public, max-age=31536000";
+}
+```
+
+3. **Performance Monitoring**: Add performance monitoring for WASM initialization and execution:
+
+```typescript
+const WasmPerformanceMonitor = () => {
+  useEffect(() => {
+    performance.mark('wasm-init-start')
+
+    init().then(() => {
+      performance.mark('wasm-init-end')
+      performance.measure('wasm initialization', 'wasm-init-start', 'wasm-init-end')
+    })
+  }, [])
+
+  return null
+}
+```
+
+## Conclusion
+
+We've successfully integrated our Rust-WASM package into a Vite React application and created useful components that demonstrate its capabilities. The combination of Rust's performance with React's UI capabilities provides a powerful foundation for building high-performance web applications.
+
+Remember to:
+
+- Initialize WASM modules early in your application lifecycle
+- Handle errors appropriately
+- Clean up resources when components unmount
+- Monitor performance in production
+
+The complete source code for this example is available on [GitHub](https://github.com/yourusername/wasm-react-example).
