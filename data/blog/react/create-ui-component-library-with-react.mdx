@@ -658,6 +658,15 @@ Add the following to `tsconfig.lib.json` to avoid `yarn build` to process these 
     ]
 ```
 
+Add the following to `vite.config.ts` to avoid `yarn build` to process these files.
+
+```json
+    "exclude": [
+        "**/__test__/**",
+        "**/__docs__/**"
+    ]
+```
+
 Run the following command to start the storybook.
 
 ```sh
