@@ -1,0 +1,456 @@
+---
+title: ArduPilot and Pixhawk Quadcopter Development Tutorial
+date: '2024-10-12'
+tags: ['Pixhawk']
+draft: false
+---
+
+## Table of Contents
+1. [Introduction](#introduction)
+2. [Understanding the Basics](#understanding-the-basics)
+3. [Hardware Requirements](#hardware-requirements)
+4. [Software Setup](#software-setup)
+5. [Initial Configuration](#initial-configuration)
+6. [Calibration Procedures](#calibration-procedures)
+7. [Flight Modes and Parameters](#flight-modes-and-parameters)
+8. [First Flight Preparation](#first-flight-preparation)
+9. [Advanced Features](#advanced-features)
+10. [Troubleshooting](#troubleshooting)
+
+## Introduction
+
+ArduPilot is an open-source autopilot software suite that supports multi-copters, planes, rovers, boats, and submarines. When paired with Pixhawk flight controllers, it provides a powerful platform for developing autonomous quadcopters. This tutorial will guide you through the complete process of building and configuring a quadcopter using ArduPilot and Pixhawk.
+
+## Understanding the Basics
+
+### What is ArduPilot?
+ArduPilot is a comprehensive open-source autopilot software that provides:
+- Stabilization and control algorithms
+- GPS navigation capabilities
+- Autonomous mission planning
+- Telemetry and logging
+- Support for various sensors and peripherals
+
+### What is Pixhawk?
+Pixhawk is a family of open-hardware flight controllers that run ArduPilot firmware. Key features include:
+- 32-bit ARM processor
+- Built-in sensors (accelerometer, gyroscope, magnetometer, barometer)
+- Multiple I/O ports for peripherals
+- Redundant power inputs
+- SD card for logging
+
+### ArduPilot Firmware Variants
+- **ArduCopter**: For multi-rotors (quadcopters, hexacopters, etc.)
+- **ArduPlane**: For fixed-wing aircraft
+- **ArduRover**: For ground vehicles
+- **ArduSub**: For underwater vehicles
+
+For quadcopter development, we'll focus on ArduCopter.
+
+## Hardware Requirements
+
+### Essential Components
+
+#### 1. Flight Controller
+- **Pixhawk 4**: Modern, feature-rich option
+- **Pixhawk 2.4.8**: Budget-friendly classic
+- **Cube Orange**: High-end option with built-in vibration isolation
+
+#### 2. Frame
+- Size: 450mm-550mm for beginners
+- Material: Carbon fiber or aluminum
+- X-configuration recommended
+
+#### 3. Motors and ESCs
+- **Motors**: 920-1000KV for 450mm frames
+- **ESCs**: 30A minimum, BLHeli_32 recommended
+- Match motor and ESC ratings
+
+#### 4. Propellers
+- 10-12 inch for 450mm frames
+- Carbon fiber or high-quality plastic
+- Always use balanced props
+
+#### 5. Power System
+- **Battery**: 3S-4S LiPo (11.1V-14.8V), 3000-5000mAh
+- **Power Module**: Provides power and current/voltage sensing
+- **BEC**: If not integrated in power module
+
+#### 6. Radio Control System
+- **Transmitter**: Minimum 6 channels, 8+ recommended
+- **Receiver**: Compatible with transmitter (PPM, SBUS, or PWM)
+- Popular options: FrSky, FlySky, Spektrum
+
+#### 7. GPS Module
+- M8N or M9N GPS with compass
+- Mount away from magnetic interference
+- Use included mast for elevation
+
+#### 8. Telemetry (Optional but Recommended)
+- 433MHz or 915MHz (check local regulations)
+- Enables wireless parameter tuning and monitoring
+
+### Wiring Diagram Overview
+```
+Pixhawk Connections:
+- MAIN OUT 1-4: Motor ESCs (for quadcopter)
+- RC IN: Radio receiver
+- GPS: GPS module
+- TELEM1: Telemetry radio
+- POWER1: Power module
+- I2C: External compass (if needed)
+- SAFETY: Safety switch
+- BUZZER: Buzzer/LED
+```
+
+## Software Setup
+
+### 1. Install Ground Control Software
+
+#### Mission Planner (Windows)
+1. Download from [ardupilot.org](http://ardupilot.org/planner/)
+2. Run installer with administrator privileges
+3. Install drivers when prompted
+
+#### QGroundControl (Cross-platform)
+1. Download from [qgroundcontrol.com](http://qgroundcontrol.com)
+2. Available for Windows, Mac, Linux, Android, iOS
+
+### 2. Firmware Installation
+
+#### Using Mission Planner:
+1. Connect Pixhawk via USB
+2. Select correct COM port
+3. Go to "Setup" → "Install Firmware"
+4. Select quadcopter icon
+5. Follow prompts to install ArduCopter
+
+#### Using QGroundControl:
+1. Connect Pixhawk
+2. Go to "Vehicle Setup" → "Firmware"
+3. Select "ArduPilot" and "CopterFirmware"
+4. Click "OK" to flash
+
+### 3. Initial Connection
+- Set baud rate to 115200 for USB
+- 57600 for telemetry radios
+- Verify connection with HUD movement
+
+## Initial Configuration
+
+### 1. Frame Type Selection
+```
+Setup → Mandatory Hardware → Frame Type
+- Select "X" configuration for quadcopter
+- Choose appropriate frame class
+```
+
+### 2. Radio Calibration
+```
+Setup → Mandatory Hardware → Radio Calibration
+1. Turn on transmitter
+2. Click "Calibrate Radio"
+3. Move all sticks and switches to extremes
+4. Click "Click when Done"
+```
+
+### 3. Accelerometer Calibration
+```
+Setup → Mandatory Hardware → Accel Calibration
+1. Click "Calibrate Accel"
+2. Follow prompts for each orientation:
+   - Level
+   - Left side
+   - Right side
+   - Nose down
+   - Nose up
+   - Upside down
+```
+
+### 4. Compass Calibration
+```
+Setup → Mandatory Hardware → Compass
+1. Enable compasses
+2. Select "Onboard Mag Calibration"
+3. Click "Start"
+4. Rotate vehicle in all orientations
+5. Complete when progress bars fill
+```
+
+### 5. ESC Calibration
+```
+Setup → Optional Hardware → ESC Calibration
+1. Remove props for safety
+2. Select "All at once" method
+3. Follow on-screen instructions
+4. Listen for ESC confirmation tones
+```
+
+## Calibration Procedures
+
+### Motor Test and Direction
+```
+Setup → Optional Hardware → Motor Test
+1. Remove propellers
+2. Test each motor individually
+3. Verify correct spin direction:
+   - Motors 1&2: Clockwise
+   - Motors 3&4: Counter-clockwise
+4. Swap any two motor wires to reverse direction
+```
+
+### PID Tuning Basics
+Initial PIDs are usually adequate, but fine-tuning improves performance:
+
+```
+Config → Extended Tuning
+Key parameters:
+- Rate Roll/Pitch P: 0.135-0.150
+- Rate Roll/Pitch I: 0.135-0.150
+- Rate Roll/Pitch D: 0.0036-0.004
+- Stabilize Roll/Pitch P: 4.5-5.5
+```
+
+### Battery Monitor Setup
+```
+Setup → Optional Hardware → Battery Monitor
+1. Select monitor type (Power Module)
+2. Enter battery capacity
+3. Set voltage divider (usually 10.1)
+4. Set Amps per volt (usually 17.0)
+5. Verify readings match actual values
+```
+
+## Flight Modes and Parameters
+
+### Essential Flight Modes
+
+#### 1. Stabilize
+- Manual throttle control
+- Self-levels when sticks centered
+- Good for beginners
+
+#### 2. Alt Hold
+- Maintains altitude automatically
+- Easier than stabilize
+- Requires good barometer
+
+#### 3. Loiter
+- GPS position hold
+- Maintains position and altitude
+- Requires good GPS lock
+
+#### 4. RTL (Return to Launch)
+- Autonomous return home
+- Climbs to RTL altitude
+- Lands at home position
+
+#### 5. Auto
+- Follows pre-programmed missions
+- Requires waypoint planning
+- Full autonomous control
+
+### Flight Mode Configuration
+```
+Config → Flight Modes
+- Assign modes to transmitter switches
+- Recommended setup:
+  - Switch position 1: Stabilize
+  - Switch position 2: Alt Hold
+  - Switch position 3: Loiter
+  - Switch position 4: RTL
+  - Switch position 5: Auto
+  - Switch position 6: Land
+```
+
+### Important Parameters
+
+#### Safety Parameters
+```
+CONFIG → Full Parameter List
+- ARMING_CHECK: 1 (all checks)
+- FS_THR_ENABLE: 1 (throttle failsafe)
+- FS_GCS_ENABLE: 1 (ground station failsafe)
+- RTL_ALT: 3000 (30m RTL altitude)
+- LAND_SPEED: 50 (cm/s landing speed)
+```
+
+#### Performance Parameters
+```
+- MOT_SPIN_ARM: 0.10 (motor spin when armed)
+- MOT_SPIN_MIN: 0.15 (minimum throttle)
+- THR_MID: 0.5 (hover throttle estimate)
+- PILOT_ACCEL_Z: 250 (vertical acceleration)
+```
+
+## First Flight Preparation
+
+### Pre-flight Checklist
+
+#### Hardware Checks
+- [ ] Props secured and correct orientation
+- [ ] Motors spin freely
+- [ ] Battery charged and secured
+- [ ] All connections tight
+- [ ] GPS has clear sky view
+- [ ] Radio link established
+
+#### Software Checks
+- [ ] Correct firmware version
+- [ ] All calibrations complete
+- [ ] Flight modes configured
+- [ ] Failsafes enabled
+- [ ] Home position set
+- [ ] Parameter backup saved
+
+### Arming Procedure
+1. Place quadcopter on level ground
+2. Wait for GPS lock (solid LED)
+3. Ensure throttle at minimum
+4. Hold throttle down-right for 2 seconds
+5. Motors will spin at idle
+6. Check for error messages
+
+### First Hover
+1. Start in Stabilize mode
+2. Open area, no wind
+3. Slowly increase throttle
+4. Hover at 2-3 meters
+5. Make small control inputs
+6. Land if any issues
+
+### Tuning After First Flight
+- Note any oscillations
+- Check log files for errors
+- Adjust PIDs if needed
+- Verify failsafes work
+
+## Advanced Features
+
+### Autonomous Missions
+
+#### Creating Waypoint Missions
+```
+Plan → Flight Plan
+1. Right-click to add waypoints
+2. Set altitude for each point
+3. Add commands (takeoff, land, RTL)
+4. Write mission to vehicle
+5. Verify on map
+```
+
+#### Mission Commands
+- **TAKEOFF**: Vertical climb to altitude
+- **WAYPOINT**: Fly to location
+- **LOITER_TIME**: Hover for duration
+- **LAND**: Descend and disarm
+- **RTL**: Return and land at home
+
+### Follow Me Mode
+Requires:
+- GPS on ground station
+- Good telemetry link
+- Copter in Guided mode
+
+### Precision Landing
+Using IR-Lock or companion computer:
+1. Install IR beacon at landing site
+2. Mount IR camera on copter
+3. Configure PLND parameters
+4. Test in controlled environment
+
+### Companion Computer Integration
+Popular options:
+- Raspberry Pi + MAVLink
+- NVIDIA Jetson for computer vision
+- Intel NUC for advanced processing
+
+Connection via:
+- Serial port (TELEM2)
+- USB
+- Ethernet (some boards)
+
+## Troubleshooting
+
+### Common Issues and Solutions
+
+#### Won't Arm
+- Check pre-arm messages
+- Verify GPS lock
+- Calibrate accelerometer
+- Check battery voltage
+- Review ARMING_CHECK parameter
+
+#### Drifts in Hover
+- Calibrate accelerometer on level surface
+- Check for magnetic interference
+- Verify CG (center of gravity)
+- Trim radio if needed
+
+#### Toilet Bowl Effect
+- Compass calibration needed
+- Check compass orientation
+- Move GPS/compass away from interference
+- Verify declination settings
+
+#### Poor Altitude Hold
+- Cover barometer foam
+- Check for prop wash
+- Tune THR_MID parameter
+- Verify MOT_HOVER_LEARN enabled
+
+#### GPS Issues
+- Ensure clear sky view
+- Check GPS cable
+- Verify GPS configuration
+- Update GPS firmware if needed
+
+### Log Analysis
+
+#### Downloading Logs
+```
+DataFlash Logs → Download Logs
+- Select log by date/time
+- Download .BIN file
+- Use for detailed analysis
+```
+
+#### Key Things to Check
+- Vibration levels (keep below 30m/s²)
+- Power consumption
+- GPS accuracy
+- Desired vs actual attitudes
+- Error messages
+
+### Safety Best Practices
+
+1. **Always remove props when testing**
+2. **Never arm near people**
+3. **Have a spotter for first flights**
+4. **Start with small, stable movements**
+5. **Know your failsafe settings**
+6. **Keep firmware updated**
+7. **Maintain your equipment**
+
+## Resources and Community
+
+### Official Documentation
+- [ArduPilot Wiki](https://ardupilot.org/copter/)
+- [ArduPilot Forum](https://discuss.ardupilot.org/)
+- [GitHub Repository](https://github.com/ArduPilot/ardupilot)
+
+### Video Tutorials
+- ArduPilot YouTube Channel
+- Painless360
+- Andrew Newton
+
+### Community Support
+- ArduPilot Discord
+- RCGroups ArduPilot section
+- Local drone clubs
+
+## Conclusion
+
+Building a quadcopter with ArduPilot and Pixhawk provides an excellent platform for learning about autonomous flight systems. Start with basic configurations, progress gradually, and always prioritize safety. The ArduPilot community is welcoming and helpful for troubleshooting and advancing your skills.
+
+Remember: Success comes from methodical setup, careful testing, and continuous learning. Happy flying!
