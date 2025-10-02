@@ -1,0 +1,693 @@
+---
+title: Detailed Learning Plan Claude Code for Rust STM32U585 Development
+date: "2025-10-02"
+tags: ["claude", "plan"]
+draft: false
+---
+# Detailed Learning Plan: Claude Code for Rust STM32U585 Development
+
+## Prerequisites Assessment
+
+**Before starting, you should have:**
+- Basic Rust knowledge (ownership, borrowing, traits, async)
+- Basic embedded concepts (registers, peripherals, interrupts)
+- WeAct Studio STM32U585 Black Pill board
+- Familiarity with command-line tools
+
+---
+
+## Phase 1: Foundation Setup (Week 1-2)
+
+### 1.1 STM32U585-Specific Environment Preparation
+
+**Hardware Setup:**
+- WeAct Studio Black Pill STM32U585 Core Board
+- USB-C cable (for programming and power)
+- ST-Link V2/V3 or built-in DFU bootloader
+- USB-to-Serial adapter (optional, for additional debugging)
+
+**Key STM32U585 Features to Understand:**
+- ARM Cortex-M33 with TrustZone
+- Up to 160 MHz operation
+- 2MB Flash, 786KB SRAM
+- Low-power modes (Stop, Standby with SRAM retention)
+- Advanced security features (TrustZone, secure boot)
+- Rich peripheral set (USB OTG, OCTOSPI, AES accelerator)
+
+**Tool Installation:**
+```bash
+# Install Rust embedded toolchain for Cortex-M33
+rustup target add thumbv8m.main-none-eabihf  # For STM32U585
+
+# Alternative if using FPU extensively
+rustup target add thumbv8m.main-none-eabihf
+
+rustup component add llvm-tools-preview
+
+# Install cargo tools
+cargo install cargo-binutils
+cargo install probe-rs --features cli
+cargo install cargo-embed
+cargo install cargo-flash
+cargo install flip-link  # Stack overflow protection
+
+# Install Claude Code
+npm install -g @anthropic-ai/claude-code
+# or
+pip install claude-code
+
+# Verify installation
+claude --version
+probe-rs --version
+```
+
+**STM32U585 Programming Options:**
+```bash
+# Option 1: Using ST-Link (recommended)
+# probe-rs supports STM32U585
+
+# Option 2: Using built-in DFU bootloader
+sudo apt install dfu-util  # Linux
+brew install dfu-util      # macOS
+
+# Option 3: Using Black Magic Probe (if you have one)
+```
+
+**Project Structure Understanding:**
+- Learn standard embedded Rust project layout for STM32U5
+- Understand `.cargo/config.toml` for Cortex-M33 target
+- Memory layout files (`memory.x`) - STM32U585 has unique memory map
+- Linker scripts for TrustZone (if using secure features)
+
+### 1.2 STM32U585 Initial Setup with Claude Code
+
+**Create your first project:**
+```bash
+claude "create a new Rust embedded project for STM32U585 on WeAct Black Pill board. Use stm32u5xx-hal if available, otherwise embassy-stm32. Target is thumbv8m.main-none-eabihf. Include proper memory.x for STM32U585CIU6 with 2MB flash and 786KB SRAM."
+```
+
+**Verify Claude Code understands your hardware:**
+```bash
+claude "what are the key differences between STM32F4 and STM32U5 that affect Rust development?"
+
+claude "analyze the WeAct STM32U585 Black Pill pinout and create a constants file mapping board pins to MCU pins"
+```
+
+**Day 1-2: Core Concepts**
+- Read official Claude Code documentation thoroughly
+- Understand the tool ecosystem specific to embedded:
+  - `Task` - for planning embedded workflows
+  - `Read/Write/Edit` - managing linker scripts, config files
+  - `Bash` - running cargo build, probe-rs, dfu-util
+  - `Grep/Glob` - navigating HAL code
+  - `WebSearch` - finding STM32U5 specific documentation
+
+**Practice exercises:**
+```bash
+# STM32U585-specific prompts
+claude "explain the memory map of STM32U585 and how it differs from STM32F4"
+
+claude "show me all the available peripherals on STM32U585 and which pins they're on"
+
+claude "what build optimizations are recommended for Cortex-M33"
+```
+
+**Day 3-4: Iterative Workflows**
+```bash
+# Learn to work with Claude Code iteratively
+claude "set up the basic clock configuration for STM32U585 running at 160MHz from HSE"
+# Review output
+claude "now add power management to optimize for low power consumption"
+# Review and test
+claude "add voltage scaling configuration for maximum performance"
+```
+
+**Day 5: Advanced Features & STM32U585 Specifics**
+- Custom slash commands for STM32U585 workflows
+- Understanding TrustZone implications (even if not using it initially)
+- Output formats for embedded diagnostics
+- Setting up defmt for efficient logging
+
+---
+
+## Phase 2: Rust Embedded Fundamentals with STM32U585 (Week 3-4)
+
+### 2.1 HAL Exploration for STM32U5
+
+**Important Note:** STM32U5 support in Rust is newer than STM32F4. You have options:
+
+**Option A: stm32u5xx-hal (if mature enough)**
+```bash
+claude "check if stm32u5xx-hal is production-ready and analyze its completeness"
+
+claude "show me the available examples in stm32u5xx-hal repository"
+```
+
+**Option B: Embassy (Recommended for STM32U5)**
+Embassy has excellent STM32U5 support with async/await:
+```bash
+claude "set up an Embassy-based project for STM32U585 with embassy-stm32 crate"
+
+claude "explain the differences between using embassy vs traditional HAL for STM32U5"
+```
+
+**Option C: PAC (Peripheral Access Crate) + Your Own Abstractions**
+```bash
+claude "create a minimal project using stm32u5 PAC directly for learning register-level programming"
+```
+
+**Practical exercises:**
+
+```bash
+# Analyze HAL/Embassy structure
+claude "analyze the embassy-stm32 implementation for STM32U5 GPIO and explain the async pattern"
+
+claude "show me how to configure GPIOC pin 13 (onboard LED on Black Pill) using embassy"
+
+claude "compare blocking vs async UART implementation in embassy for STM32U585"
+```
+
+**WeAct Black Pill STM32U585 Specific Pins:**
+```bash
+claude "create a board support package (BSP) for WeAct STM32U585 Black Pill with these mappings:
+- LED: PC13
+- User Button: PA0 (if present)
+- USB: PA11/PA12
+- SWD: PA13/PA14
+- Default UART: PA9/PA10 (USART1)
+- I2C: PB6/PB7 (I2C1)
+- SPI: PA5/PA6/PA7 (SPI1)
+Document all available pins"
+```
+
+### 2.2 Create STM32U585-Specific Reference Documentation
+
+**Use Claude Code to build your knowledge base:**
+
+```bash
+# Generate custom documentation
+claude "create a comprehensive markdown file documenting STM32U585 GPIO capabilities including low-power modes"
+
+claude "make a cheat sheet for STM32U5 clock tree configuration with all possible clock sources"
+
+claude "document the power management modes available on STM32U585 with code examples"
+
+claude "create a guide for using the AES hardware accelerator on STM32U585"
+```
+
+**Create a `/docs` directory structure:**
+```
+docs/
+├── u585-gpio-patterns.md
+├── u585-clock-config.md
+├── u585-power-modes.md
+├── uart-async-examples.md
+├── usb-device-guide.md
+├── trustzone-basics.md
+├── octospi-flash.md
+└── low-power-cookbook.md
+```
+
+### 2.3 Build Small Projects with Claude Code
+
+**Project 1: Blinky LED (PC13)**
+```bash
+claude "create a new STM32U585 Embassy project that blinks the LED on PC13 every 500ms using async Timer"
+```
+- Learn Embassy's async runtime
+- Understand executor setup for Cortex-M33
+- Compare code size with traditional HAL
+
+**Project 2: UART Echo with Embassy**
+```bash
+claude "implement async UART echo on USART1 (PA9/PA10) at 115200 baud using embassy-stm32 for STM32U585"
+```
+- Learn async UART patterns
+- Implement with_timeout for robust communication
+- Add defmt logging for debugging
+
+**Project 3: USB CDC Serial**
+```bash
+claude "implement USB CDC device on STM32U585 using embassy-usb for serial communication over USB-C"
+```
+- Understand USB OTG FS peripheral
+- Learn USB enumeration
+- Create a virtual serial port
+
+**Project 4: Low Power Blinky**
+```bash
+claude "create a low-power LED blink using STOP mode on STM32U585, waking from RTC alarm"
+```
+- Learn STM32U5 low-power modes
+- Configure RTC for wakeup
+- Measure power consumption patterns
+
+---
+
+## Phase 3: Intermediate STM32U585 Patterns (Week 5-6)
+
+### 3.1 Async/Await Embedded Programming (Embassy Focus)
+
+**Learn Embassy patterns with Claude Code:**
+```bash
+claude "explain Embassy's executor and how it differs from traditional RTOS"
+
+claude "implement multiple concurrent tasks on STM32U585: LED blink, UART echo, and button monitoring"
+
+claude "create a task that reads a sensor every second using async delays and I2C"
+```
+
+**Key concepts:**
+- Embassy executor for Cortex-M33
+- Task spawning and priorities
+- Async channels for inter-task communication
+- Select for multiple async operations
+
+### 3.2 Advanced Peripherals Unique to STM32U5
+
+**OCTOSPI (Octo-SPI Interface):**
+```bash
+claude "implement OCTOSPI interface for external flash memory on STM32U585"
+
+claude "configure memory-mapped mode for OCTOSPI flash and execute code from it"
+```
+
+**USB OTG with Power Delivery:**
+```bash
+claude "implement USB device with embassy-usb supporting multiple interfaces"
+
+claude "create a USB HID device on STM32U585 for custom input device"
+```
+
+**AES Hardware Accelerator:**
+```bash
+claude "use the AES peripheral on STM32U585 to encrypt data with AES-128"
+
+claude "implement secure data storage using AES encryption in flash"
+```
+
+**Low-Power UART (LPUART):**
+```bash
+claude "configure LPUART1 to work in STOP mode for low-power serial communication"
+```
+
+### 3.3 Power Management Deep Dive
+
+**STM32U5 has industry-leading low-power features:**
+
+```bash
+claude "implement a state machine that transitions between Run, Sleep, Stop1, Stop2, and Standby modes"
+
+claude "configure SRAM retention in Stop mode and demonstrate preserving data"
+
+claude "set up autonomous peripherals (LPTIM, LPUART) to run while CPU is in Stop mode"
+
+claude "implement battery-powered sensor node that maximizes battery life using STM32U585 power modes"
+```
+
+**Projects:**
+- Battery-powered temperature logger
+- Low-power motion detector
+- Solar-powered environmental sensor
+
+---
+
+## Phase 4: Professional STM32U585 Development (Week 7-8)
+
+### 4.1 Testing and Simulation
+
+**Unit testing Embassy code:**
+```bash
+claude "set up a testing framework for Embassy-based STM32U585 code with mocked HAL"
+
+claude "create integration tests that can run on both host and target"
+```
+
+**Debugging with probe-rs:**
+```bash
+claude "configure probe-rs for RTT (Real-Time Transfer) logging on STM32U585"
+
+claude "set up defmt for efficient logging with minimal overhead"
+
+claude "create a probe-rs configuration file for STM32U585 with custom memory regions"
+```
+
+### 4.2 Build System Optimization for Cortex-M33
+
+**Optimize for STM32U585:**
+```bash
+claude "optimize the build for minimum binary size using LTO and size optimization for Cortex-M33"
+
+claude "configure link-time optimization specific to STM32U585 with TrustZone consideration"
+
+claude "set up multiple build profiles: debug with defmt, release optimized for size, and release optimized for speed"
+
+claude "create a build script that uses flip-link to detect stack overflows on STM32U585"
+```
+
+**Cargo.toml optimization:**
+```toml
+[profile.release]
+opt-level = "z"  # Optimize for size
+lto = "fat"
+codegen-units = 1
+debug = true  # Keep debug symbols for probe-rs
+```
+
+### 4.3 Advanced Embassy Features
+
+**Embassy-specific patterns:**
+```bash
+claude "implement embassy channels for communication between tasks"
+
+claude "use embassy-sync Mutex for sharing resources between async tasks"
+
+claude "create a task pool for dynamic task management"
+
+claude "implement watchdog integration with Embassy executor"
+```
+
+---
+
+## Phase 5: Complex STM32U585 Systems (Week 9-12)
+
+### 5.1 Multi-Module Embassy Projects
+
+**System architecture:**
+```bash
+claude "design an async architecture for a battery-powered IoT sensor hub with:
+- Multiple I2C sensors
+- LoRa communication
+- USB configuration interface
+- Low-power management
+- Data buffering in SRAM"
+```
+
+**Project structure:**
+```
+src/
+├── main.rs
+├── board/
+│   └── blackpill_u585.rs  # BSP
+├── drivers/
+│   ├── sensor_async.rs
+│   ├── lora_sx127x.rs
+│   └── flash_storage.rs
+├── tasks/
+│   ├── sensor_monitor.rs
+│   ├── data_transmission.rs
+│   └── power_manager.rs
+├── protocols/
+│   └── lorawan.rs
+└── utils/
+    ├── async_ringbuffer.rs
+    └── power_budget.rs
+```
+
+### 5.2 Security Features (TrustZone)
+
+**Explore STM32U5 security:**
+```bash
+claude "explain TrustZone implementation on STM32U585 and when to use it"
+
+claude "create a simple TrustZone example with secure and non-secure worlds"
+
+claude "implement secure key storage using STM32U585's secure memory regions"
+```
+
+**Note:** TrustZone in Rust is advanced. Start without it, return later.
+
+### 5.3 Real-World Projects
+
+**Project A: USB Data Logger**
+```bash
+claude "implement a USB mass storage device that logs sensor data to virtual flash drive using STM32U585"
+```
+
+**Project B: Wireless Sensor Node**
+```bash
+claude "create a LoRa-based sensor node with STM32U585 that sleeps in Stop2 mode and wakes periodically to transmit"
+```
+
+**Project C: Audio Processor**
+```bash
+claude "use SAI peripheral on STM32U585 to capture and process audio with DSP algorithms"
+```
+
+---
+
+## Phase 6: Advanced STM32U585 Topics (Week 13+)
+
+### 6.1 Performance Optimization for Cortex-M33
+
+```bash
+claude "analyze instruction cache effectiveness on STM32U585 and optimize code placement"
+
+claude "implement DMA-based circular buffer for high-speed ADC sampling"
+
+claude "optimize critical loops using ARM Cortex-M33 DSP extensions"
+```
+
+### 6.2 Advanced USB Features
+
+```bash
+claude "implement USB composite device (CDC + HID) on STM32U585"
+
+claude "create firmware update mechanism over USB DFU"
+
+claude "implement USB power delivery detection and negotiation"
+```
+
+### 6.3 Bootloader Development
+
+```bash
+claude "create a secure bootloader for STM32U585 with firmware signature verification"
+
+claude "implement dual-bank firmware update with automatic rollback"
+
+claude "create a bootloader that supports USB DFU and UART update"
+```
+
+---
+
+## STM32U585 Black Pill Specific Tips
+
+### Board Features to Leverage
+
+**1. Pinout Reference:**
+```bash
+claude "create a comprehensive pinout diagram reference for WeAct STM32U585 Black Pill as a markdown table"
+```
+
+**2. USB-C Power:**
+```bash
+claude "implement USB-C power detection and optimize power consumption based on power source"
+```
+
+**3. Flash Size (2MB):**
+```bash
+claude "design a file system for storing configuration and data in internal flash"
+```
+
+**4. SRAM (786KB):**
+```bash
+claude "implement large data buffers in SRAM for DSP operations"
+```
+
+### Common Pitfalls and Solutions
+
+**Issue 1: Clock Configuration**
+```bash
+# STM32U5 has complex clock tree
+claude "create a clock configuration calculator for STM32U585 and validate my 160MHz setup"
+```
+
+**Issue 2: Power Domain Initialization**
+```bash
+# STM32U5 requires proper power domain setup
+claude "explain STM32U585 power domain initialization sequence and common errors"
+```
+
+**Issue 3: Embassy vs Traditional HAL**
+```bash
+# Make informed choice
+claude "when should I use Embassy vs stm32u5xx-hal for my STM32U585 project?"
+```
+
+---
+
+## Debugging Workflow with Claude Code
+
+### 1. Build Errors
+```bash
+# When encountering Cortex-M33 specific errors
+claude "I'm getting this linker error on STM32U585: [paste error]. The target is thumbv8m.main-none-eabihf"
+```
+
+### 2. Runtime Debugging with probe-rs
+```bash
+# Setup RTT
+claude "configure probe-rs RTT for STM32U585 and show me how to add logging statements"
+
+# Analyze crash
+claude "I got a HardFault on STM32U585. Here's the backtrace from probe-rs: [paste]. Help debug."
+```
+
+### 3. Power Consumption Issues
+```bash
+claude "my STM32U585 is consuming more power than expected in Stop mode. Help me audit the peripheral configurations"
+```
+
+### 4. USB Enumeration Problems
+```bash
+claude "USB device on STM32U585 isn't enumerating. Check my USB peripheral init code and descriptor"
+```
+
+---
+
+## Best Practices for STM32U585 Development
+
+### 1. Always Use defmt for Logging
+```bash
+claude "set up defmt logging with different log levels for STM32U585 development"
+```
+
+**Why:** defmt is zero-cost abstraction, perfect for resource-constrained debugging.
+
+### 2. Leverage Embassy for New Projects
+```bash
+claude "explain why Embassy is particularly well-suited for STM32U5's low-power capabilities"
+```
+
+**Why:** Embassy's async nature aligns perfectly with low-power state machines.
+
+### 3. Use flip-link for Stack Protection
+```bash
+claude "configure flip-link to detect stack overflows on STM32U585"
+```
+
+**Why:** Cortex-M33 stack overflows can be subtle and catastrophic.
+
+### 4. Power Budget Planning
+```bash
+claude "create a power budget spreadsheet for my STM32U585 project with different modes"
+```
+
+**Why:** STM32U5 excels at low power; plan for it from the start.
+
+### 5. Memory Layout Documentation
+```bash
+claude "document the memory layout of my STM32U585 project including SRAM regions and flash sectors"
+```
+
+---
+
+## Weekly Project Progression (STM32U585 Specific)
+
+**Week 1:** LED blink, button input, UART hello world  
+**Week 2:** USB CDC device, Embassy basics  
+**Week 3:** Async UART communication, multiple tasks  
+**Week 4:** I2C sensor reading (BME280, MPU6050), async patterns  
+**Week 5:** Low-power modes, RTC wakeup, power measurement  
+**Week 6:** SPI communication, external flash  
+**Week 7:** USB composite device or data logger  
+**Week 8:** DMA operations, high-speed data capture  
+**Week 9-10:** Complete IoT node with wireless (LoRa/BLE)  
+**Week 11-12:** Bootloader or advanced security features  
+
+---
+
+## Resources Specific to STM32U585
+
+### Documentation to Reference with Claude Code
+
+```bash
+# Have Claude help you navigate these
+claude "summarize the key points from STM32U585 reference manual chapter on power management"
+
+claude "find relevant examples in embassy-stm32 repository for STM32U5 family"
+
+claude "explain the differences between STM32U575 and STM32U585"
+```
+
+**Key documents:**
+- STM32U585 Reference Manual (RM0456)
+- STM32U585 Datasheet
+- WeAct Black Pill schematic and pinout
+- Embassy book and examples
+- Cortex-M33 Technical Reference Manual
+
+### Community Resources
+
+```bash
+# Use Claude to help find and understand community content
+claude "search for STM32U585 Rust projects on GitHub and analyze their architecture"
+
+claude "find Embassy examples using STM32U5 and explain the common patterns"
+```
+
+---
+
+## Monthly Milestones (Adjusted for STM32U585)
+
+**Month 1:** 
+- Embassy basics working
+- USB CDC functional
+- Low-power blink implemented
+- Comfortable with probe-rs debugging
+
+**Month 2:** 
+- Multiple async tasks coordinated
+- I2C/SPI peripherals working
+- Power consumption optimized
+- DMA-based operations
+
+**Month 3:** 
+- Complete sensor node project
+- USB composite device or data logger
+- Secure storage implementation
+- Professional error handling
+
+**Month 4:** 
+- Bootloader or OTA updates
+- Advanced security features explored
+- Production-ready power management
+- Contributing to Embassy or creating examples
+
+---
+
+## STM32U585-Specific Claude Code Workflows
+
+### Daily Development Pattern
+
+```bash
+# Morning: Plan the day
+claude "today I want to implement async SPI communication with an external flash chip on STM32U585. Create a step-by-step plan"
+
+# During development: Incremental help
+claude "implement the SPI initialization for STM32U585 SPI1 at 10MHz"
+# Test, then continue
+claude "now add async read/write methods using embassy DMA"
+# Test, then continue  
+claude "implement sector erase and program operations with proper error handling"
+
+# Evening: Review and document
+claude "review my SPI flash driver for safety issues and add documentation comments"
+```
+
+### Troubleshooting Pattern
+
+```bash
+# When stuck
+claude "I'm having an issue with [describe problem] on STM32U585. Here's my code: [paste]. Help debug systematically"
+
+# For optimization
+claude "this code works but is too slow/large. Optimize it for STM32U585: [paste code]"
+
+# For understanding
+claude "explain what this Embassy macro is doing in the context of STM32U585: [paste macro]"
+```
+
+---
+
+This updated plan is specifically tailored for the WeAct STM32U585 Black Pill and takes advantage of its advanced features (low power, security, USB-C, large memory). The plan emphasizes Embassy framework which is excellent for STM32U5, while keeping HAL options open. Focus on async/await patterns and low-power design from the start, as these are STM32U585's strengths!
