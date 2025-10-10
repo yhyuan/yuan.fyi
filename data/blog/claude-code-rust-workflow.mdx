@@ -1,0 +1,433 @@
+---
+title: Claude code based rust workflow
+date: '2025-10-10'
+tags: ['rust']
+draft: false
+---
+
+This is a sophisticated automated code review and fix workflow! Let me design a detailed solution for implementing this multi-agent system with Claude Code.
+
+## Architecture Overview
+
+```
+┌─────────────┐     ┌──────────────┐     ┌─────────────┐
+│   Rust      │────▶│ Agent 1:     │────▶│  Review     │
+│   File      │     │ Code Review  │     │  .md file   │
+└─────────────┘     └──────────────┘     └─────────────┘
+                                                │
+                    ┌──────────────┐             ▼
+                    │ Agent 2:     │     ┌─────────────┐
+                    │ Issue        │◀────│  Issues &   │
+                    │ Analyzer     │     │  Prompts    │
+                    └──────────────┘     └─────────────┘
+                            │
+                            ▼
+                    ┌──────────────┐     ┌─────────────┐
+                    │ Agent 3:     │────▶│  Fixed      │
+                    │ Code Fixer   │     │  Rust File  │
+                    └──────────────┘     └─────────────┘
+                            │
+                            ▼
+                    ┌──────────────┐     ┌─────────────┐
+                    │ Agent 4:     │────▶│  Review     │
+                    │ Re-reviewer  │     │  Report     │
+                    └──────────────┘     └─────────────┘
+                            │
+                            ▼
+                    ┌──────────────┐
+                    │ Agent 5:     │
+                    │ Final Fixer  │
+                    └──────────────┘
+                            │
+                            ▼
+                    ┌──────────────┐
+                    │ Loop Check   │────┐
+                    │ (All Fixed?) │    │
+                    └──────────────┘    │
+                            │           │
+                            ▼           │
+                        [Done]      [Continue]
+```
+
+## Implementation Solution
+
+### 1. Directory Structure
+
+```bash
+rust-review-automation/
+├── scripts/
+│   ├── orchestrator.sh          # Main loop controller
+│   ├── agent1_review.sh         # Initial code review
+│   ├── agent2_analyze.sh        # Issue analysis & prompt generation
+│   ├── agent3_fix.sh           # Code fixing
+│   ├── agent4_rereview.sh      # Re-review after fixes
+│   └── agent5_finalfix.sh      # Final fixing pass
+├── prompts/
+│   ├── initial_review.txt       # Prompt template for Agent 1
+│   ├── issue_analyzer.txt       # Prompt template for Agent 2
+│   ├── code_fixer.txt          # Prompt template for Agent 3
+│   ├── re_reviewer.txt         # Prompt template for Agent 4
+│   └── final_fixer.txt         # Prompt template for Agent 5
+├── workspace/
+│   ├── source/                 # Original Rust files
+│   ├── reviews/                # Review markdown files
+│   ├── issues/                 # Issue summaries and prompts
+│   ├── fixed/                  # Fixed code versions
+│   └── reports/                # Review reports
+├── config/
+│   └── settings.json           # Configuration settings
+└── logs/
+    └── workflow.log            # Execution logs
+```
+
+### 2. Main Orchestrator Script
+
+```bash
+#!/bin/bash
+# orchestrator.sh - Main workflow controller
+
+set -e
+
+# Configuration
+MAX_ITERATIONS=10
+CURRENT_ITERATION=0
+RUST_FILE="$1"
+WORKSPACE_DIR="./workspace"
+PROMPTS_DIR="./prompts"
+LOG_FILE="./logs/workflow.log"
+
+# Initialize workspace
+initialize_workspace() {
+    mkdir -p workspace/{source,reviews,issues,fixed,reports}
+    mkdir -p logs
+    cp "$RUST_FILE" "$WORKSPACE_DIR/source/input.rs"
+    echo "[$(date)] Starting review workflow for $RUST_FILE" >> "$LOG_FILE"
+}
+
+# Check if all issues are resolved
+check_issues_resolved() {
+    local report_file="$1"
+    # Parse the report to check for critical/high issues
+    if grep -q "Status: All issues resolved" "$report_file"; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Main workflow loop
+run_workflow() {
+    local current_file="$WORKSPACE_DIR/source/input.rs"
+
+    while [ $CURRENT_ITERATION -lt $MAX_ITERATIONS ]; do
+        echo "[$(date)] Starting iteration $((CURRENT_ITERATION + 1))" >> "$LOG_FILE"
+
+        # Agent 1: Initial Code Review
+        echo "🔍 Agent 1: Reviewing code..."
+        ./scripts/agent1_review.sh "$current_file" \
+            "$WORKSPACE_DIR/reviews/review_$CURRENT_ITERATION.md"
+
+        # Agent 2: Analyze Issues and Generate Prompts
+        echo "📊 Agent 2: Analyzing issues..."
+        ./scripts/agent2_analyze.sh \
+            "$WORKSPACE_DIR/reviews/review_$CURRENT_ITERATION.md" \
+            "$WORKSPACE_DIR/issues/issues_$CURRENT_ITERATION.json"
+
+        # Check if there are issues to fix
+        if [ ! -s "$WORKSPACE_DIR/issues/issues_$CURRENT_ITERATION.json" ] || \
+           grep -q '"issues": \[\]' "$WORKSPACE_DIR/issues/issues_$CURRENT_ITERATION.json"; then
+            echo "✅ No issues found. Workflow complete!"
+            break
+        fi
+
+        # Agent 3: Fix Issues
+        echo "🔧 Agent 3: Fixing issues..."
+        ./scripts/agent3_fix.sh \
+            "$current_file" \
+            "$WORKSPACE_DIR/issues/issues_$CURRENT_ITERATION.json" \
+            "$WORKSPACE_DIR/fixed/fixed_$CURRENT_ITERATION.rs"
+
+        # Agent 4: Re-review Fixed Code
+        echo "🔍 Agent 4: Re-reviewing fixed code..."
+        ./scripts/agent4_rereview.sh \
+            "$WORKSPACE_DIR/fixed/fixed_$CURRENT_ITERATION.rs" \
+            "$WORKSPACE_DIR/reports/report_$CURRENT_ITERATION.md"
+
+        # Check if all issues are resolved
+        if check_issues_resolved "$WORKSPACE_DIR/reports/report_$CURRENT_ITERATION.md"; then
+            echo "✅ All issues resolved! Workflow complete."
+            cp "$WORKSPACE_DIR/fixed/fixed_$CURRENT_ITERATION.rs" "./output_fixed.rs"
+            break
+        fi
+
+        # Agent 5: Final Fixing Pass
+        echo "🔨 Agent 5: Final fixing pass..."
+        ./scripts/agent5_finalfix.sh \
+            "$WORKSPACE_DIR/fixed/fixed_$CURRENT_ITERATION.rs" \
+            "$WORKSPACE_DIR/reports/report_$CURRENT_ITERATION.md" \
+            "$WORKSPACE_DIR/fixed/final_$CURRENT_ITERATION.rs"
+
+        # Prepare for next iteration
+        current_file="$WORKSPACE_DIR/fixed/final_$CURRENT_ITERATION.rs"
+        CURRENT_ITERATION=$((CURRENT_ITERATION + 1))
+    done
+
+    if [ $CURRENT_ITERATION -eq $MAX_ITERATIONS ]; then
+        echo "⚠️ Maximum iterations reached. Manual review recommended."
+    fi
+}
+
+# Main execution
+initialize_workspace
+run_workflow
+echo "Workflow completed. Check ./output_fixed.rs for the final version."
+```
+
+### 3. Individual Agent Scripts
+
+#### Agent 1: Initial Code Review
+
+```bash
+#!/bin/bash
+# agent1_review.sh
+
+INPUT_FILE="$1"
+OUTPUT_FILE="$2"
+
+claude-code --mode review \
+    --context "You are a senior Rust developer performing a thorough code review." \
+    --prompt-file "./prompts/initial_review.txt" \
+    --input "$INPUT_FILE" \
+    --output "$OUTPUT_FILE" \
+    --format markdown
+```
+
+#### Agent 2: Issue Analyzer
+
+```bash
+#!/bin/bash
+# agent2_analyze.sh
+
+REVIEW_FILE="$1"
+OUTPUT_FILE="$2"
+
+claude-code --mode analyze \
+    --context "Analyze the code review and create actionable fix prompts." \
+    --prompt-file "./prompts/issue_analyzer.txt" \
+    --input "$REVIEW_FILE" \
+    --output "$OUTPUT_FILE" \
+    --format json \
+    --structured-output '{
+        "issues": [
+            {
+                "id": "string",
+                "severity": "critical|high|medium|low",
+                "description": "string",
+                "fix_prompt": "string",
+                "file_location": "string"
+            }
+        ]
+    }'
+```
+
+#### Agent 3: Code Fixer
+
+```bash
+#!/bin/bash
+# agent3_fix.sh
+
+CODE_FILE="$1"
+ISSUES_FILE="$2"
+OUTPUT_FILE="$3"
+
+claude-code --mode fix \
+    --context "Fix the identified issues in the Rust code." \
+    --prompt-file "./prompts/code_fixer.txt" \
+    --input "$CODE_FILE" \
+    --issues "$ISSUES_FILE" \
+    --output "$OUTPUT_FILE" \
+    --preserve-structure \
+    --test-after-fix
+```
+
+### 4. Prompt Templates
+
+#### initial_review.txt
+
+```markdown
+Perform a comprehensive code review of this Rust file. Focus on:
+
+1. **Memory Safety Issues**
+
+   - Unsafe code blocks
+   - Potential memory leaks
+   - Improper lifetime annotations
+
+2. **Concurrency Issues**
+
+   - Data races
+   - Deadlock potential
+   - Improper mutex usage
+
+3. **Error Handling**
+
+   - Unwrap() usage that could panic
+   - Missing error propagation
+   - Incomplete error handling
+
+4. **Code Quality**
+
+   - Code duplication
+   - Complex functions that need refactoring
+   - Missing documentation
+   - Inefficient algorithms
+
+5. **Rust Best Practices**
+   - Idiomatic Rust patterns
+   - Proper use of ownership and borrowing
+   - Appropriate trait implementations
+
+Format your review as a markdown document with:
+
+- Executive summary
+- Critical issues (must fix)
+- High priority issues (should fix)
+- Medium priority issues (nice to fix)
+- Low priority suggestions
+- Code snippets for each issue
+```
+
+#### issue_analyzer.txt
+
+```markdown
+Analyze the code review markdown and extract all issues into a structured format.
+
+For each issue identified:
+
+1. Assign a unique ID
+2. Determine severity (critical/high/medium/low)
+3. Write a clear description
+4. Create a specific prompt that another AI agent can use to fix this issue
+5. Note the file location/line numbers if available
+
+Group related issues together and prioritize based on:
+
+- Security implications
+- Potential for runtime failures
+- Performance impact
+- Code maintainability
+
+Output a JSON structure with all issues and their fix prompts.
+```
+
+#### code_fixer.txt
+
+```markdown
+You are tasked with fixing specific issues in a Rust codebase.
+
+For each issue provided:
+
+1. Locate the problematic code
+2. Apply the fix while preserving functionality
+3. Ensure the fix doesn't introduce new issues
+4. Add appropriate comments explaining the change
+5. Maintain consistent code style
+
+Rules:
+
+- Preserve all existing functionality
+- Don't modify code unrelated to the issues
+- Add tests if critical functionality is changed
+- Use safe Rust patterns wherever possible
+- Document any unavoidable unsafe blocks
+
+After fixing, add a comment block at the top listing all applied fixes.
+```
+
+### 5. Configuration File
+
+```json
+{
+  "claude_code_settings": {
+    "model": "claude-opus-4-1-20250805",
+    "temperature": 0.2,
+    "max_tokens": 8000,
+    "timeout": 300
+  },
+  "workflow_settings": {
+    "max_iterations": 10,
+    "auto_commit": true,
+    "run_tests": true,
+    "severity_threshold": "medium"
+  },
+  "review_criteria": {
+    "check_memory_safety": true,
+    "check_concurrency": true,
+    "check_error_handling": true,
+    "check_performance": true,
+    "check_documentation": true
+  }
+}
+```
+
+### 6. Setup and Execution
+
+```bash
+# Setup script
+#!/bin/bash
+# setup.sh
+
+# Create directory structure
+mkdir -p rust-review-automation/{scripts,prompts,workspace,config,logs}
+
+# Make scripts executable
+chmod +x scripts/*.sh
+
+# Install dependencies (if any)
+# npm install -g claude-code (if needed)
+
+echo "Setup complete. Run with: ./scripts/orchestrator.sh your_rust_file.rs"
+```
+
+### 7. Advanced Features
+
+#### Parallel Processing for Multiple Files
+
+```bash
+#!/bin/bash
+# parallel_review.sh
+
+find ./src -name "*.rs" | parallel -j 4 './scripts/orchestrator.sh {}'
+```
+
+#### Integration with Git Hooks
+
+```bash
+#!/bin/bash
+# .git/hooks/pre-commit
+
+# Run automated review on staged Rust files
+for file in $(git diff --cached --name-only --diff-filter=ACM | grep '\.rs$'); do
+    ./scripts/orchestrator.sh "$file"
+    if [ $? -ne 0 ]; then
+        echo "Code review failed for $file"
+        exit 1
+    fi
+done
+```
+
+## Key Implementation Notes
+
+1. **Claude Code CLI**: The scripts assume `claude-code` CLI is available. You may need to adjust the command syntax based on the actual Claude Code CLI interface.
+
+2. **Error Handling**: Each script should include proper error handling and logging.
+
+3. **Iteration Control**: The workflow includes a maximum iteration limit to prevent infinite loops.
+
+4. **State Management**: Each iteration's outputs are preserved for debugging and audit trails.
+
+5. **Customization**: Prompts can be tailored to your specific code standards and requirements.
+
+6. **Testing**: Consider adding automated testing after each fix to ensure functionality isn't broken.
+
+This solution provides a robust, automated code review and fix workflow that leverages multiple Claude Code agents in a coordinated manner. The modular design allows for easy customization and extension based on your specific needs.
