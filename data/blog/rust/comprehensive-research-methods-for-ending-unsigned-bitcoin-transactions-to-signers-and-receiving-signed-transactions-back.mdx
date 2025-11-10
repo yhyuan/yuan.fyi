@@ -1,0 +1,579 @@
+---
+title: Comprehensive Research Methods for Sending Unsigned Bitcoin Transactions to Signers and Receiving Signed Transactions Back
+date: '2024-07-29'
+tags: ['Rust', 'Embassy.rs', 'Claude Code']
+draft: false
+---
+
+### Introduction
+
+
+<TOCInline toc={props.toc} exclude="Introduction" />{' '}
+
+Based on extensive research, I've identified multiple protocols, standards, and methods for transmitting unsigned Bitcoin transactions to signing devices and retrieving signed transactions. Here's a comprehensive analysis:
+
+## 1. **PSBT (Partially Signed Bitcoin Transaction) - BIP 174**
+
+### Overview
+PSBT is a standardized format introduced in BIP 174 that allows unsigned or partially signed transactions to be passed between multiple signers and different wallet software implementations. This has become the de facto standard for transaction signing communication.
+
+### Key Features
+- The format consists of key-value maps with a Creator, Updater, Signer, Finalizer, and Extractor role
+- Supports both non-witness and witness inputs with separate fields for PSBT_IN_NON_WITNESS_UTXO and PSBT_IN_WITNESS_UTXO
+- Uses compact size unsigned integers for efficient encoding and includes proprietary type support (0xFC) for custom extensions
+- Designed to work with offline signers like air-gapped wallets and hardware wallets without requiring direct UTXO access
+
+### Data Structure
+- Magic bytes "psbt" (0x70736274) followed by 0xFF separator
+- Global map, per-input maps, and per-output maps
+- Binary format that can be encoded as Base64 for text transmission or displayed as QR codes
+
+## 2. **Hardware Wallet Interface (HWI)**
+
+### Protocol Design
+HWI is a Python library and command-line tool that provides a standard interface for software to work with hardware wallets without implementing device-specific drivers.
+
+### Communication Flow
+1. Enumerate devices to find hardware wallets with fingerprints
+2. Create unsigned PSBT using walletcreatefundedpsbt in Bitcoin Core
+3. Send PSBT to device for signing
+4. Return signed PSBT, which can be finalized and broadcast
+
+### Implementation Details
+- Supports BIP 44, 84, and 49 derivation paths
+- Works with descriptor wallets in Bitcoin Core >=0.21.0
+- Provides both command-line and programmatic interfaces
+
+## 3. **QR Code-Based Protocols**
+
+### Standard QR Codes
+- Simple Base64-encoded PSBT displayed as single QR code
+- Limited by QR capacity (~2953 bytes for QR version 40)
+- Used by wallets like Specter DIY for small transactions
+
+### Animated QR Codes (BC-UR/Uniform Resources)
+Blockchain Commons' UR specification enables encoding of large PSBTs as animated QR sequences using fountain codes, allowing transmission to start at any frame and handle missing frames.
+
+**Technical Implementation:**
+- Built on CBOR (Concise Binary Object Representation) per RFC 7049
+- Uses Luby transform fountain codes for rateless encoding
+- Supports fragments with metadata including sequence number, length, checksum, and XOR-mixed data
+- Libraries available in C++, Swift, Java, Rust, Python, and JavaScript
+
+### SeedSigner/Specter DIY Protocol
+Uses camera-based QR scanning where transaction information is encoded in multiple QR codes, scanned by the device, displayed for review, and signed transactions returned as QR codes.
+
+## 4. **USB Communication Protocols**
+
+### USB HID (Human Interface Device)
+Common protocol using USB HID or CDC for communication, with devices exchanging serialized PSBTs. Features:
+- Standardized across many hardware wallets
+- Typically uses 64-byte packets
+- Bidirectional communication
+- Can use ISO 7816-4 T=0 encoding on top of HID
+
+### USB Serial/CDC (Communications Device Class)
+- Virtual COM port implementation
+- Simple serial protocol for PSBT transfer
+- Used by devices like Coldcard with disk emulation
+
+## 5. **Serial/UART Protocols**
+
+### RS-232/TTL Serial
+UART communication using asynchronous serial transmission at various baud rates (typically 9600-115200 bps).
+
+**Protocol Characteristics:**
+- TTL levels (0-5V) or RS-232 levels (+/-3V to +/-15V)
+- Start bit, 8 data bits, optional parity, stop bit(s)
+- Simple point-to-point communication
+- Used in embedded wallet implementations
+
+### Custom Serial Protocols
+- HDLC framing for packet delimitation
+- Escaped byte sequences for binary data
+- CRC/checksum for error detection
+
+## 6. **NFC (Near Field Communication)**
+
+### Implementation Methods
+NFC wallets use passive NTAG chips (commonly NTAG424 DNA) for transaction signing via contactless communication.
+
+**Protocol Features:**
+- Transaction data transmitted via NFC, signed on secure element, returned to phone
+- ISO 14443 Type 4 compliant
+- AES-128 encryption support
+- 13.56 MHz frequency, ~10cm range
+- Used by wallets like Keycard, Satochip, CoolWallet
+
+### Security Considerations
+- Private keys stored in secure element, never transmitted
+- Transaction details require physical tap confirmation
+- Limited to specific NTAG chip types with crypto support
+
+## 7. **Bluetooth/BLE Protocols**
+
+### Ledger Implementation
+Uses AES-encrypted BLE channel with numeric comparison pairing for MITM protection, where only public data is transmitted via Bluetooth while private keys remain in secure element.
+
+**Protocol Stack:**
+- BLE 4.0+ with GATT services
+- Custom characteristics for command/response
+- Encrypted payload transmission
+- Requires physical button confirmation on device
+
+### Security Model
+- Two-phase connection protocol with key exchange
+- Transaction details always displayed on device screen
+- No private key exposure over wireless
+
+## 8. **MicroSD Card Transfer**
+
+### File-Based Protocol
+Used by devices like Coldcard and Passport:
+- PSBT saved as file on MicroSD
+- Card physically moved between devices
+- Signed PSBT written back to card
+- Supports large transactions without size limits
+
+### Format
+- Binary or Base64-encoded PSBT files
+- Optional metadata files
+- Backup and firmware update support
+
+## 9. **Network-Based Protocols**
+
+### JSON-RPC
+Bitcoin Core's JSON-RPC interface supports PSBT operations through walletcreatefundedpsbt, walletprocesspsbt, and related commands.
+
+**Implementation:**
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "walletprocesspsbt",
+  "params": ["<base64_psbt>"],
+  "id": 1
+}
+```
+
+### WebSocket
+Real-time bidirectional communication for transaction updates and signing requests, though not commonly used for direct hardware wallet communication.
+
+## 10. **Proprietary and Specialized Protocols**
+
+### Lightning Network Signers
+- Specialized protocols for channel state management
+- Requires persistent connection for real-time signing
+- Custom message formats for commitment transactions
+
+### Coordinator-Based Protocols
+- Used in multisig setups like Casa or Unchained
+- HTTP/HTTPS API for PSBT coordination
+- Server-mediated signing workflows
+
+## Security Considerations Across All Methods
+
+### Data Integrity
+- All protocols must verify transaction details before signing
+- Display transaction on trusted screen for user confirmation
+- Checksums/CRCs for data transmission verification
+
+### Air Gap Maintenance
+- QR and MicroSD methods maintain complete air gap
+- USB/Serial requires careful implementation to prevent data leakage
+- Wireless methods (BLE/NFC) require encryption and authentication
+
+### Privacy Considerations
+- Some methods may leak metadata (addresses, amounts)
+- Consider using Tor or VPN for network-based protocols
+- Minimize information exposed in each transmission
+
+## Best Practices for Implementation
+
+1. **Always use PSBT format** as the base transaction format
+2. **Implement multiple communication methods** for flexibility
+3. **Display full transaction details** on signing device
+4. **Verify signatures** after receiving signed transaction
+5. **Support both single-sig and multisig** workflows
+6. **Implement proper error handling** for failed transmissions
+7. **Use standard protocols** (BIP 174, UR) when possible
+8. **Test with various transaction sizes** and types
+9. **Document protocol specifics** for developers
+10. **Consider bandwidth limitations** of each method
+
+## Emerging Standards and Future Developments
+
+- **PSBT v2** improvements for better CoinJoin support
+- **Taproot/Schnorr** signing protocols
+- **FROST** threshold signatures for improved multisig
+- **Improved UR types** for various Bitcoin data structures
+- **Standardized hardware wallet APIs** across manufacturers
+
+This comprehensive research shows that the Bitcoin ecosystem has developed multiple robust methods for secure transaction signing, each with specific trade-offs between security, convenience, and compatibility. The choice of protocol depends on the specific use case, security requirements, and target devices.
+
+# Deep and Comprehensive Analysis: Methods to Send Unsigned Bitcoin Transactions to a Signer and Return the Signed Result
+
+This report provides a deep and comprehensive research on the protocols, formats, workflows, and best practices for transmitting **unsigned Bitcoin transactions** to a **signer** (e.g., a hardware wallet, air-gapped device, or remote signing service), and returning the **fully signed transaction** for broadcast.
+
+---
+
+## 1. **Core Conceptual Framework**
+
+Bitcoin transactions must be **cryptographically signed** using the private key corresponding to a Unspent Transaction Output (UTXO). To maximize security—especially for large holdings—many users **separate the signing environment** (offline, hardware-isolated) from the transaction creation environment (online, connected). This requires a standardized method to **transport transaction data** between the two environments.
+
+The modern solution to this problem is the **Partially Signed Bitcoin Transaction (PSBT)** format, introduced in [BIP-174](https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki) [20].
+
+---
+
+## 2. **The PSBT (Partially Signed Bitcoin Transaction) Standard**
+
+### 2.1 Definition and Purpose
+
+PSBT is a **standardized interchange format** designed to simplify collaborative signing workflows. It encapsulates an unsigned or partially signed transaction along with **metadata required for signing**, such as:
+
+- UTXO details (amounts, scripts)
+- Derivation paths for keys
+- Redeem scripts (for P2SH)
+- Witness scripts (for SegWit)
+
+> "Partially Signed Bitcoin Transactions (PSBTs) are a data format that allows wallets and other tools to exchange information about a Bitcoin transaction" .
+
+> "A PSBT (Partially Signed Bitcoin Transaction) is a data format for passing transactions around for signing. This format essentially contains… a transaction (which is unsigned, or not completely signed)" .
+
+### 2.2 Structure (Per BIP-174)
+
+PSBT consists of a **global map** and **per-input/per-output key-value maps** [20]. It is **not network-serializable**—it exists only as an intermediate construct.
+
+### 2.3 Versioning
+
+PSBT v2 (defined in [BIP-370](https://github.com/bitcoin/bips/blob/master/bip-0370.mediawiki)) improves privacy and efficiency by replacing per-input UTXO data with transaction IDs and indices [28].
+
+---
+
+## 3. **Workflow: From Unsigned to Signed**
+
+### Step 1: **Transaction Construction (Online)**
+
+An online wallet (or service) constructs an unsigned transaction by:
+
+- Selecting UTXOs
+- Defining outputs (recipients + change)
+- Estimating fees
+
+This raw transaction is **not yet signed** and is **not valid for broadcast**.
+
+> "The initiator constructs an unsigned transaction by ‘selecting the necessary inputs and outputs, which is then converted into PSBT format.’" .
+
+This raw transaction can be in **hex-encoded serialized form** (the legacy method) or wrapped into **PSBT** (modern method) .
+
+### Step 2: **Serialization & Export**
+
+Two primary formats are used:
+
+#### A. **Raw Transaction Hex**
+- A hex-encoded byte string of the transaction per Bitcoin’s serialization rules .
+- **Limitation**: Does not include UTXO metadata needed for signing (e.g., scriptPubKey, amount).
+- Requires the signer to have **external access** to UTXO data.
+
+#### B. **PSBT (Preferred)**
+- Encodes everything the signer needs: inputs, outputs, UTXO details, key derivation info .
+- Human-readable via Base64 or QR code.
+
+> "By using the PSBT format, you can send each signer the unsigned transaction data, and each signer can use whichever wallet/device they prefer to" .
+
+### Step 3: **Transmission to Signer**
+
+Common methods to send the unsigned transaction to an offline/hardware signer:
+
+| Method | Use Case | Security Notes |
+|-------|---------|----------------|
+| **QR Code** | Mobile/desktop to air-gapped device (e.g., ColdCard, SeedSigner) | Highly secure; no physical connection  |
+| **USB/SD Card** | Desktop to offline computer or hardware wallet | Risk of malware if USB is reused  |
+| **NFC/Bluetooth** | Mobile to hardware wallet (e.g., Ledger) | Less secure than air-gapped; potential side-channel  |
+| **Manual Copy/Paste** | For small transactions | Prone to error; not recommended for large sums |
+
+> "Create PSBT: Compose an unsigned transaction on an online wallet and export the PSBT file. Transfer to Offline: Send the PSBT via QR code" .
+
+> "SeedSigner is a stateless, air-gapped signing device... transaction prepared online is transferred via QR" .
+
+### Step 4: **Signing Process (Offline/Secure Environment)**
+
+The signer (hardware wallet, offline node, etc.):
+
+1. Parses the PSBT or raw transaction.
+2. Validates UTXOs and amounts (to prevent fee manipulation).
+3. Uses the private key (never exposed) to generate an ECDSA (or Schnorr for Taproot) signature.
+4. Embeds the signature into the transaction input(s).
+5. Returns the **signed PSBT** or **signed raw transaction hex**.
+
+> "Hardware wallets are dedicated single-purpose offline computers used only to store private keys and conduct cryptocurrency signing operations" .
+
+> "When you initiate a transaction, the hardware wallet signs it with your private key, using the chip's secure" .
+
+For multi-signature or multi-party setups, PSBT allows **incremental signing**: each party signs and passes the PSBT onward until fully signed .
+
+### Step 5: **Return & Broadcast (Online)**
+
+The signed transaction is transferred back to the online environment via the same channels (QR, USB, etc.).
+
+- If in **PSBT format**, it is **finalized** (stripped of metadata) to produce a **network-serializable raw transaction**.
+- The raw hex is then **broadcast** to the Bitcoin network via nodes or APIs.
+
+> Bitcoin Core provides `finalizepsbt` to convert a fully signed PSBT into a broadcastable raw transaction .
+
+---
+
+## 4. **Technical Implementation: Bitcoin Core & RPCs**
+
+Bitcoin Core supports both legacy and PSBT workflows:
+
+### Legacy Raw Transaction Workflow:
+1. `createrawtransaction` → unsigned hex
+2. `fundrawtransaction` → adds inputs and change
+3. `signrawtransactionwithkey` → signs using private keys (requires UTXO info as argument)
+4. Broadcast via `sendrawtransaction`
+
+> "`signrawtransactionwithkey` will need information about the UTXOs again, the scripts used in those, what type of scripts they are" .
+
+### PSBT Workflow (Recommended):
+1. `walletcreatefundedpsbt` → creates PSBT with inputs/outputs/funding
+2. Export PSBT (Base64 or binary)
+3. Send to external signer
+4. Import signed PSBT
+5. `finalizepsbt` → produces raw transaction
+6. Broadcast
+
+This workflow is **more secure** and **device-agnostic**, as the signer doesn’t need access to the full wallet.
+
+---
+
+## 5. **Hardware Wallet Integration**
+
+Hardware wallets (Ledger, Trezor, ColdCard) natively support PSBT:
+
+- They **never expose private keys**.
+- They **display transaction details** on their screen for user confirmation.
+- They **validate UTXO amounts** to prevent fee overpayment or amount spoofing.
+
+> "The primary wallet application submits an unsigned transaction or a partially signed bitcoin transaction (PSBT) to the external signer" .
+
+Communication occurs via:
+- USB HID (Human Interface Device)
+- WebUSB (for browser wallets like Electrum)
+- QR codes (for air-gapped devices)
+
+---
+
+## 6. **Air-Gapped Signing: Ultimate Security**
+
+In high-security setups (e.g., institutional custody), **air-gapped computers** or **dedicated offline signers** are used:
+
+> "An air-gapped wallet secures Bitcoin by generating and storing your private keys on a device that is permanently disconnected from the internet" .
+
+Workflow:
+1. Online machine: creates PSBT.
+2. Transfer via QR or SD card to air-gapped machine.
+3. Air-gapped machine (with private keys): signs PSBT.
+4. Transfer signed PSBT back.
+5. Online machine: broadcasts.
+
+> "You prepare a transaction on an online machine (PSBT for Bitcoin...), transfer it to your air-gapped device, sign it without exposing" .
+
+Tools like **Specter Desktop**, **Sparrow Wallet**, and **SeedSigner** facilitate this.
+
+---
+
+## 7. **Security Best Practices**
+
+- **Always verify** transaction details (amount, address, fees) on the **signing device**—never trust the online display .
+- Use **PSBT over raw hex** to avoid missing UTXO data.
+- Prefer **QR code transfer** over USB for air-gapped setups to eliminate malware risk .
+- **Never sign unknown or suspicious PSBTs**—they could drain your wallet .
+- **Finalize and validate** the signed transaction before broadcast .
+
+> "Signatures are the bedrock of Bitcoin's security model, providing mathematical certainty for every transaction" .
+
+---
+
+## 8. **Conclusion**
+
+The **PSBT standard (BIP-174)** is the cornerstone of modern Bitcoin transaction signing workflows, enabling secure, flexible, and interoperable communication between transaction creators and signers. Whether using hardware wallets, air-gapped computers, or multi-signature setups, PSBT ensures that **private keys remain isolated** while providing all necessary context for secure signing.
+
+Legacy raw transaction methods are still functional but **less secure and less flexible**, as they require manual handling of UTXO metadata.
+
+For maximum security, **combine PSBT with air-gapped signing via QR codes**, and always **verify transaction details on the signing device**.
+
+---
+
+### References (Compiled from Search Results)
+
+–: As cited in the analysis above.
+Awesome brief! Here’s a deep, systems-level map of every practical way to move unsigned Bitcoin transactions to a signer and get signed transactions back—covering standards, transports, concrete workflows (Core/HWI, Sparrow/Electrum, QR hardware), implementation libraries, and hardening.
+
+# 1) Canonical data formats (what you actually send)
+
+* **PSBT (Partially Signed Bitcoin Transaction)** — the cross-wallet standard for exchanging unsigned/partially-signed txs.
+
+  * **PSBTv0 (BIP-174)** defines roles (creator, updater, signer, finalizer, extractor) and a key-value map structure. ([Bitcoin Wiki][1])
+  * **PSBTv2 (BIP-370)** improves mutability (adding inputs/outputs post-creation) and reorganizes globals/inputs/outputs, but it’s still interoperable at app boundaries. ([Bips][2])
+  * **Taproot extensions (BIP-371)** add the taproot fields (x-only keys, tapleaf scripts, merkle paths, taproot sigs). Your signer must understand these for BIP340/341/342 spends. ([Bips][3])
+* **Descriptors (BIP-380)** — not for the *transaction* itself, but for establishing watch-only wallets, change derivation, multisig policies (often exchanged alongside PSBT). Descriptors + PSBT = smooth interop. ([Bips][4])
+
+  * Many wallets and devices can export descriptors; e.g., Coldcard descriptor export (BIP-380) for pairing with software wallets. ([Coldcard][5])
+
+# 2) Transport layers (how you move PSBTs and signatures)
+
+**Air-gapped** (no data cable):
+
+* **QR (static & animated):**
+
+  * **UR (Blockchain Commons, BCR-2020-005)** is the modern, widely adopted animated QR framing for PSBTs/xpubs/signatures—chunked, error-tolerant, CBOR-based. Used by SeedSigner, Keystone, Foundation Passport, etc. ([Developer Resources][6])
+  * **BBQR (Coldcard)** is an alternative high-capacity QR framing used by COLDCARD Q. If your host supports only UR, you’ll need a translator. ([BBQr][7])
+* **microSD card:** copy `.psbt` to card → sign on device → copy back `.psbt` or `.txn`. Common on Coldcard/Passport/Keystone. ([Coldcard][8])
+* **NFC:** some signers (e.g., COLDCARD Mk4/Q) can ingest/export PSBT or sigs via NFC (often with NDEF payloads handled by wallet apps like Nunchuk). ([Coldcard][9])
+
+**Cabled or tethered**:
+
+* **USB HID/WebUSB/WebHID + vendor protocols:**
+
+  * **Trezor** supports Bridge, WebUSB, and (legacy) HID; modern flows favor WebUSB in Suite/Connect. ([Trezor Forum][10])
+  * **Ledger** uses **APDU** commands over USB (and BLE on some models) via LedgerJS/Signer Kits; the Bitcoin signer kit exposes PSBT-aware calls. ([Ledger Developer Portal][11])
+* **Bluetooth (selected devices)** and **serial/UART** (DIY signers) exist, but are less common for PSBT in production wallets.
+
+# 3) Reference workflows (copy-pasteable mental models)
+
+## A) Full-node centric (Bitcoin Core + external signer via HWI)
+
+1. **Create unsigned PSBT** on the online node (watch-only wallet):
+   `walletcreatefundedpsbt` → returns Base64 PSBT. ([Bitcoin Developer Documentation][12])
+2. **Deliver PSBT to signer**:
+
+   * Air-gapped (QR/SD/NFC), or
+   * Cable (USB) using **HWI** (Hardware Wallet Interface) which normalizes device differences. ([Hardware Wallet Interface][13])
+3. **Sign** on device (PSBT updated with partial/full signatures).
+4. **Return signed PSBT**, then **finalize & extract** on the online node:
+   `walletprocesspsbt` (if needed), `finalizepsbt`, then `sendrawtransaction`. ([Bitcoin Core][14])
+
+> This flow cleanly maps to the BIP-174 roles and works for singlesig, multisig, SegWit, and Taproot (with BIP-371 aware stacks). ([Bitcoin Optech][15])
+
+## B) Sparrow (desktop) ↔ air-gapped hardware (Keystone/Passport/Coldcard)
+
+* **Pair via descriptors/xpubs**, then compose a payment in Sparrow and **“Finalize for signing”** to produce a PSBT. Present as **UR QR** (Keystone/Passport) or **BBQR** (Coldcard Q) or export to **microSD**. Device signs; you scan the **signature/PSBT** back; Sparrow finalizes & broadcasts. ([Sparrow Wallet][16])
+
+## C) Electrum, offline/online pair
+
+* Online Electrum builds PSBT → save file → transfer to offline Electrum or hardware → sign → bring back → finalize/broadcast. (Electrum supports PSBT as of v4; exact UI varies.) ([Bitcoin Stack Exchange][17])
+
+## D) Programmatic (libraries)
+
+* **Rust**: `rust-bitcoin` + `psbt`/`psbt-v2`, **BDK** with **rust-hwi** custom signers. Great for building your own PSBT construction/signing pipeline. ([Docs.rs][18])
+* **Python**: **HWI** (`hwilib`), plus `python-bitcointx`/`bit` for tx and PSBT handling; **bitcoin-qr-tools** if you need UR/BBQR encoding/decoding. ([Hardware Wallet Interface][13])
+* **JS/TS**: **LedgerJS** + Signer Kit for APDU transport to Ledger; **@trezor/transport** for protobuf-framed exchanges to Trezor (WebUSB). ([Ledger Developer Portal][19])
+
+# 4) Hardening the channel (attack surfaces & mitigations)
+
+**(a) Exfiltration via signatures (nonce covert channels)**
+
+* A malicious signer can leak key bits through manipulated ECDSA/Schnorr nonces.
+
+  * **Anti-exfil / anti-klepto**: host supplies a nonce commitment/contribution; several devices (BitBox02, Jade; some others) implement these protections. Prefer stacks that support it—especially when directly cabled (no airgap). ([Blockstream][20])
+
+**(b) PSBT over-trust / wrong change / wrong script**
+
+* Verify **inputs (UTXO set & amounts)**, **outputs**, **change script type & derivation**, and **fee** on the *device screen*, not just the host UI. PSBT + descriptors enable the signer to know what it controls. ([Bitcoin Optech][21])
+
+**(c) Taproot specifics**
+
+* Ensure your stack supports **BIP-371 fields**; otherwise Taproot inputs won’t sign. Test both **key-path** and **script-path** spends in QA. ([Bips][3])
+
+**(d) Transport pitfalls**
+
+* **QR:** choose UR over raw Base64 to avoid size/scan issues; animated UR handles large PSBTs. Where using COLDCARD Q, align on **BBQR** or provide a converter. ([Developer Resources][6])
+* **microSD:** treat as untrusted media; your device should parse PSBT defensively; follow vendor docs for air-gap workflows. ([Coldcard][8])
+* **USB/WebUSB:** pin vendor IDs, enforce user prompts on every critical action; prefer open-source host stacks (HWI/Sparrow/Electrum). ([Hardware Wallet Interface][13])
+
+# 5) End-to-end recipes (with exact commands / knobs)
+
+## Node-first (Core + HWI + any hardware)
+
+1. **Create fund-select PSBT** (watch-only wallet):
+   `bitcoin-cli -rpcwallet=watch walletcreatefundedpsbt [] '[{"bc1q...":0.01}]' 0 '{"replaceable":true,"fee_rate":5}' true` → `psbt` (Base64). ([Bitcoin Developer Documentation][12])
+2. **Sign on device** (examples):
+
+   * HWI CLI (USB): `hwi -f <path> sign --psbt <base64>` → returns PSBT with sigs. ([Hardware Wallet Interface][13])
+   * Air-gap: encode PSBT as UR/QR (wallet does this), scan on signer, export signed PSBT back. ([Developer Resources][6])
+3. **Finalize & broadcast:**
+   `finalizepsbt <base64>` → `hex` → `sendrawtransaction <hex>`. If not complete, rerun `walletprocesspsbt` (with `sign=false`) to fill missing data. ([Bitcoin Core][14])
+
+## Sparrow ↔ Keystone/Passport/Coldcard (QR or microSD)
+
+* Compose tx → **Finalize for signing** → show **UR/BBQR** → scan on device → **return signed PSBT** as QR or microSD → Sparrow **finalize** → broadcast. (Sparrow docs + Keystone guide.) ([Sparrow Wallet][16])
+
+## Electrum offline/online
+
+* Online: build PSBT → save → transfer → Offline: **Sign** (hardware or software) → export partially/fully signed PSBT → Online: **finalize/broadcast**. ([Bitcoin Stack Exchange][17])
+
+# 6) Implementation building blocks (dev)
+
+* **Standards to implement/parse**: BIP-174/370/371 for PSBT; BIP-380 for descriptors. ([Bips][2])
+* **UR stacks**: bc-ur (Rust), URKit (Swift), JS implementations (`@ngraveio/ur-blockchain-commons`). ([Docs.rs][22])
+* **Device bridges**:
+
+  * **HWI** (Python lib + CLI) supports many signers uniformly. ([Hardware Wallet Interface][13])
+  * **Ledger**: APDU via LedgerJS / Signer Kit (WebUSB/WebHID/Node HID). ([Ledger Developer Portal][19])
+  * **Trezor**: protobuf over WebUSB/Bridge; `@trezor/transport` for raw transport. ([Trezor Forum][10])
+  * **Rust**: `psbt-v2`, `bdk`, `rust-hwi` for external signer glue. ([Docs.rs][18])
+
+# 7) QA/test strategy (what to prove before mainnet)
+
+* **Matrix** of script types: p2wpkh / p2wsh-multisig / Taproot key-path / Taproot script-path; single- and multi-signer; RBF vs non-RBF; change present/absent; mixed SIGHASH. Validate in your CI with PSBT round-trips. (Decode with `decodepsbt` to assert fields.) ([Bitcoin Core][23])
+* **Transport fuzzing**: very large PSBTs over QR (UR fragment size, FPS limits), SD card filename edge cases, USB dis/connect mid-flow.
+* **Anti-exfil**: enable anti-klepto where supported; assert host commitment is displayed/acknowledged on device. ([BitBox Blog][24])
+* **Descriptor sync**: import/export descriptors and verify derived addresses & change paths match across stacks. ([Bitcoin Optech][21])
+
+# 8) Security checklist (drop-in)
+
+* Use **descriptor-based watch-only** wallets (no private keys on online host). ([Bips][4])
+* Always **verify on device screen**: outputs, change, fees, SIGHASH.
+* Prefer **air-gapped UR/QR** or **microSD** for high assurance; if cabled, enable **anti-exfil/anti-klepto**. ([Blockstream][20])
+* Ensure **Taproot PSBT fields** are supported end-to-end. ([Bips][3])
+* Keep device firmware and host wallet updated; pin device IDs and require user presence on critical ops (address display, signing).
+
+---
+
+## Pinned references (good jumping-off points)
+
+* PSBT: **BIP-174**, **BIP-370**, and **Taproot fields (BIP-371)**. ([Bitcoin Wiki][1])
+* Descriptors: **BIP-380**, Optech overview, Coldcard descriptor export. ([Bips][4])
+* UR & animated QR: **UR spec/registry**, dev guide for PSBTs, animated QRs overview. ([Developer Resources][25])
+* HWI: docs + repo; Optech topic. ([Hardware Wallet Interface][13])
+* Core RPCs: `walletcreatefundedpsbt`, `walletprocesspsbt`, `finalizepsbt`, `decodepsbt`. ([Bitcoin Developer Documentation][12])
+* Sparrow/Electrum workflows. ([Sparrow Wallet][16])
+* Anti-exfil/anti-klepto: Blockstream & BitBox posts; device support mentions. ([Blockstream][20])
+
+If you want, I can tailor this to your specific signer (e.g., Coldcard Q airgap with BBQR + NFC; Jade BLE + anti-klepto; Keystone UR; or a Rust/BDK custom signer), and hand you exact code/CLI snippets for your toolchain.
+
+[1]: https://en.bitcoin.it/wiki/BIP_0174?utm_source=chatgpt.com "BIP 0174 - Bitcoin Wiki"
+[2]: https://bips.dev/370/?utm_source=chatgpt.com "BIP 370: PSBT Version 2"
+[3]: https://bips.dev/371/?utm_source=chatgpt.com "BIP 371: Taproot Fields for PSBT"
+[4]: https://bips.dev/380/?utm_source=chatgpt.com "BIP 380: Output Script Descriptors General Operation"
+[5]: https://coldcard.com/docs/descriptor_export/?utm_source=chatgpt.com "Descriptor Export"
+[6]: https://developer.blockchaincommons.com/ur/psbts/?utm_source=chatgpt.com "A Guide to Using URs for PSBTs"
+[7]: https://bbqr.org/?utm_source=chatgpt.com "BBQr - Better Bitcoin QR | BBQr"
+[8]: https://coldcard.com/docs/middle-ground/?utm_source=chatgpt.com "COLDCARD Middle Ground Guide"
+[9]: https://coldcard.com/docs/ready-to-sign/?utm_source=chatgpt.com "Ready To Sign? - COLDCARD Documentation"
+[10]: https://forum.trezor.io/t/trezor-communication-inquiries/13200?utm_source=chatgpt.com "Trezor Communication Inquiries"
+[11]: https://developers.ledger.com/docs/device-interaction/references/signers/btc?utm_source=chatgpt.com "Bitcoin Signer Kit"
+[12]: https://developer.bitcoin.org/reference/rpc/walletcreatefundedpsbt.html?utm_source=chatgpt.com "walletcreatefundedpsbt - Bitcoin.org"
+[13]: https://hwi.readthedocs.io/?utm_source=chatgpt.com "Welcome to Hardware Wallet Interface's documentation ..."
+[14]: https://bitcoincore.org/en/doc/23.0.0/rpc/wallet/walletprocesspsbt/?utm_source=chatgpt.com "walletprocesspsbt (23.0.0 RPC) - Bitcoin Core"
+[15]: https://bitcoinops.org/en/topics/psbt/?utm_source=chatgpt.com "Partially signed bitcoin transactions"
+[16]: https://sparrowwallet.com/docs/?utm_source=chatgpt.com "Documentation"
+[17]: https://bitcoin.stackexchange.com/questions/103452/how-to-create-a-signed-transaction-offline-using-electrum?utm_source=chatgpt.com "How to create a signed transaction offline using electrum?"
+[18]: https://docs.rs/psbt-v2?utm_source=chatgpt.com "psbt_v2 - Rust"
+[19]: https://developers.ledger.com/docs/device-interaction/ledgerjs/integration/web-application/web-hid-usb?utm_source=chatgpt.com "Web USB/HID"
+[20]: https://blog.blockstream.com/anti-exfil-stopping-key-exfiltration/?utm_source=chatgpt.com "Anti-Exfil: Stopping Key Exfiltration"
+[21]: https://bitcoinops.org/en/topics/output-script-descriptors/?utm_source=chatgpt.com "Output script descriptors"
+[22]: https://docs.rs/bc-ur?utm_source=chatgpt.com "bc_ur - Rust"
+[23]: https://bitcoincore.org/en/doc/0.20.0/rpc/rawtransactions/decodepsbt/?utm_source=chatgpt.com "decodepsbt (0.20.0 RPC) - Bitcoin Core"
+[24]: https://blog.bitbox.swiss/en/anti-klepto-explained-protection-against-leaking-private-keys/?utm_source=chatgpt.com "Anti-klepto explained: how the BitBox02 protects you ..."
+[25]: https://developer.blockchaincommons.com/ur/?utm_source=chatgpt.com "Uniform Resources (UR)"

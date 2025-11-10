@@ -1,0 +1,374 @@
+---
+title: Comprehensive Learning Plan Embassy.rs Development with Claude Code for STM32U585
+date: '2024-07-29'
+tags: ['Rust', 'Embassy.rs', 'Claude Code']
+draft: false
+---
+
+### Introduction
+
+
+<TOCInline toc={props.toc} exclude="Introduction" />{' '}
+
+### Phase 1: Environment Setup & Claude Code Mastery (Week 1-2)
+
+#### 1.1 Claude Code Installation and Configuration
+```bash
+# Install Claude Code
+npm install -g @anthropic/claude-code
+
+# Configure authentication
+claude-code auth login
+
+# Set up project-specific configuration
+claude-code config set model claude-opus-4-1-20250805
+claude-code config set context-window 200000
+```
+
+#### 1.2 STM32U585 Development Environment
+```bash
+# Use Claude Code to set up the toolchain
+claude-code task "Set up a complete Rust embedded development environment for STM32U585 with:
+- rustup with nightly toolchain
+- probe-rs for debugging
+- cargo-embassy for project templates
+- arm-none-eabi-gcc toolchain
+- Create installation scripts for Linux/macOS/Windows"
+
+# Hardware-specific tools
+claude-code task "Create a script to install and configure:
+- STM32CubeProgrammer CLI tools
+- OpenOCD with STM32U5 support
+- probe-rs with STM32U585 chip configuration"
+```
+
+#### 1.3 WeAct Black Pill Board Analysis
+```bash
+claude-code task "Research and document the WeAct Studio STM32U585 Black Pill:
+- Pin mappings and peripherals
+- Crystal frequencies (HSE/LSE)
+- USB-C power delivery capabilities
+- Debug interface (SWD pins)
+- Create a comprehensive board reference document"
+```
+
+### Phase 2: Embassy.rs Fundamentals (Week 2-3)
+
+#### 2.1 Embassy Architecture Deep Dive
+```bash
+claude-code task "Create a learning module explaining embassy-rs architecture:
+- Async/await in no_std environments
+- Embassy executor vs RTIC comparison
+- Hardware abstraction layers (HAL)
+- Time driver implementation
+- Create visual diagrams using mermaid"
+```
+
+#### 2.2 Basic Embassy Project Structure
+```bash
+claude-code task "Generate a minimal embassy-rs project for STM32U585:
+- Cargo.toml with correct dependencies
+- memory.x for Black Pill's memory layout (2MB Flash, 786KB RAM)
+- build.rs for linking
+- .cargo/config.toml for target configuration
+- Basic src/main.rs with LED blink"
+
+# Project template structure
+claude-code task "Create a reusable project template with:
+src/
+├── main.rs
+├── tasks/
+│   ├── mod.rs
+│   ├── led.rs
+│   └── usb.rs
+├── drivers/
+│   └── mod.rs
+└── config.rs"
+```
+
+#### 2.3 Core Embassy Patterns
+```bash
+claude-code task "Implement and explain these embassy patterns:
+1. Spawning async tasks with #[embassy_executor::task]
+2. Channel communication between tasks
+3. Mutex and signal usage in async context
+4. Timer and delay implementations
+5. Interrupt handling with embassy"
+```
+
+### Phase 3: STM32U585-Specific Development (Week 3-4)
+
+#### 3.1 Peripheral Drivers Implementation
+```bash
+claude-code task "Implement embassy-based drivers for STM32U585 peripherals:
+- GPIO with async interrupts
+- USART with DMA transfers
+- SPI with async transactions
+- I2C with error handling
+- ADC with continuous sampling
+- TIM for PWM generation"
+```
+
+#### 3.2 Power Management Features
+```bash
+claude-code task "Develop power-efficient code leveraging STM32U585's features:
+- Low-power modes (Sleep, Stop, Standby)
+- Dynamic voltage scaling
+- RTC wakeup implementation
+- Power consumption measurement techniques
+- Create benchmarks for different scenarios"
+```
+
+#### 3.3 Security Features Integration
+```bash
+claude-code task "Implement STM32U585's security features with embassy:
+- TrustZone configuration
+- Secure boot implementation
+- Hardware crypto acceleration (AES, SHA)
+- True Random Number Generator (TRNG)
+- Secure key storage using OTP"
+```
+
+### Phase 4: Advanced Embassy Applications (Week 4-5)
+
+#### 4.1 USB Device Implementation
+```bash
+claude-code task "Create a USB composite device with embassy-usb:
+- CDC-ACM for serial communication
+- MSC for mass storage
+- HID for custom protocols
+- Proper descriptor configuration
+- Error handling and hot-plug support"
+```
+
+#### 4.2 Network Stack Integration
+```bash
+claude-code task "If using external network module, implement:
+- embassy-net integration
+- TCP/IP stack configuration
+- Async HTTP client
+- MQTT client implementation
+- TLS support with embedded-tls"
+```
+
+#### 4.3 Real-Time Operating Capabilities
+```bash
+claude-code task "Develop a real-time application showcasing:
+- Priority-based task scheduling
+- Deadline-driven task execution
+- Resource sharing with priority ceiling
+- Interrupt latency measurements
+- Worst-case execution time analysis"
+```
+
+### Phase 5: Testing and Debugging Infrastructure (Week 5-6)
+
+#### 5.1 Hardware-in-the-Loop Testing
+```bash
+claude-code task "Create HIL test framework:
+- defmt for efficient logging
+- probe-rs RTT for real-time output
+- GPIO-based test fixtures
+- Automated test runner with cargo-embed
+- Performance profiling setup"
+```
+
+#### 5.2 Emulation and Simulation
+```bash
+claude-code task "Set up QEMU-based testing:
+- Configure QEMU for STM32U585
+- Create embassy-compatible HAL mocks
+- Integration with CI/CD pipeline
+- Code coverage analysis
+- Fuzzing setup for robust testing"
+```
+
+#### 5.3 Debugging Strategies
+```bash
+claude-code task "Implement comprehensive debugging tools:
+- GDB server configuration with probe-rs
+- VS Code debug configuration
+- Memory usage analysis tools
+- Stack overflow detection
+- Hard fault handler implementation"
+```
+
+### Phase 6: Production-Ready Projects (Week 6-8)
+
+#### 6.1 Sensor Data Logger Project
+```bash
+claude-code task "Build a complete sensor data logger:
+- Multiple I2C/SPI sensors
+- SD card storage with async FAT32
+- USB data export
+- Low-power operation with RTC timestamps
+- Configuration via USB CDC"
+```
+
+#### 6.2 Secure IoT Device
+```bash
+claude-code task "Develop a secure IoT endpoint:
+- TLS client certificate authentication
+- OTA firmware updates with rollback
+- Secure element integration
+- Environmental monitoring
+- MQTT telemetry with QoS levels"
+```
+
+#### 6.3 Motor Control Application
+```bash
+claude-code task "Create a BLDC motor controller:
+- 6-step commutation with hall sensors
+- Field-oriented control (FOC)
+- Current sensing and protection
+- CAN bus communication
+- Temperature monitoring"
+```
+
+### Phase 7: Optimization and Best Practices (Week 8-9)
+
+#### 7.1 Performance Optimization
+```bash
+claude-code task "Optimize embassy applications:
+- Profile async task overhead
+- Minimize memory allocations
+- Optimize interrupt latency
+- DMA usage patterns
+- Compiler optimization flags analysis"
+```
+
+#### 7.2 Code Quality and Maintenance
+```bash
+claude-code task "Establish quality practices:
+- Clippy configuration for embedded
+- Documentation standards
+- Error handling patterns
+- Logging strategies
+- Version control workflows"
+```
+
+#### 7.3 Production Deployment
+```bash
+claude-code task "Create production deployment pipeline:
+- Binary size optimization
+- Bootloader integration
+- Firmware signing process
+- Factory programming scripts
+- Field debugging capabilities"
+```
+
+### Phase 8: Advanced Topics and Specialization (Week 9-10)
+
+#### 8.1 Custom Embassy Executors
+```bash
+claude-code task "Implement custom executor features:
+- Multi-core executor for dual-core STM32
+- Deterministic scheduling
+- Task migration strategies
+- Custom allocators
+- Benchmark against default executor"
+```
+
+#### 8.2 Integration with RTOS
+```bash
+claude-code task "Hybrid embassy-RTOS implementation:
+- FreeRTOS integration layer
+- Task synchronization bridges
+- Shared resource management
+- Performance comparison
+- Use case analysis"
+```
+
+#### 8.3 Contributing to Embassy Ecosystem
+```bash
+claude-code task "Prepare contributions:
+- Identify missing STM32U5 features
+- Write HAL implementations
+- Create example applications
+- Documentation improvements
+- Test coverage additions"
+```
+
+### Continuous Learning Resources
+
+#### Daily Practice Routine
+```bash
+# Morning: Review and experiment
+claude-code task "Review yesterday's code and identify improvements"
+claude-code task "Implement one new embassy feature or pattern"
+
+# Afternoon: Project work
+claude-code task "Work on current project milestone"
+claude-code task "Debug and optimize existing code"
+
+# Evening: Documentation and community
+claude-code task "Document today's learnings"
+claude-code task "Review embassy-rs GitHub issues and PRs"
+```
+
+#### Weekly Challenges
+```bash
+claude-code challenge week-1 "Implement interrupt-driven UART without DMA"
+claude-code challenge week-2 "Create zero-allocation async task system"
+claude-code challenge week-3 "Build USB bootloader with embassy"
+claude-code challenge week-4 "Implement hardware fault recovery system"
+```
+
+#### Resource Library Setup
+```bash
+claude-code task "Create a personal embassy-rs knowledge base with:
+- Code snippets database
+- Performance benchmarks
+- Hardware quirks documentation
+- Debugging techniques catalog
+- Project templates repository"
+```
+
+### Claude Code Workflow Optimization
+
+#### Iterative Development Pattern
+```bash
+# Initial implementation
+claude-code task "Implement basic GPIO driver for STM32U585"
+
+# Review and improve
+claude-code review "Analyze the GPIO driver for safety and performance"
+
+# Test generation
+claude-code test "Create comprehensive tests for GPIO driver"
+
+# Documentation
+claude-code document "Generate API documentation for GPIO driver"
+
+# Optimization
+claude-code optimize "Optimize GPIO driver for size and speed"
+```
+
+#### Multi-Agent Collaboration
+```bash
+# Use Claude Code's multi-agent capabilities
+claude-code architect "Design system architecture for [project]"
+claude-code implement "Implement the architecture design"
+claude-code review "Review implementation for best practices"
+claude-code test "Create test suite for implementation"
+```
+
+### Success Metrics and Milestones
+
+1. **Week 2**: Successfully blink LED with embassy on Black Pill
+2. **Week 4**: Complete async peripheral drivers suite
+3. **Week 6**: Deploy first production-ready application
+4. **Week 8**: Achieve <100μA sleep current consumption
+5. **Week 10**: Contribute to embassy-rs repository
+
+### Troubleshooting Guide
+
+```bash
+# Common issues and solutions
+claude-code troubleshoot "Embassy executor panics on STM32U585"
+claude-code troubleshoot "DMA transfer corruption with embassy"
+claude-code troubleshoot "USB enumeration fails with embassy-usb"
+claude-code troubleshoot "Hard fault in async interrupt handler"
+```
+
+This comprehensive plan leverages Claude Code's capabilities to accelerate your embassy.rs learning journey while building practical skills for STM32U585 development. The progression from basics to advanced topics ensures a solid foundation while the specific focus on the WeAct Black Pill board provides immediate practical application.
