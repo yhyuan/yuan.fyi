@@ -1,0 +1,281 @@
+---
+title: Comprehensive Guide to Overriding Chrome OS Installing Ubuntu on the ASUS Chromebook Plus CX15 (Intel Jasper Lake Platform)
+date: '2025-11-20'
+tags: ['Ubuntu', 'Chrome OS']
+draft: false
+---
+
+# **Comprehensive Guide to Overriding Chrome OS: Installing Ubuntu on the ASUS Chromebook Plus CX15 (Intel Jasper Lake Platform)**
+
+## **I. Introduction and Pre-Modification Assessment**
+
+The ASUS Chromebook Plus CX15 (CX1505/CX1500 series) represents a generation of ChromeOS devices built on the Intel Jasper Lake platform, featuring processors such as the Celeron N4500. Overriding the native Chrome Operating System with a conventional distribution like Ubuntu requires deep modification of the device’s firmware, moving beyond standard operating system installation procedures. This report details the necessary steps for a full, permanent migration, focusing on complex hardware security bypasses and post-installation driver remediation required for this specific architecture.
+
+### **A. Device Profile, Architecture, and Project Scope**
+
+The ASUS CX15, sometimes referenced by its hardware codenames such as AWADORON or BABYTIGER , is fundamentally a coreboot-based machine secured by Google’s proprietary hardware security chips (CR50 or its successor, Ti50). The native boot process relies on verified boot chains, which are incompatible with standard operating systems that utilize the Unified Extensible Firmware Interface (UEFI).  
+The core of this migration project is the installation of custom coreboot firmware, specifically the UEFI (Full ROM) payload provided by the MrChromebox community. This replacement is essential because it removes the proprietary boot verification steps, allows the installation of a standard OS, and eliminates the persistent Developer Mode warning screen that many users find disruptive. Unlike historical methods which attempted to use a secondary boot path (RW\_LEGACY), the Full ROM flash is the most robust and permanent method for enabling features like Suspend/Resume functionality and Virtual Machine Extensions (VMX), which are often unstable or disabled under the legacy approach.  
+Table 1: ASUS CX15 (Jasper Lake) Hardware and Firmware Summary
+
+| Device Series | Processor/Platform | Approximate Codename | Security Chip (WP) | Required Firmware |
+| :---- | :---- | :---- | :---- | :---- |
+| ASUS Chromebook Plus CX15 (CX1505/CX1500) | Intel Celeron N4500 (Jasper Lake) | AWADORON / BABYTIGER | CR50 / Ti50 | UEFI (Full ROM) |
+
+### **B. Mandatory OS Selection: Ubuntu 24.04 LTS**
+
+The selection of the operating system distribution is critical due to the non-standard hardware components, particularly the audio subsystem. While many Linux distributions can boot via the UEFI firmware, full functionality requires community-developed kernel patches and scripts. Analysis of available driver solutions indicates that the critical chromebook-linux-audio script, essential for enabling internal speakers and microphones, works reliably only with **Ubuntu 24.04 LTS (Noble Numbat) and later versions**. Prior versions (e.g., Ubuntu 22.04) are explicitly noted as not well-supported by this crucial utility, making the newest LTS release mandatory for a fully functional system.
+
+### **C. Critical Risk Assessment and Legal Disclaimer**
+
+The process of replacing the stock firmware on a ChromeOS device carries significant inherent risks. The procedure is unsupported by the device manufacturer and Google.
+
+1. **Permanent Risk (Bricking):** Flashing custom firmware has the potential to render the device permanently unusable, commonly referred to as "bricking". This risk is heightened during the Write Protection disablement and flashing phases.  
+2. **Warranty Status:** Performing this modification, especially by opening the chassis or flashing third-party firmware, will irrevocably void any manufacturer or extended warranties associated with the Chromebook.  
+3. **Data Integrity:** Enabling Developer Mode initiates a full Power Wash, erasing all local user data. The subsequent installation of Ubuntu will also overwrite the internal storage completely. Users must ensure all critical data is backed up before beginning Phase II.
+
+### **D. Technical Checklist of Required Materials**
+
+Before initiating the migration, the following resources must be secured:
+
+* **Hardware:** The ASUS CX15 device and the original OEM charger. A 45W USB-PD charger is required, as the device must boot solely on external power if the battery is disconnected for Write Protection disablement.  
+* **Storage and Tools:**  
+  * One high-quality USB flash drive (8GB minimum) prepared with the Ubuntu 24.04 LTS ISO, configured for UEFI boot.  
+  * A second USB drive for mandatory firmware backup.  
+  * Precision Torx and Phillips driver sets and non-conductive plastic prying tools for potential chassis disassembly.  
+* **Essential Peripherals: Temporary Connectivity:** Because the proprietary internal Wi-Fi adapter (often Realtek) will not function immediately after Ubuntu installation, a temporary means of accessing the internet is necessary to download and install the required community drivers. A USB Ethernet adapter or a reliable external USB Wi-Fi dongle is a mandatory prerequisite.  
+* **Advanced Tooling:** For the most reliable and future-proof Write Protection disablement, a **SuzyQable** (a ChromeOS debug cable) is highly recommended.
+
+## **II. Phase I: Preparing Chrome OS and Establishing Developer Mode**
+
+The initial step involves transitioning the device out of its locked Verified Boot state into Developer Mode, which enables access to the shell environment required for firmware manipulation.
+
+### **A. Initiating Developer Mode**
+
+1. **Enter Recovery Mode:** Power off the device. Simultaneously press and hold the ESC key, the Refresh key (often located where F3 would be), and then tap the Power button. Continue holding ESC and Refresh until the recovery screen appears.  
+2. **Enable Developer Mode:** At the recovery screen, press CTRL \+ D. The user will be prompted to confirm the transition to Developer Mode. This action is irreversible without re-flashing the stock firmware later and will initiate a full system wipe.  
+3. **Wait for Transition:** The device will reboot, erase all data, and configure itself for Developer Mode, a process that can take 15–30 minutes. Upon completion, the device will display a persistent warning screen at every boot.  
+4. **Boot to Chrome OS:** Allow the device to boot fully into the standard Chrome OS environment.
+
+### **B. Accessing the Chrome OS Shell and Preliminary Checks**
+
+Once in Developer Mode, access to the command line interface (shell) is possible, which is the operational environment for firmware modification.
+
+1. **Open the Terminal:** From the Chrome OS desktop, press CTRL \+ ALT \+ T to open the Crosh terminal.  
+2. **Access the Shell:** Type shell and press ENTER. This provides a Linux-like command line prompt.  
+3. **WP Status Verification:** Before proceeding to disable the Write Protection, the user should confirm its status. Run the command:  
+   `crossystem wpsw_cur`  
+   If the device is stock and unmodified, the output will typically be 1, indicating that hardware Write Protection is currently enabled. The goal of the next phase is to change this value to 0\.
+
+## **III. Phase II: Disabling Hardware Write Protection (WP) on CR50/Ti50**
+
+This is the most critical and complex phase, as the security chip (CR50 or Ti50) actively prevents firmware modification. The CX15, being a modern device, uses a proprietary system requiring either physical intervention (battery disconnect) or an advanced debug cable (SuzyQable) to bypass the protection.
+
+### **A. Understanding the CR50/Ti50 Write Protection Mechanism**
+
+Older Chromebooks used a simple screw or jumper to control the hardware Write Protection signal. Newer generations, including the Jasper Lake CX15, delegate this control to the CR50 or Gen2 CR50 (Ti50) security chip. This chip physically holds the WP signal high, preventing the flashrom utility from writing the new firmware. Disabling WP requires breaking the chip’s control, either by disconnecting its power source (the battery) or overriding its commands via a debug interface.  
+The choice of method is important, as the Ti50 chip, often found in 2023+ models, adds a layer of security known as AP RO Firmware Verification. If this verification is not disabled, attempting to flash the Full ROM firmware can lead to a temporary device brick, even if WP is successfully disabled.
+
+### **B. Method A (Physical WP Disable): Battery Disconnection**
+
+This method is the least technically complex but involves the highest physical risk of chassis damage and is less reliable on Ti50-based systems.
+
+1. **Preparation and Disassembly:** Power off the device completely and disconnect the external charger. Open the chassis using precision tools. New Chromebooks often use the battery sense line to control WP.  
+2. **Disconnect the Battery:** Locate the battery connector on the mainboard. Using non-conductive plastic tools, carefully and gently disconnect the battery ribbon from the mainboard. This cuts the power supply that enables the WP signal.  
+3. **Boot on External Power:** Reassemble the case lid (without screws for now) and connect the original OEM charger (45W minimum). The device must now run solely on external power.  
+4. **Execute WP Disable:** Boot the device back into Developer Mode. Access the shell (CTRL \+ ALT \+ T, then shell). Since the hardware WP is now disabled, the software utility can be used to set the software WP status to disabled.  
+   `sudo sh`  
+   `flashrom --wp-disable`
+
+5. **Verification:** Run the status check commands:  
+   `flashrom --wp-status`  
+   `crossystem wpsw_cur`  
+   The output should confirm WP is disabled (0). If the status remains enabled, the device likely requires the advanced CCD method.  
+6. **Reassembly:** If successful, proceed to Phase IV. If unsuccessful, power off, remove external power, carefully reconnect the battery, and transition immediately to Method B.
+
+### **C. Method B (Advanced WP Disable): Closed Case Debugging (CCD) via SuzyQable**
+
+This approach, while requiring specialized hardware (the SuzyQable), is mandatory for devices utilizing the advanced security features of the Ti50 chip and is the most reliable method for all modern Jasper Lake Chromebooks.
+
+#### **Step 1: Enabling CCD Access**
+
+CCD allows external communication with the security chip via the USB-C debug port (typically the upper-left port).
+
+1. **Enter Developer Mode:** Ensure the device is powered on and logged in to the Developer Mode screen.  
+2. **Open VT-2 Terminal:** Press CTRL \+ ALT \+ F2 (F2 corresponds to the right arrow key on the top row) to switch to the VT-2 console.  
+3. **Log in:** Log in as root.  
+4. **Start CCD Opening Procedure:** Execute the command to open CCD access:  
+   `gsctool -a -o`
+
+5. **Physical Presence (PP) Confirmation:** The system will prompt the user to press the Physical Presence button (the power button) several times over a 2–3 minute window to confirm device ownership. Follow the prompts until the message PP Done\! appears. The device will then reboot into Verified Boot Mode.  
+6. **Re-enable Developer Mode:** Repeat the CTRL \+ D sequence to return the device to the Developer Mode login screen, which is necessary for the next step.
+
+#### **Step 2: Disabling WP and Bypassing Ti50 RO Verification**
+
+The second step uses the open CCD connection to issue commands that permanently disable hardware write protection and disable the robust security features of the Ti50 chip.
+
+1. **Access Root Terminal:** Return to the VT-2 console (CTRL \+ ALT \+ F2) and log in as root.  
+2. **Connect and Verify SuzyQable:** Plug the USB-C end of the SuzyQable into the debug port on the Chromebook and the USB-A end into a host computer or a loopback adapter (if supported). Verify the connection by running:  
+   `ls /dev/ttyUSB*`  
+   Successful connection will show three entries: ttyUSB0, ttyUSB1, and ttyUSB2. If not, try reversing the USB-C orientation or using the alternative USB-C port.  
+3. **Disable Hardware WP:** Issue the WP disable commands via the primary debug port device (ttyUSB0):  
+   `echo "wp false" > /dev/ttyUSB0`  
+   `echo "wp false atboot" > /dev/ttyUSB0`
+
+4. **Ti50 AP RO Verification Bypass (Critical Step):** For devices utilizing the Ti50 security chip (which verifies the RO firmware upon boot), a mandatory command must be executed to prevent a temporary brick when flashing the custom firmware. This command resets the CCD flags to factory defaults, crucially setting AllowUnverifiedRo to always:  
+   `echo "ccd reset factory" > /dev/ttyUSB0`
+
+5. **Final Verification:** Verify that the write protection is disabled and that factory CCD values are set:  
+   * Run crossystem wpsw\_cur. The output must be 0\.  
+   * Run gsctool \-a \-I. All CCD flags should indicate Y/Always.  
+6. **Reboot:** Reboot the device to prepare for the firmware flash.
+
+Table 2: Firmware Write Protection Disablement Methods
+
+| WP Disablement Method | Requirement | Complexity | WP Verification Command | Risk/Caveat |
+| :---- | :---- | :---- | :---- | :---- |
+| Physical Battery Disconnect | Screwdriver, Non-conductive tool, OEM Charger | Moderate | crossystem wpsw\_cur \= 0 | May fail on Gen2 (Ti50) chips; requires case opening. |
+| CCD via SuzyQable | SuzyQable debug cable, Advanced terminal commands | High | crossystem wpsw\_cur \= 0 | Mandatory for Ti50 AP RO verification bypass; requires specialized cable. |
+
+## **IV. Phase III: Flashing the Custom UEFI Firmware (Full ROM)**
+
+With the hardware Write Protection disabled, the device is ready to accept the custom coreboot firmware which contains the Tianocore UEFI payload. This allows the system to recognize and boot a standard Linux distribution from a USB drive.
+
+### **A. Execution of the MrChromebox Utility Script**
+
+The flashing process is streamlined using the MrChromebox Firmware Utility Script, executed from the Chrome OS shell.
+
+1. **Access the Shell:** Boot the device and access the Chrome OS shell (CTRL \+ ALT \+ T, then shell).  
+2. **Execute the Script:** Run the combined command that downloads and executes the utility script. Note that if running this from a live Linux environment, the curl application must be installed first (sudo apt install \-y curl). Assuming execution within the Chrome OS shell:  
+   `cd; curl -LOf mrchromebox.tech/firmware-util.sh && sudo bash firmware-util.sh`
+
+3. **Selection and Backup:** When the menu appears, select **Option 1: Install/Update UEFI (Full ROM) Firmware**. The script will prompt the user to create a backup of the stock firmware. This step is critically important. The backup must be stored on a separate, reliable external medium (USB drive) as it is the only viable path for recovery should the Full ROM flash fail catastrophically or if the user ever intends to return to stock Chrome OS.  
+4. **Flashing Process:** Confirm the flashing process. The script will use flashrom to write the new firmware image to the SPI flash chip. This process takes a few minutes.  
+5. **Post-Flash Reboot:** Upon successful completion, the script will prompt a reboot. The device will now boot directly into the coreboot splash screen instead of the standard Chrome OS developer warning. This indicates the firmware replacement was successful.
+
+### **B. Post-Flash Verification and Boot Preparation**
+
+After the reboot, the system is now a standard UEFI device, ready to boot external media. The previous Developer Mode security screen is permanently bypassed.
+
+1. **Accessing UEFI:** Immediately upon reboot, use the device’s specific UEFI boot key (this is often F2, ESC, or F10, depending on the coreboot build) to access the boot menu.  
+2. **Verify UEFI Environment:** Confirm the presence of a standard UEFI environment, which recognizes the internal storage and USB ports. This confirms the Full ROM integrity.
+
+## **V. Phase IV: Ubuntu 24.04 LTS Installation**
+
+The device is now architecturally prepared for a standard Linux installation. The primary challenge in this phase is preventing installer instability caused by conflicts between the initial Linux kernel and proprietary Chromebook drivers.
+
+### **A. Creating the UEFI-Compatible Ubuntu Live USB**
+
+The Ubuntu installation media must be prepared for standard UEFI booting. Using a tool like Rufus or Etcher on an external PC ensures the 24.04 LTS ISO image is correctly written to the USB drive, configured specifically for GPT partitioning and UEFI mode.
+
+### **B. Booting the Installer and Initial Setup**
+
+1. **Boot from USB:** Insert the prepared Ubuntu USB drive. Use the appropriate UEFI boot menu key (as determined in Section IV-B) to select the USB drive as the boot device.  
+2. **Start Installation:** Select the option to "Try or Install Ubuntu" from the GRUB menu. The system should load into the live environment.
+
+### **C. Critical Installation Phase Guidance and Troubleshooting**
+
+During the installation process, a common failure point for Jasper Lake-based Chromebooks is encountered during the "Preparing to install Ubuntu" step.
+
+#### **The Wi-Fi/Third-Party Driver Pitfall**
+
+It is documented that selecting the option **"Install third-party software for graphics and Wi-Fi hardware" will cause the Ubuntu installer to crash or hang indefinitely** on many Chromebook models.  
+The underlying mechanism for this crash is the attempt by the installer to configure proprietary drivers (often Realtek or similar components) for which the initial Linux kernel lacks stable, pre-packaged support. This incompatibility leads to a kernel failure within the installer environment.  
+**Mandatory Mitigation Strategy:** When prompted during installation, the user **must deselect** the option to install third-party software. The correct procedure is to perform a minimal, stable installation and then manually patch the necessary drivers post-installation, once a stable environment is established.
+
+#### **Partitioning and Completion**
+
+1. **Storage Selection:** Select the option **"Erase disk and install Ubuntu."** Since the Full ROM firmware has been flashed, the proprietary Chrome OS partitions are no longer recognized as bootable, simplifying the partitioning scheme to a clean, standard UEFI setup.  
+2. **Proceed:** Complete the remaining localization and user creation steps.  
+3. **Final Reboot:** After installation is complete, the installer will prompt for a reboot. Remove the USB drive. The system will boot directly into the newly installed Ubuntu 24.04 LTS.
+
+## **VI. Phase V: Comprehensive Post-Installation Driver and Functionality Fixes**
+
+Upon first boot into Ubuntu, the system will likely lack functional audio and internal Wi-Fi, which is characteristic of ChromeOS hardware migration. These components require specialized community-maintained driver packages and configurations.
+
+### **A. Establishing Temporary Connectivity**
+
+The successful installation mandated skipping proprietary driver installation, which means the internal Wi-Fi adapter is non-functional. Before any drivers can be fixed, temporary connectivity must be established using the required USB Ethernet adapter or external Wi-Fi dongle, allowing the system to download the necessary packages.
+
+### **B. Addressing Realtek Wi-Fi Adapter Failures**
+
+The ASUS CX15, like many modern portable devices, often utilizes Realtek chipsets (e.g., RTL8852BE) for Wi-Fi. Standard Linux kernels often do not include native support for these specific, recent models, leading to failure to recognize the adapter.  
+The necessary driver series is rtw89, which must be installed manually via a community Personal Package Archive (PPA).
+
+1. **Diagnosis:** Confirm the presence of a Realtek chipset using the terminal:  
+   `lspci`  
+   `lsusb`  
+   The output should list "Realtek" or "RTL" devices.  
+2. **System Update:** Ensure the system is updated using the temporary connection:  
+   `sudo apt update`  
+   `sudo apt upgrade`
+
+3. **Add PPA and Update:** Add the PPA containing the necessary drivers:  
+   `sudo add-apt-repository ppa:kelebek333/kablosuz`  
+   `sudo apt update`
+
+4. **Install Driver:** Install the driver package specific to the expected Jasper Lake Realtek chip:  
+   `sudo apt install rtw89_8851be`
+
+5. **Verification:** Reboot the system (sudo reboot). Upon logging back in, the internal Wi-Fi adapter should be recognized, scan networks, and connect successfully.
+
+### **C. Solving the Intel SST Audio/Microphone Issue**
+
+Chromebooks rely on complex vendor-specific configurations for the Intel Smart Sound Technology (SST) audio chip, which standard Ubuntu kernel modules fail to initialize correctly. This issue is resolved using the chromebook-linux-audio script maintained by the community.
+
+1. **Install Git:** Ensure the Git version control system is installed to clone the repository:  
+   `sudo apt install git`
+
+2. **Clone the Repository:** Clone the audio fix script repository:  
+   `git clone https://github.com/WeirdTreeThing/chromebook-linux-audio`
+
+3. **Execute Setup Script:** Navigate into the cloned directory and run the setup script. This script applies kernel configuration patches and firmware blobs specific to Chromebook audio hardware:  
+   `cd chromebook-linux-audio`
+
+./setup-audio \`\`\` 4\. **Verification:** Reboot the device. Check the Sound Settings menu to confirm that the internal speakers and microphone are now recognized and producing sound.  
+Table 3: Critical Post-Installation Driver Fixes (Ubuntu 24.04)
+
+| *Hardware Component* | Expected Issue | Required Fix | Key Terminal Command |
+| :---- | :---- | :---- | :---- |
+| Audio (Speakers/Mic) | No sound output (Intel SST configuration missing) | chromebook-linux-audio script | ./setup-audio (after cloning Git repository) |
+| Wi-Fi Adapter | Realtek RTL8852BE not detected | Manual rtw89 driver installation via PPA | sudo apt install rtw89\_8851be (after adding PPA) |
+| OS Installer Stability | Installer crash/hang during setup | Deselect "Install third-party software" option | N/A (Pre-installation setting) |
+
+### **D. Optimizing Trackpad and Input Performance**
+
+While the core functionality of the trackpad is often handled adequately by modern Linux kernels (such as those in Ubuntu 24.04), advanced multi-finger gestures or precise scrolling may sometimes be lacking due to the proprietary nature of the input hardware. If basic functionality is present but precision is missing, the issue is typically resolved through fine-tuning user settings within the desktop environment or manually configuring libinput parameters. In rare cases where low-level device access is restricted, advanced kernel parameters, such as appending iomem=relaxed to the GRUB configuration, can sometimes resolve deep-seated conflicts by loosening security measures that block direct device memory access.
+
+## **VII. Advanced Troubleshooting and Security Measures**
+
+### **A. Recovering from Installation and Boot Errors**
+
+Even after a successful flash and installation, kernel updates or configuration changes can sometimes lead to system instability, manifesting as kernel panics or failure to boot.
+
+1. **Accessing the GRUB Menu:** If the system fails to boot after an update, press and hold the Shift key immediately after the coreboot splash screen disappears (or sometimes the ESC key on UEFI systems) to access the GNU GRUB menu.  
+2. **Selecting an Older Kernel:** From the GRUB menu, navigate to "Advanced options for Ubuntu" and select a previous, stable kernel version. Booting a stable kernel allows the system to operate long enough to diagnose the issue.  
+3. **Purging Problematic Kernels:** Once booted, the unstable kernel must be removed. Identify the problematic kernel version using dpkg \-l | grep "linux-\[a-z\]\*-". Then, use the command to purge the kernel, replacing \<latest-kernel-version-number\> with the identified failing version:  
+   `sudo apt-get purge <latest-kernel-version-number>`  
+   `sudo update-grub`  
+   This removes the corrupt kernel and updates the boot configuration, restoring stability upon the next reboot.
+
+### **B. Re-enabling Hardware Write Protection (Security Practice)**
+
+After the firmware replacement is complete, security-conscious users may choose to re-enable the hardware Write Protection feature. This prevents unauthorized modification of the core firmware in the future but reinstates the barrier that must be overcome for any subsequent firmware updates.  
+To reverse the process, the user must follow the inverse steps of Phase II:
+
+* **If Method A was used (Battery Disconnect):** Power off the device, remove the charger, open the chassis, and meticulously reconnect the battery connector to the mainboard.  
+* **If Method B was used (CCD):** The user must utilize the SuzyQable and the gsctool utility to reissue the "wp true" command, followed by relocking the CCD state if desired.
+
+## **VIII. Conclusion and Recommendations**
+
+The migration of the ASUS Chromebook Plus CX15 to Ubuntu 24.04 LTS is a viable but highly technical endeavor, requiring meticulous attention to security chip bypasses and post-installation driver dependencies. The fundamental challenge lies in transitioning a highly secured, proprietary coreboot system into a conventional UEFI environment.  
+The successful methodology relies on three key procedural deviations from standard PC installation practices:
+
+1. **Comprehensive WP Bypass:** The user must be prepared to execute the complex Closed Case Debugging (CCD) procedure with a SuzyQable, as newer Jasper Lake models may mandate this approach to successfully bypass AP RO Firmware Verification enforced by the Ti50 security chip. Relying solely on the physical battery disconnect is a riskier, potentially non-viable strategy for modern Chromebooks.  
+2. **Installation Isolation:** Avoiding the installation of third-party drivers during the Ubuntu setup is essential to prevent system crashes caused by immature driver support for the proprietary Realtek Wi-Fi hardware.  
+3. **Staged Driver Remediation:** The immediate post-installation period necessitates external connectivity to manually patch the Wi-Fi and audio functionality using specialized community resources (the rtw89 PPA for Wi-Fi and the chromebook-linux-audio script for sound).
+
+The report confirms that by meticulously following the outlined multi-phase approach—from firmware override to driver patching—a fully functional Ubuntu 24.04 LTS installation can be achieved on the ASUS CX15 platform, resulting in a stable, general-purpose computing environment.
+
+#### **引用的文献**
+
+1\. ASUS Chromebook CX15 | Chromebook Laptop | ASUS Global, https://www.asus.com/us/laptops/for-home/chromebook/asus-chromebook-cx15-cx1505/ 2\. Supported Devices | MrChromebox.tech, https://docs.mrchromebox.tech/docs/supported-devices.html 3\. Updating MrChromebox Custom Firmware, https://docs.mrchromebox.tech/docs/firmware/updating-firmware.html 4\. Chrome OS devices/Custom firmware \- ArchWiki, https://wiki.archlinux.org/title/Chrome\_OS\_devices/Custom\_firmware 5\. sound \- How to install Chromebook audio drivers in Ubuntu? \- Ask ..., https://askubuntu.com/questions/1486278/how-to-install-chromebook-audio-drivers-in-ubuntu 6\. How to (actually) install a Linux operating system on a Chromebook \- Reddit, https://www.reddit.com/r/linux/comments/1nc1jui/how\_to\_actually\_install\_a\_linux\_operating\_system/ 7\. Ubuntu 24.04 LTS installation doesn't recognize wifi adapter after installation, https://askubuntu.com/questions/1546466/ubuntu-24-04-lts-installation-doesnt-recognize-wifi-adapter-after-installation 8\. Disabling Firmware Write Protection | MrChromebox.tech, https://docs.mrchromebox.tech/docs/firmware/wp/disabling.html 9\. Where is the hardware write protection screw in an Asus CX1 Chromebook? \- Super User, https://superuser.com/questions/1705583/where-is-the-hardware-write-protection-screw-in-an-asus-cx1-chromebook 10\. How to disable write protect on Chromebook . \- YouTube, https://www.youtube.com/watch?v=pNW8vCzNhOE 11\. Ubuntu 20.04 Installer crashed, https://askubuntu.com/questions/1251514/ubuntu-20-04-installer-crashed 12\. Asus CX1500CNA Installation Issues \- Linux Support \- Chromebook to Ultrabook, https://forum.chrultrabook.com/t/asus-cx1500cna-installation-issues/5698 13\. HP Omen 17 \+ Ubuntu 22.04 \+ RTL8852BE WiFi issue \- HP Support Community \- 9471472, https://h30434.www3.hp.com/t5/Notebook-Software-and-How-To-Questions/HP-Omen-17-Ubuntu-22-04-RTL8852BE-WiFi-issue/td-p/9471472 14\. Use your Chromebook touchpad \- Google Help, https://support.google.com/chromebook/answer/1047367?hl=en 15\. Ubuntu won't boot \- kernel error?, https://askubuntu.com/questions/955020/ubuntu-wont-boot-kernel-error 16\. Help with kernel error after upgrading my Ubuntu : r/linux4noobs \- Reddit, https://www.reddit.com/r/linux4noobs/comments/1n0h9k6/help\_with\_kernel\_error\_after\_upgrading\_my\_ubuntu/

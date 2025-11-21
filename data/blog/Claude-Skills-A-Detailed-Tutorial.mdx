@@ -1,0 +1,224 @@
+---
+title: Claude Skills A Detailed Tutorial
+date: '2025-11-20'
+tags: ['Claude']
+draft: false
+---
+
+# Claude Skills: A Detailed Tutorial
+
+## What Are Claude Skills?
+
+Claude Skills are specialized knowledge modules that enhance my abilities in specific domains. Think of them as expert "playbooks" - curated sets of best practices, techniques, and workflows that I can access when working on particular types of tasks.
+
+When you ask me to create a document, presentation, spreadsheet, or work with specialized tools, I can read the relevant skill documentation to apply proven techniques and avoid common pitfalls.
+
+## How Skills Work
+
+Skills are stored as markdown files (SKILL.md) in specific directories:
+- **Public Skills** (`/mnt/skills/public/`): Core capabilities available to everyone
+- **Example Skills** (`/mnt/skills/examples/`): Additional specialized skills
+- **User Skills** (`/mnt/skills/user/`): Custom skills you can create yourself
+
+When I encounter a task, I:
+1. **Identify** which skill(s) are relevant
+2. **Read** the SKILL.md file(s) before starting work
+3. **Apply** the best practices and techniques documented in the skill
+4. **Execute** the task with enhanced quality and accuracy
+
+---
+
+## Available Built-in Skills
+
+### 📄 **docx** - Word Documents
+**Location:** `/mnt/skills/public/docx/SKILL.md`
+
+**Use for:**
+- Creating professional documents
+- Editing existing .docx files
+- Working with tracked changes and comments
+- Preserving formatting
+- Text extraction and analysis
+
+**Example scenario:** "Create a technical specification document for our new API"
+
+---
+
+### 📊 **pptx** - Presentations
+**Location:** `/mnt/skills/public/pptx/SKILL.md`
+
+**Use for:**
+- Creating presentations from scratch
+- Modifying slide layouts
+- Adding speaker notes and comments
+- Professional formatting and design
+
+**Example scenario:** "Make a presentation about React performance optimization with 10 slides"
+
+---
+
+### 📈 **xlsx** - Spreadsheets
+**Location:** `/mnt/skills/public/xlsx/SKILL.md`
+
+**Use for:**
+- Creating spreadsheets with formulas
+- Data analysis and visualization
+- Reading/analyzing CSV and Excel files
+- Preserving and recalculating formulas
+- Advanced formatting
+
+**Example scenario:** "Create a budget tracker with formulas for monthly expenses"
+
+---
+
+### 📑 **pdf** - PDF Manipulation
+**Location:** `/mnt/skills/public/pdf/SKILL.md`
+
+**Use for:**
+- Extracting text and tables from PDFs
+- Creating new PDFs programmatically
+- Filling PDF forms
+- Merging/splitting documents
+- Large-scale PDF processing
+
+**Example scenario:** "Fill out this job application PDF form with my information"
+
+---
+
+### 🛠️ **skill-creator** - Creating Custom Skills
+**Location:** `/mnt/skills/public/skill-creator/SKILL.md`
+
+**Use for:**
+- Designing your own skills
+- Extending Claude's capabilities
+- Creating specialized workflows
+- Building domain-specific knowledge bases
+
+**Example scenario:** "Create a skill for my company's code review process"
+
+---
+
+### 📚 **product-self-knowledge** - Anthropic Products
+**Location:** `/mnt/skills/public/product-self-knowledge/SKILL.md`
+
+**Use for:**
+- Accurate information about Claude products
+- API documentation guidance
+- Feature capabilities and limits
+- Pricing and access information
+
+**Example scenario:** "How do I use Claude Code from the terminal?"
+
+---
+
+## Practical Examples
+
+### Example 1: Creating a Presentation
+
+**Your request:** "Create a presentation about Bitcoin cold wallet security"
+
+**What happens behind the scenes:**
+```
+1. I identify this needs the pptx skill
+2. I read /mnt/skills/public/pptx/SKILL.md
+3. I learn best practices for:
+   - Slide layouts and structure
+   - Content hierarchy
+   - Visual design principles
+   - Common pitfalls to avoid
+4. I create the presentation applying these techniques
+5. I save it to /mnt/user-data/outputs/bitcoin-security.pptx
+```
+
+### Example 2: Working with Spreadsheets
+
+**Your request:** "Analyze this sales data CSV and create charts"
+
+**Behind the scenes:**
+```
+1. I read /mnt/skills/public/xlsx/SKILL.md
+2. I learn optimal approaches for:
+   - Reading CSV files
+   - Creating formulas
+   - Data visualization techniques
+   - Chart types and when to use them
+3. I process your data with best practices
+4. I create an Excel file with analysis and charts
+```
+
+### Example 3: Creating a Custom Skill
+
+**Your request:** "Create a skill for reviewing STM32 embedded systems code"
+
+**Process:**
+```
+1. I read /mnt/skills/public/skill-creator/SKILL.md
+2. I learn how to structure a skill properly
+3. I create a custom skill with:
+   - Domain-specific knowledge (STM32 best practices)
+   - Common pitfalls to check for
+   - Code review checklists
+   - Testing approaches
+4. I save it to /mnt/skills/user/stm32-review/SKILL.md
+```
+
+---
+
+## Why Skills Matter
+
+### ✅ **Higher Quality Output**
+Skills contain lessons learned from extensive testing and iteration.
+
+### ✅ **Consistency**
+The same high-quality approach is applied every time.
+
+### ✅ **Efficiency**
+I don't need to rediscover best practices for each task.
+
+### ✅ **Customization**
+You can create skills specific to your workflows and domain expertise.
+
+---
+
+## Creating Your Own Skills
+
+You can create custom skills for your specific needs! Here's a simple template:
+
+```markdown
+# Skill Name
+
+## Purpose
+What this skill helps accomplish
+
+## When to Use
+Specific triggers and scenarios
+
+## Best Practices
+- Key principle 1
+- Key principle 2
+- Common pitfalls to avoid
+
+## Examples
+Concrete examples of using this skill
+
+## Tools & Techniques
+Specific methods and approaches
+```
+
+**Want to create a custom skill?** Just ask me something like:
+- "Create a skill for reviewing React TypeScript code"
+- "Make a skill for our company's technical documentation standards"
+- "Design a skill for STM32 embedded systems development"
+
+---
+
+## Try It Out!
+
+Want to see skills in action? Try any of these:
+
+1. **"Create a PowerPoint about React hooks with 5 slides"** (uses pptx skill)
+2. **"Make a budget spreadsheet with formulas for tracking expenses"** (uses xlsx skill)
+3. **"Create a technical spec document for a REST API"** (uses docx skill)
+4. **"Design a custom skill for reviewing Rust code"** (uses skill-creator skill)
+
+The difference will be in the quality, structure, and professional polish of the output!

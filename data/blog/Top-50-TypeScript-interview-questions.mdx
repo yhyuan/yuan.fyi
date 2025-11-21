@@ -1,0 +1,118 @@
+---
+title: Top 50 TypeScript interview questions
+date: '2025-11-20'
+tags: ['Interview']
+draft: false
+---
+
+## Fundamental Type System (Questions 1-10)
+
+1. **Explain the difference between `type` and `interface` in TypeScript. When would you use one over the other?** This tests understanding of declaration merging, computed properties, and the practical implications of each approach.
+
+2. **What is structural typing in TypeScript, and how does it differ from nominal typing?** Understanding this concept is crucial for grasping why TypeScript allows certain assignments that might seem surprising.
+
+3. **Explain the `unknown` type and how it differs from `any`. Why was `unknown` introduced?** This reveals whether a candidate understands type safety and the progression of TypeScript's type system.
+
+4. **What is type narrowing, and what are the different ways to narrow types in TypeScript?** This covers type guards, discriminated unions, and control flow analysis.
+
+5. **Explain the difference between `never` and `void`. Provide use cases for the `never` type.** Understanding these utility types shows comprehension of TypeScript's type algebra.
+
+6. **What are union types and intersection types? Explain with examples where each would be most appropriate.** This tests fundamental understanding of type composition.
+
+7. **Describe the difference between `enum` and `const enum`. What are the runtime implications of each?** This reveals understanding of how TypeScript compiles to JavaScript.
+
+8. **What is type assertion in TypeScript? What's the difference between `as` and angle bracket `<>` syntax, and when should you avoid type assertions?** This tests whether candidates understand the dangers of type assertions.
+
+9. **Explain what index signatures are and their limitations. How do they differ from mapped types?** This reveals understanding of dynamic property access and type system constraints.
+
+10. **What is the purpose of the `readonly` modifier? How does it differ from `const`?** This tests understanding of immutability at the type level versus runtime.
+
+## Advanced Types and Generics (Questions 11-20)
+
+11. **Explain what generic constraints are and provide a real-world example where they solve a specific problem.** This tests practical application of generics beyond simple container types.
+
+12. **What are conditional types in TypeScript? Explain the `T extends U ? X : Y` syntax and provide an example.** Understanding conditional types is essential for advanced TypeScript usage.
+
+13. **Explain the `infer` keyword in conditional types. How would you use it to extract the return type of a function?** This is a common advanced interview question that tests deep type system knowledge.
+
+14. **What are template literal types, and how can they be used to create more precise types?** This tests knowledge of TypeScript 4.1+ features and string manipulation at the type level.
+
+15. **Explain what mapped types are and how they work. Implement a simple version of the `Partial` utility type.** This reveals understanding of type transformations.
+
+16. **What is the difference between covariance, contravariance, and invariance in TypeScript? How does this apply to function parameters?** This is an advanced question that separates senior developers from others.
+
+17. **Explain what distributive conditional types are. Why does `T extends U ? X : Y` distribute over union types?** This tests deep understanding of how TypeScript's type system processes unions.
+
+18. **How do you create a type-safe event emitter using generics?** This is a practical question that tests ability to apply generics to real-world patterns.
+
+19. **What are higher-order types, and how would you implement a `Curry` type that represents a curried function?** This tests advanced generic manipulation skills.
+
+20. **Explain what recursive types are and provide an example of when you'd use them, such as representing a nested tree structure.** Understanding recursive types is crucial for complex data structures.
+
+## Utility Types and Type Manipulation (Questions 21-30)
+
+21. **Implement the `Pick` and `Omit` utility types from scratch. Explain how they work internally.** This tests understanding of mapped types and keyof operators.
+
+22. **What is the `keyof` operator, and how does it relate to `typeof`? Provide examples of using them together.** This reveals understanding of type queries and index access.
+
+23. **Explain the `ReturnType` and `Parameters` utility types. How would you implement them?** This tests knowledge of conditional types and the infer keyword.
+
+24. **What is the difference between `Record<K, V>` and an index signature? When would you prefer one over the other?** This tests practical understanding of object type construction.
+
+25. **Implement a `DeepReadonly` type that makes all properties readonly recursively, including nested objects and arrays.** This is a challenging question that tests advanced mapped type and conditional type skills.
+
+26. **How would you create a type that represents all possible paths through an object as string literal types?** This tests ability to work with template literal types and recursive types together.
+
+27. **Explain the `Exclude`, `Extract`, and `NonNullable` utility types. Implement one from scratch.** This tests understanding of conditional types and type filtering.
+
+28. **What is the `Awaited` utility type, and why is it useful for working with promises?** This tests understanding of modern TypeScript features for async operations.
+
+29. **How would you create a type that makes specific properties required while keeping others optional?** This tests ability to combine utility types creatively.
+
+30. **Implement a `UnionToIntersection` type. Explain how it works using contravariance.** This is a very advanced question that tests deep type system knowledge.
+
+## Practical Application and Patterns (Questions 31-40)
+
+31. **How do you implement a builder pattern in TypeScript that ensures required properties are set before building?** This tests ability to use the type system for API design.
+
+32. **Explain how to use TypeScript with React: What are the differences between `FC`, `ReactElement`, `ReactNode`, and `JSX.Element`?** Since you work with React, this is directly relevant.
+
+33. **How do you type a higher-order component (HOC) in TypeScript?** This tests understanding of generics and React patterns together.
+
+34. **What are discriminated unions, and how do they enable exhaustive type checking with switch statements?** This is a crucial pattern for type-safe state machines.
+
+35. **How would you implement type-safe Redux actions and reducers?** This tests practical application of union types and type narrowing.
+
+36. **Explain how to create a type-safe API client where endpoints are strongly typed based on a schema.** This tests ability to apply TypeScript to real-world architectural challenges.
+
+37. **How do you handle branded types (nominal typing) in TypeScript's structural type system?** This reveals advanced techniques for creating distinct types.
+
+38. **What strategies can you use to type third-party libraries that don't have type definitions?** This tests practical experience with the TypeScript ecosystem.
+
+39. **How do you implement dependency injection in TypeScript while maintaining type safety?** This tests understanding of advanced patterns and generics.
+
+40. **Explain how to use TypeScript's type system to prevent invalid state representations (making impossible states impossible).** This is a key principle of type-safe design.
+
+## Configuration, Tooling, and Best Practices (Questions 41-50)
+
+41. **Explain the most important `tsconfig.json` options: `strict`, `strictNullChecks`, `noImplicitAny`, `strictFunctionTypes`. What does each enforce?** This tests understanding of type safety configurations.
+
+42. **What is the difference between `module` and `target` in tsconfig? How do they affect compilation?** This reveals understanding of TypeScript compilation and JavaScript ecosystem.
+
+43. **Explain the `paths` and `baseUrl` options in tsconfig. How do they help with module resolution?** This tests practical project configuration knowledge.
+
+44. **What are declaration files (`.d.ts`), and when would you create them manually?** This tests understanding of type declarations and the TypeScript compilation model.
+
+45. **Explain the `declare` keyword and its use cases, including ambient declarations and global augmentation.** This tests knowledge of advanced declaration patterns.
+
+46. **How does TypeScript handle module augmentation and declaration merging? Provide examples.** This is important for extending third-party types.
+
+47. **What are the performance implications of using complex types? How can you optimize TypeScript compilation speed?** This tests experience with large codebases and practical challenges.
+
+48. **Explain the `satisfies` operator introduced in TypeScript 4.9. How does it differ from type assertions?** This tests knowledge of recent TypeScript features.
+
+49. **What are some common TypeScript anti-patterns, and how would you refactor them?** This reveals practical experience and understanding of best practices.
+
+50. **How do you approach migrating a large JavaScript codebase to TypeScript? What strategies would you use to minimize disruption?** This tests real-world experience and architectural thinking.
+
+These questions cover the full spectrum from fundamentals to expert-level TypeScript knowledge, touching on theoretical understanding, practical application, and real-world scenarios you'd encounter in production codebases.

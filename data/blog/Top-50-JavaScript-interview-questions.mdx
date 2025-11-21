@@ -1,0 +1,187 @@
+---
+title: Top 50 JavaScript interview questions
+date: '2025-11-20'
+tags: ['Interview']
+draft: false
+---
+
+## Fundamental Concepts (Questions 1-10)
+
+1. **Explain the difference between `var`, `let`, and `const`. What is the Temporal Dead Zone (TDZ)?** This tests understanding of scoping, hoisting, and modern JavaScript fundamentals.
+
+2. **What are the different data types in JavaScript? Explain the difference between primitive types and reference types.** This reveals understanding of how JavaScript handles values in memory.
+
+3. **Explain type coercion in JavaScript. What's the difference between `==` and `===`?** Understanding coercion is crucial for avoiding subtle bugs and predicting behavior.
+
+4. **What is the difference between `null` and `undefined`? When does JavaScript automatically assign each?** This tests knowledge of JavaScript's type system quirks.
+
+5. **Explain how JavaScript's dynamic typing works. What are the implications for runtime behavior?** This tests understanding of JavaScript's fundamental nature.
+
+6. **What is "hoisting" in JavaScript? How does it work differently for `var`, `let`, `const`, and function declarations?** Understanding hoisting is essential for predicting execution order.
+
+7. **Explain the concept of "truthy" and "falsy" values. List all falsy values in JavaScript.** This is fundamental for understanding conditional logic.
+
+8. **What is the difference between function declarations and function expressions? Include arrow functions in your explanation.** This tests understanding of function behavior and scope.
+
+9. **Explain how `this` binding works in JavaScript. What are the different ways `this` can be bound?** This is one of the most confusing aspects of JavaScript and a common interview topic.
+
+10. **What is strict mode (`'use strict'`), and what are its benefits? How does it change JavaScript behavior?** This tests awareness of JavaScript execution modes and best practices.
+
+## Closures and Scope (Questions 11-15)
+
+11. **What is a closure? Provide a practical example where closures solve a real problem.** Understanding closures is fundamental to JavaScript mastery.
+
+12. **Explain lexical scoping and how it relates to closures. What is the scope chain?** This tests deeper understanding of how JavaScript resolves variables.
+
+13. **What are common pitfalls with closures, particularly in loops? How would you fix this classic problem?**
+```javascript
+for (var i = 0; i < 5; i++) {
+  setTimeout(() => console.log(i), 100);
+}
+```
+This tests practical closure knowledge and debugging skills.
+
+14. **How do closures relate to memory management? Can closures cause memory leaks?** This reveals understanding of JavaScript memory model and practical implications.
+
+15. **Explain how immediately invoked function expressions (IIFEs) work and why they were commonly used before ES6.** This tests historical JavaScript knowledge and understanding of scope isolation.
+
+## Objects and Prototypes (Questions 16-23)
+
+16. **Explain JavaScript's prototypal inheritance model. How does it differ from classical inheritance?** This is fundamental to understanding JavaScript's object model.
+
+17. **What is the prototype chain? How does JavaScript resolve property lookups?** This tests deep understanding of how inheritance works internally.
+
+18. **Explain the difference between `__proto__` and `prototype`. When would you use each?** This is a common source of confusion that separates those who truly understand prototypes.
+
+19. **What are the different ways to create objects in JavaScript? Compare object literals, constructor functions, `Object.create()`, and ES6 classes.** This tests breadth of knowledge about object creation patterns.
+
+20. **How do you implement inheritance in JavaScript using prototypes? How does this compare to ES6 class syntax?** This tests practical knowledge of inheritance patterns.
+
+21. **What is the difference between "own properties" and "inherited properties"? How do you check for each?** This tests understanding of property enumeration and inheritance.
+
+22. **Explain `Object.create()`, `Object.assign()`, and the spread operator for object cloning. What are the differences in shallow vs deep copying?** This tests understanding of object manipulation and common pitfalls.
+
+23. **What are getters and setters? How do you define them using `Object.defineProperty()` and in ES6 class syntax?** This tests knowledge of property descriptors and encapsulation.
+
+## Asynchronous JavaScript (Questions 24-33)
+
+24. **Explain the JavaScript event loop. How do the call stack, task queue, and microtask queue interact?** This is crucial for understanding async behavior and one of the most important interview topics.
+
+25. **What is the difference between microtasks and macrotasks? Give examples of each.** This tests deep understanding of the event loop and task prioritization.
+
+26. **Explain Promises. What are the different states of a Promise, and how do you handle errors?** Understanding Promises is fundamental to modern JavaScript.
+
+27. **What is Promise chaining? How do you handle errors in a Promise chain?** This tests practical async programming knowledge.
+
+28. **Explain `async`/`await`. How does it relate to Promises? What are the benefits and potential pitfalls?** This tests understanding of syntactic sugar and async patterns.
+
+29. **How do you handle multiple asynchronous operations? Compare `Promise.all()`, `Promise.race()`, `Promise.allSettled()`, and `Promise.any()`.** This tests knowledge of Promise combinators and their use cases.
+
+30. **What are the common pitfalls when using `async`/`await`? How do you handle errors properly?** This reveals practical experience with async code.
+
+31. **Explain the differences between callbacks, Promises, and `async`/`await`. When would you use each?** This tests understanding of the evolution of async patterns.
+
+32. **How would you implement a simple Promise from scratch?** This is an advanced question that tests deep understanding of Promise internals.
+
+33. **What is callback hell, and how do modern async patterns solve it?** This tests awareness of historical problems and their solutions.
+
+## Functions and Functional Programming (Questions 34-40)
+
+34. **Explain the concepts of first-class functions and higher-order functions with examples.** This is fundamental to functional programming in JavaScript.
+
+35. **What is currying? Implement a `curry` function that works for any number of arguments.** This tests understanding of closures and functional patterns.
+
+36. **Explain function composition. How would you implement a `compose` or `pipe` function?** This tests functional programming knowledge.
+
+37. **What is partial application, and how does it differ from currying?** This tests nuanced understanding of functional patterns.
+
+38. **Explain the difference between `.call()`, `.apply()`, and `.bind()`. Provide use cases for each.** This tests understanding of explicit `this` binding.
+
+39. **What are pure functions? Why are they important, and what are the benefits?** This tests functional programming principles.
+
+40. **Explain memoization. Implement a memoization function that caches results.** This tests understanding of optimization techniques and closures.
+
+## Modern JavaScript Features (Questions 41-46)
+
+41. **Explain destructuring in JavaScript. Cover both object and array destructuring, including nested destructuring and default values.** This tests knowledge of ES6+ syntax.
+
+42. **What are rest parameters and the spread operator? How do they differ, and what are their use cases?** This tests understanding of modern syntax for handling collections.
+
+43. **Explain template literals and tagged template literals. What are practical use cases for tagged templates?** This tests knowledge of string manipulation and advanced features.
+
+44. **What are symbols in JavaScript? When would you use them?** This tests understanding of less common data types and their purposes.
+
+45. **Explain the module system in JavaScript. What's the difference between CommonJS and ES6 modules?** This tests understanding of code organization and the evolution of JavaScript.
+
+46. **What are JavaScript Proxies and Reflect? Provide practical use cases.** This tests knowledge of metaprogramming features.
+
+## Advanced Topics and Patterns (Questions 47-50)
+
+47. **Explain event delegation and event bubbling/capturing. How would you implement efficient event handling for dynamically added elements?** This tests understanding of the DOM event model and performance optimization.
+
+48. **What is debouncing and throttling? Implement both from scratch and explain when to use each.** This is a common practical question that tests understanding of timing and optimization.
+
+49. **How does JavaScript's garbage collection work? What are common causes of memory leaks?** This tests understanding of memory management and performance.
+
+50. **Explain the difference between deep and shallow equality. How would you implement a deep equality check?** This tests understanding of data structures and comparison algorithms.
+
+## Bonus Conceptual Questions (Extra Context)
+
+These questions test deeper understanding of specific areas:
+
+**Event Loop Deep Dive:**
+```javascript
+console.log('1');
+setTimeout(() => console.log('2'), 0);
+Promise.resolve().then(() => console.log('3'));
+console.log('4');
+// What's the output and why?
+```
+
+**This Binding Challenge:**
+```javascript
+const obj = {
+  name: 'Alice',
+  greet: function() {
+    console.log(this.name);
+  },
+  delayedGreet: function() {
+    setTimeout(function() {
+      console.log(this.name);
+    }, 1000);
+  }
+};
+obj.delayedGreet(); // What happens and how do you fix it?
+```
+
+**Closure Memory:**
+```javascript
+function createCounter() {
+  let count = 0;
+  return {
+    increment: () => ++count,
+    decrement: () => --count,
+    getCount: () => count
+  };
+}
+// Explain the closure and why count is private
+```
+
+**Prototype Chain:**
+```javascript
+function Animal(name) {
+  this.name = name;
+}
+Animal.prototype.speak = function() {
+  console.log(`${this.name} makes a sound`);
+};
+
+function Dog(name) {
+  Animal.call(this, name);
+}
+Dog.prototype = Object.create(Animal.prototype);
+Dog.prototype.constructor = Dog;
+// Explain each line and the resulting prototype chain
+```
+
+These 50+ questions comprehensively cover JavaScript from fundamentals through advanced concepts, touching on the language's quirks, modern features, async programming, functional patterns, and practical considerations. They're designed to test not just memorization but genuine understanding of how JavaScript works and how to write effective JavaScript code.
