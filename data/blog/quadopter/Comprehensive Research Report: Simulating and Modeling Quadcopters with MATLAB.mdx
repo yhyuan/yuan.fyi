@@ -1,3 +1,11 @@
+---
+title: 'Comprehensive Research Report: Simulating and Modeling Quadcopters with MATLAB'
+date: '2025-02-01'
+tags: ['quadcopter', 'matlab', 'simulation', 'control-systems', 'uav']
+draft: false
+summary: 'A comprehensive overview of quadcopter modeling and simulation using MATLAB/Simulink, covering fundamental dynamics, mathematical modeling, control strategies, and practical implementation techniques.'
+---
+
 # Comprehensive Research Report: Simulating and Modeling Quadcopters with MATLAB
 
 ## Executive Summary
@@ -17,7 +25,7 @@ This report provides a comprehensive overview of quadcopter modeling and simulat
 9. [Conclusions](#conclusions)
 10. [References](#references)
 
-## 1. Introduction {#introduction}
+## 1. Introduction
 
 ### 1.1 Overview
 
@@ -48,7 +56,7 @@ MATLAB/Simulink offers several advantages for quadcopter development:
 - Hardware-in-the-loop (HIL) testing support
 - Visualization and analysis tools
 
-## 2. Quadcopter Dynamics and Mathematical Modeling {#quadcopter-dynamics}
+## 2. Quadcopter Dynamics and Mathematical Modeling
 
 ### 2.1 Coordinate Systems
 
@@ -139,7 +147,7 @@ Where:
 - [φ θ ψ]: Euler angles
 - [p q r]: angular velocities in body frame
 
-## 3. Linearization and State-Space Representation {#linearization}
+## 3. Linearization and State-Space Representation
 
 ### 3.1 Linearization Process
 
@@ -195,7 +203,7 @@ Po = obsv(A,C);
 rank_Po = rank(Po);
 ```
 
-## 4. Control System Design {#control-systems}
+## 4. Control System Design
 
 ### 4.1 PID Control
 
@@ -282,7 +290,7 @@ Where ueq is equivalent control and usw is switching control
 3. **Automatic Tuning**: MATLAB's PID Tuner app
 4. **Optimization-based**: Gradient descent, genetic algorithms
 
-## 5. Sensor Fusion and State Estimation {#sensor-fusion}
+## 5. Sensor Fusion and State Estimation
 
 ### 5.1 Sensor Suite
 
@@ -335,7 +343,7 @@ alpha = 0.98;
 angle = alpha * (angle + gyro * dt) + (1 - alpha) * accel_angle;
 ```
 
-## 6. Path Planning and Trajectory Generation {#path-planning}
+## 6. Path Planning and Trajectory Generation
 
 ### 6.1 Path Planning Algorithms
 
@@ -383,7 +391,7 @@ p(t) = a₀ + a₁t + a₂t² + a₃t³ + a₄t⁴ + a₅t⁵
 2. **Optimization-based**: Quadratic programming with constraints
 3. **Reactive Methods**: Dynamic window approach
 
-## 7. MATLAB/Simulink Implementation {#implementation}
+## 7. MATLAB/Simulink Implementation
 
 ### 7.1 Simulink Model Structure
 
@@ -456,7 +464,7 @@ codegen controllerFunction -args {zeros(12,1), zeros(4,1)}
 deployToPixhawk('controller_ert_rtw');
 ```
 
-## 8. Advanced Topics and Future Directions {#advanced-topics}
+## 8. Advanced Topics and Future Directions
 
 ### 8.1 Machine Learning Integration
 
@@ -483,7 +491,7 @@ deployToPixhawk('controller_ert_rtw');
 - Optimal trajectory planning for energy efficiency
 - Solar-powered quadcopters
 
-## 9. Conclusions {#conclusions}
+## 9. Conclusions
 
 ### 9.1 Key Findings
 
@@ -516,7 +524,7 @@ deployToPixhawk('controller_ert_rtw');
 4. **Robust control under uncertainties**
 5. **Human-robot interaction** for collaborative tasks
 
-## 10. References {#references}
+## 10. References
 
 ### Key Papers and Resources
 
