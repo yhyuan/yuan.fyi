@@ -1,0 +1,1086 @@
+---
+title: TD4 4-Bit CPU A Complete Deep-Dive Tutorial
+date: '2025-11-27'
+tags: ['TD4 4-bit CPU']
+draft: false
+---
+# TD4 4-Bit CPU: A Complete Deep-Dive Tutorial
+
+## Table of Contents
+1. [Introduction](#1-introduction)
+2. [Historical Context](#2-historical-context)
+3. [Architecture Overview](#3-architecture-overview)
+4. [Component Breakdown](#4-component-breakdown)
+5. [Instruction Set Architecture](#5-instruction-set-architecture)
+6. [Data Path Analysis](#6-data-path-analysis)
+7. [Control Logic](#7-control-logic)
+8. [Clock and Reset Circuitry](#8-clock-and-reset-circuitry)
+9. [Step-by-Step Operation](#9-step-by-step-operation)
+10. [Building the TD4](#10-building-the-td4)
+11. [Example Programs](#11-example-programs)
+12. [Extensions and Modifications](#12-extensions-and-modifications)
+
+---
+
+## 1. Introduction
+
+### What is the TD4?
+
+The TD4 (often written as TD4-4BIT-CPU) is a minimalist 4-bit CPU designed for educational purposes. The name "TD4" comes from the Japanese book title "CPU no Tsukurikata" (CPUの創りかた - "How to Make a CPU") by **Watanabe Tetsuya**, published in 2003.
+
+### Why Study the TD4?
+
+The TD4 is exceptional for learning because:
+
+- **Minimal complexity**: Only 10 ICs total (all 74HC series)
+- **No microcode**: Direct hardware instruction decoding
+- **Transparent operation**: Every signal can be traced and understood
+- **Buildable**: Can be constructed on a breadboard in a few hours
+- **Complete**: Despite its simplicity, it's a fully functional stored-program computer
+
+### Design Philosophy
+
+The TD4 strips a CPU down to its absolute essentials:
+- 4-bit data bus
+- 4-bit address space (16 bytes of program memory)
+- 4 registers (2 general-purpose, 1 output, 1 program counter)
+- 16 instructions (4-bit opcode)
+- Single accumulator architecture with carry flag
+
+---
+
+## 2. Historical Context
+
+### The Book and Its Impact
+
+Watanabe Tetsuya's book became a cult classic in Japan among electronics hobbyists and students. It walks readers through building a CPU from scratch using only commonly available 74HC logic ICs.
+
+### Educational Lineage
+
+The TD4 fits into a lineage of educational CPUs:
+
+```
+Simple Logic Gates
+       ↓
+   Adders/ALUs
+       ↓
+    SAP-1 (Simple As Possible)
+       ↓
+      TD4 ←── You are here
+       ↓
+    HACK (Nand2Tetris)
+       ↓
+  Real CPUs (6502, Z80, etc.)
+```
+
+The TD4 occupies a sweet spot: complex enough to be a real CPU, simple enough to fully understand.
+
+---
+
+## 3. Architecture Overview
+
+### Block Diagram
+
+```
+                    ┌─────────────────────────────────────────────────────────┐
+                    │                        TD4 CPU                          │
+                    │                                                         │
+   ┌────────┐       │  ┌─────┐    ┌─────┐                                     │
+   │ Clock  │───────┼─▶│ PC  │───▶│ ROM │──┬─ OPCODE[7:4] ──▶ Instruction    │
+   └────────┘       │  └─────┘    └─────┘  │                   Decoder        │
+                    │     ▲                │                      │           │
+   ┌────────┐       │     │                │                      ▼           │
+   │ Reset  │───────┼─────┤                │              Control Signals     │
+   └────────┘       │     │                │                      │           │
+                    │     │                └─ IM[3:0] ───────────────┐        │
+                    │     │                    (Immediate)           │        │
+                    │  ┌──┴──┐                                       ▼        │
+                    │  │ +1  │◀── Carry ◀── ┌─────┐    ┌─────┐    ┌─────┐    │
+                    │  └─────┘              │ ALU │◀───│ MUX │◀───│ A/B │    │
+                    │                       │ ADD │    │ 4:1 │    │ Reg │    │
+   ┌────────┐       │                       └──┬──┘    └─────┘    └─────┘    │
+   │  IN    │───────┼──────────────────────────┼──────────▲                   │
+   │ Port   │       │                          │          │                   │
+   └────────┘       │                          ▼          │                   │
+                    │                       ┌─────┐       │                   │
+   ┌────────┐       │                       │ OUT │───────┘                   │
+   │  OUT   │◀──────┼───────────────────────│ Reg │                           │
+   │ Port   │       │                       └─────┘                           │
+   └────────┘       │                                                         │
+                    └─────────────────────────────────────────────────────────┘
+```
+
+### Register Set
+
+| Register | Name | Size | Description |
+|----------|------|------|-------------|
+| A | Accumulator A | 4-bit | General purpose register |
+| B | Accumulator B | 4-bit | General purpose register |
+| OUT | Output Register | 4-bit | Connected to output port (directly drives LEDs) |
+| PC | Program Counter | 4-bit | Points to current instruction (0-15) |
+| C | Carry Flag | 1-bit | Set when ALU produces carry-out |
+
+### Memory Map
+
+```
+Address    Content
+0x0        Instruction 0
+0x1        Instruction 1
+...        ...
+0xF        Instruction 15  (only 16 bytes total!)
+```
+
+---
+
+## 4. Component Breakdown
+
+### Complete Parts List
+
+| Qty | Part Number | Function |
+|-----|-------------|----------|
+| 2 | 74HC161 | 4-bit binary counter (PC and Address) |
+| 2 | 74HC153 | Dual 4-to-1 multiplexer |
+| 1 | 74HC283 | 4-bit binary adder |
+| 2 | 74HC74 | Dual D flip-flop (registers) |
+| 1 | 74HC540 | Octal buffer with inverted outputs |
+| 1 | 74HC10 | Triple 3-input NAND |
+| 1 | ROM | 16×8 (can use DIP switches, EEPROM, or diode matrix) |
+
+### 4.1 74HC161 - Program Counter
+
+The 74HC161 is a synchronous 4-bit binary counter with parallel load capability.
+
+```
+        ┌───────────────┐
+   CLR ─┤1           16├─ VCC
+   CLK ─┤2           15├─ RCO (Ripple Carry Out)
+    D0 ─┤3           14├─ Q0
+    D1 ─┤4           13├─ Q1
+    D2 ─┤5           12├─ Q2
+    D3 ─┤6           11├─ Q3
+   ENP ─┤7           10├─ ENT
+   GND ─┤8            9├─ LOAD
+        └───────────────┘
+```
+
+**In TD4, this IC serves as the Program Counter:**
+- On each clock pulse (with ENP and ENT high), it counts up: 0→1→2→...→15→0
+- When LOAD is asserted low, it loads a new address (for JMP instruction)
+- CLR resets to 0 (system reset)
+
+**Key insight**: The PC doesn't just count—it can also be loaded with an immediate value for jumps!
+
+### 4.2 74HC153 - Data Selector (MUX)
+
+The 74HC153 contains two independent 4-to-1 multiplexers.
+
+```
+        ┌───────────────┐
+   1Ea ─┤1           16├─ VCC
+    S1 ─┤2           15├─ 2Ea
+  1I3a ─┤3           14├─ S0
+  1I2a ─┤4           13├─ 2I3a
+  1I1a ─┤5           12├─ 2I2a
+  1I0a ─┤6           11├─ 2I1a
+   1Ya ─┤7           10├─ 2I0a
+   GND ─┤8            9├─ 2Ya
+        └───────────────┘
+```
+
+**In TD4, two 74HC153s form a 4-bit wide 4:1 MUX:**
+
+```
+Select bits S1 S0:
+   00 → Select Register A
+   01 → Select Register B
+   10 → Select Input Port
+   11 → Select 0000 (constant zero)
+```
+
+This MUX selects what goes to one input of the ALU.
+
+### 4.3 74HC283 - 4-Bit Adder (The ALU)
+
+The 74HC283 is a 4-bit binary full adder with fast carry.
+
+```
+        ┌───────────────┐
+   Σ2 ─┤1           16├─ VCC
+   B2 ─┤2           15├─ B3
+   A2 ─┤3           14├─ A3
+   Σ1 ─┤4           13├─ Σ3
+   A1 ─┤5           12├─ Σ4
+   B1 ─┤6           11├─ C4 (Carry Out)
+  C0  ─┤7           10├─ A4
+  GND ─┤8            9├─ B4
+        └───────────────┘
+```
+
+**The TD4's ALU is JUST an adder!**
+
+This is a crucial simplification. The TD4 has no subtraction, no AND, no OR—just ADD. Yet it's still Turing complete!
+
+**Operation:**
+```
+A inputs ← Selected by MUX (A, B, IN, or 0)
+B inputs ← Immediate value from instruction [3:0]
+Σ outputs ← A + B + Cin
+C4       ← Carry out (stored in carry flip-flop)
+```
+
+### 4.4 74HC74 - D Flip-Flops (Registers)
+
+The 74HC74 contains two independent D flip-flops with preset and clear.
+
+```
+        ┌───────────────┐
+  1CLR ─┤1           14├─ VCC
+   1D  ─┤2           13├─ 2CLR
+  1CLK ─┤3           12├─ 2D
+  1PRE ─┤4           11├─ 2CLK
+   1Q  ─┤5           10├─ 2PRE
+  1Q̄   ─┤6            9├─ 2Q
+  GND  ─┤7            8├─ 2Q̄
+        └───────────────┘
+```
+
+**In TD4:**
+- Two 74HC74s provide 4 flip-flops for registers A and B (2 bits each? No—see below)
+- Actually, the original TD4 uses 74HC161s for A, B, and OUT registers too (they have built-in flip-flops)
+- One flip-flop stores the carry flag
+
+### 4.5 74HC540 - Octal Buffer (Output Register)
+
+Used to drive the output LEDs and isolate the output register from the bus.
+
+### 4.6 74HC10 - Triple 3-Input NAND (Instruction Decoder)
+
+The instruction decoder converts the 4-bit opcode into control signals.
+
+---
+
+## 5. Instruction Set Architecture
+
+### Instruction Format
+
+Each instruction is 8 bits:
+
+```
+  7   6   5   4   3   2   1   0
+┌───┬───┬───┬───┬───┬───┬───┬───┐
+│OP3│OP2│OP1│OP0│IM3│IM2│IM1│IM0│
+└───┴───┴───┴───┴───┴───┴───┴───┘
+│←── OPCODE ──→│←── IMMEDIATE ─→│
+```
+
+- **OPCODE [7:4]**: Determines the operation
+- **IMMEDIATE [3:0]**: 4-bit immediate value (0-15)
+
+### Complete Instruction Set
+
+| Binary | Hex | Mnemonic | Operation | Description |
+|--------|-----|----------|-----------|-------------|
+| 0000 | 0 | ADD A, Im | A ← A + Im | Add immediate to A |
+| 0001 | 1 | MOV A, B | A ← B + 0 | Copy B to A |
+| 0010 | 2 | IN A | A ← IN + 0 | Read input port to A |
+| 0011 | 3 | MOV A, Im | A ← 0 + Im | Load immediate to A |
+| 0100 | 4 | MOV B, A | B ← A + 0 | Copy A to B |
+| 0101 | 5 | ADD B, Im | B ← B + Im | Add immediate to B |
+| 0110 | 6 | IN B | B ← IN + 0 | Read input port to B |
+| 0111 | 7 | MOV B, Im | B ← 0 + Im | Load immediate to B |
+| 1000 | 8 | — | (unused) | Reserved |
+| 1001 | 9 | OUT B | OUT ← B + 0 | Output B to port |
+| 1010 | A | — | (unused) | Reserved |
+| 1011 | B | OUT Im | OUT ← 0 + Im | Output immediate to port |
+| 1100 | C | — | (unused) | Reserved |
+| 1101 | D | — | (unused) | Reserved |
+| 1110 | E | JNC Im | if C=0: PC ← Im | Jump if no carry |
+| 1111 | F | JMP Im | PC ← Im | Unconditional jump |
+
+### Understanding the Instruction Encoding
+
+The brilliance of TD4's instruction encoding lies in how opcodes directly generate control signals:
+
+```
+OPCODE bits:
+  OP3 OP2 OP1 OP0
+   │   │   │   │
+   │   │   └───┴── MUX select (which register feeds ALU)
+   │   │              00 = A
+   │   │              01 = B  
+   │   │              10 = IN
+   │   │              11 = 0 (constant)
+   │   │
+   └───┴────────── Destination select
+                     00 = A register
+                     01 = B register
+                     10 = OUT register
+                     11 = PC (jump)
+```
+
+**This is incredibly elegant!** The opcode bits ARE the control signals (almost).
+
+---
+
+## 6. Data Path Analysis
+
+### The Central Data Path
+
+```
+                              ┌─────────────────────────┐
+                              │     INSTRUCTION         │
+                              │   ┌───────┬───────┐     │
+                              │   │OPCODE │ IMMED │     │
+                              │   │[7:4]  │ [3:0] │     │
+                              │   └───┬───┴───┬───┘     │
+                              │       │       │         │
+                              │       ▼       │         │
+                              │   ┌───────┐   │         │
+                              │   │DECODE │   │         │
+                              │   └───┬───┘   │         │
+                              │       │       │         │
+                              └───────┼───────┼─────────┘
+                                      │       │
+            ┌─────────────────────────┼───────┼──────────────────┐
+            │                         │       │                  │
+            │  SELECT                 │       │  IMMEDIATE       │
+            │    │                    │       │    │             │
+            │    ▼                    │       │    ▼             │
+            │  ┌────┐   ┌────┐        │       │  ┌────┐          │
+            │  │REG │   │REG │        │       │  │    │          │
+            │  │ A  │   │ B  │        │       │  │    │          │
+            │  └─┬──┘   └─┬──┘        │       │  │    │          │
+            │    │        │           │       │  │    │          │
+            │    ▼        ▼           │       │  │    │          │
+            │  ┌────────────┐         │       │  │    │          │
+INPUT ──────┼─▶│  4:1 MUX   │─────────┼───────┼─▶│ADD │──┐       │
+  PORT      │  └────────────┘         │       │  │    │  │       │
+            │         ▲               │       │  │    │  │       │
+            │         │               │       │  └────┘  │       │
+            │    0000─┘               │       │    │     │       │
+            │                         │       │    │COUT │       │
+            │                         ▼       │    ▼     │       │
+            │                    ┌────────┐   │  ┌───┐   │       │
+            │                    │DEST SEL│   │  │ C │   │       │
+            │                    └────────┘   │  │FLG│   │       │
+            │                         │       │  └───┘   │       │
+            │    ┌────────────────────┼───────┘          │       │
+            │    │        │           │                  │       │
+            │    ▼        ▼           ▼                  │       │
+            │  ┌────┐   ┌────┐   ┌────────┐              │       │
+            │  │REG │   │REG │   │OUT REG │              │       │
+            │  │ A  │   │ B  │   └────┬───┘              │       │
+            │  └────┘   └────┘        │                  │       │
+            │                         ▼                  │       │
+            │                    ┌────────┐              │       │
+            │                    │ OUTPUT │              │       │
+            │                    │  PORT  │              │       │
+            │                    └────────┘              │       │
+            │                                            │       │
+            │            ┌──────────────────────────────┘       │
+            │            │                                       │
+            │            ▼                                       │
+            │       ┌────────┐      ┌─────┐                      │
+            │       │   PC   │──────│ ROM │                      │
+            │       │(74HC161│◀─────│     │                      │
+            │       └────────┘      └─────┘                      │
+            │            ▲                                       │
+            │            │                                       │
+            │      CLK───┘                                       │
+            │                                                    │
+            └────────────────────────────────────────────────────┘
+```
+
+### Signal Flow for Each Instruction Type
+
+#### ADD A, Im (Opcode 0000)
+
+```
+Step 1: PC outputs address → ROM outputs instruction
+Step 2: Opcode 0000 decoded:
+        - MUX select = 00 (choose A)
+        - Dest select = 00 (load A)
+Step 3: ALU computes: A + Immediate
+Step 4: Rising clock edge:
+        - Result loaded into A
+        - Carry loaded into C flag
+        - PC increments
+```
+
+#### JMP Im (Opcode 1111)
+
+```
+Step 1: PC outputs address → ROM outputs instruction
+Step 2: Opcode 1111 decoded:
+        - MUX select = 11 (choose 0)
+        - Dest select = 11 (load PC)
+        - PC LOAD signal asserted
+Step 3: ALU computes: 0 + Immediate = Immediate
+Step 4: Rising clock edge:
+        - PC loads Immediate value (not increment!)
+        - Next instruction fetched from new address
+```
+
+---
+
+## 7. Control Logic
+
+### Instruction Decoder Truth Table
+
+| OP3 | OP2 | OP1 | OP0 | LOAD_A | LOAD_B | LOAD_OUT | LOAD_PC | SEL1 | SEL0 |
+|-----|-----|-----|-----|--------|--------|----------|---------|------|------|
+| 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | 0 | 0 |
+| 0 | 0 | 0 | 1 | 1 | 0 | 0 | 0 | 0 | 1 |
+| 0 | 0 | 1 | 0 | 1 | 0 | 0 | 0 | 1 | 0 |
+| 0 | 0 | 1 | 1 | 1 | 0 | 0 | 0 | 1 | 1 |
+| 0 | 1 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | 0 |
+| 0 | 1 | 0 | 1 | 0 | 1 | 0 | 0 | 0 | 1 |
+| 0 | 1 | 1 | 0 | 0 | 1 | 0 | 0 | 1 | 0 |
+| 0 | 1 | 1 | 1 | 0 | 1 | 0 | 0 | 1 | 1 |
+| 1 | 0 | 0 | 1 | 0 | 0 | 1 | 0 | 0 | 1 |
+| 1 | 0 | 1 | 1 | 0 | 0 | 1 | 0 | 1 | 1 |
+| 1 | 1 | 1 | 0 | 0 | 0 | 0 | ~C | 1 | 1 |
+| 1 | 1 | 1 | 1 | 0 | 0 | 0 | 1 | 1 | 1 |
+
+### Decoder Logic Equations
+
+From the truth table, we can derive:
+
+```
+LOAD_A  = ~OP3 & ~OP2
+LOAD_B  = ~OP3 & OP2
+LOAD_OUT = OP3 & ~OP2 & OP0
+LOAD_PC = OP3 & OP2 & (OP0 | (OP1 & ~CARRY))
+SEL1    = OP1
+SEL0    = OP0
+```
+
+These equations can be implemented with just a few NAND gates!
+
+### The JNC (Jump if No Carry) Logic
+
+```
+JNC instruction (opcode 1110):
+  LOAD_PC = OP3 & OP2 & OP1 & ~OP0 & ~CARRY
+          = "It's a JNC" AND "Carry is clear"
+          
+JMP instruction (opcode 1111):
+  LOAD_PC = OP3 & OP2 & OP1 & OP0
+          = Always load PC (unconditional)
+```
+
+Combined:
+```
+LOAD_PC = OP3 & OP2 & OP1 & (OP0 | ~CARRY)
+```
+
+---
+
+## 8. Clock and Reset Circuitry
+
+### Clock Generator Options
+
+#### Option 1: 555 Timer Oscillator
+```
+                VCC
+                 │
+                 R1
+                 │
+          ┌──────┴──────┐
+          │      8      │
+     ┌────┤7    555   3 ├────── CLK OUT
+     │    │             │
+     R2   │      6 ─────┤
+     │    │      2 ─────┤
+     ├────┤             │
+     │    │      1      │
+     C    └──────┬──────┘
+     │           │
+    GND         GND
+
+f ≈ 1.44 / ((R1 + 2×R2) × C)
+```
+
+For ~1 Hz clock (easy to observe):
+- R1 = 10kΩ
+- R2 = 470kΩ  
+- C = 1µF
+
+#### Option 2: Manual Clock (Push Button)
+```
+VCC ─────┬─────────── CLK OUT
+         │
+        10kΩ
+         │
+        ─┴─
+        ───  Push Button
+         │
+        GND
+```
+
+Add debounce circuit:
+```
+VCC ─┬─ 10kΩ ─┬─ 74HC14 ─┬─ 74HC14 ─── CLK OUT
+     │        │          │
+   Button     C         (Schmitt trigger for clean edges)
+     │       0.1µF
+    GND       │
+             GND
+```
+
+### Reset Circuit
+
+```
+         VCC
+          │
+         10kΩ
+          │
+          ├───────────── RESET (to all CLR inputs)
+          │
+       ───┴───
+       ───────  Reset Button
+          │
+         GND
+```
+
+Power-on reset (automatic):
+```
+VCC ──┬── 10kΩ ──┬─── RESET
+      │          │
+      │         ─┴─ 10µF
+     ─┴─         │
+     ───        GND
+      │
+     GND
+```
+
+---
+
+## 9. Step-by-Step Operation
+
+### Execution Cycle
+
+The TD4 executes each instruction in a **single clock cycle**:
+
+```
+        ┌───────────────────────────────────────────────────┐
+        │                  CLOCK CYCLE                       │
+        │                                                    │
+        │  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌───────┐ │
+        │  │ FETCH   │  │ DECODE  │  │ EXECUTE │  │ STORE │ │
+        │  │         │  │         │  │         │  │       │ │
+        │  │ PC→ROM  │  │ Opcode  │  │  ALU    │  │ Regs  │ │
+        │  │         │→ │ →Ctrl   │→ │ Compute │→ │ Load  │ │
+        │  └─────────┘  └─────────┘  └─────────┘  └───────┘ │
+        │                                                    │
+        │◀────────────────── ~1 clock ─────────────────────▶│
+        └───────────────────────────────────────────────────┘
+
+Clock:  ────┐     ┌─────────────────┐     ┌─────
+            │     │                 │     │
+            └─────┘                 └─────┘
+                  ▲                       ▲
+                  │                       │
+            Registers loaded        Next cycle
+```
+
+### Detailed Timing
+
+```
+Time →
+
+CLK:    ─────┐          ┌──────────────┐          ┌─────
+             │          │              │          │
+             └──────────┘              └──────────┘
+
+PC:     ════╤════════════════╤════════════════════╤════
+        ADDR│     ADDR N     │      ADDR N+1      │
+            │                │                    │
+
+ROM:    ────┼────────────────┼────────────────────┼────
+            │ OP│IM (prev)   │    OP│IM (curr)   │
+
+ALU:    ~~~~│~~~~~~~~~~~~~~~~│~~~~~~~~~~~~~~~~~~~~│~~~~
+            │ (computing)    │   (result ready)   │
+
+Regs:   ════╪════════════════╪════════════════════╪════
+            │ (previous val) │   (loads new val)  │
+            │                │         ▲          │
+            │                │         │          │
+                                   Register loads
+                                   on rising edge
+```
+
+### Worked Example: Running a Program
+
+Let's trace through this program:
+
+```
+Address  Instruction    Assembly
+0x0      0011 0001     MOV A, 1      ; A = 1
+0x1      0111 0010     MOV B, 2      ; B = 2
+0x2      0001 0000     MOV A, B      ; A = B (A = 2)
+0x3      0000 0011     ADD A, 3      ; A = A + 3 = 5
+0x4      1011 0000     OUT 0         ; Output = 0 (clear)
+0x5      1001 0000     OUT B         ; Output = B = 2
+0x6      1111 0000     JMP 0         ; Loop forever
+```
+
+**Cycle 0:**
+```
+PC = 0 → ROM[0] = 0011_0001
+Opcode 0011 → MOV A, Im
+Immediate = 1
+ALU: 0 + 1 = 1
+On clock edge: A ← 1, PC ← 1
+```
+
+**Cycle 1:**
+```
+PC = 1 → ROM[1] = 0111_0010
+Opcode 0111 → MOV B, Im
+Immediate = 2
+ALU: 0 + 2 = 2
+On clock edge: B ← 2, PC ← 2
+```
+
+**Cycle 2:**
+```
+PC = 2 → ROM[2] = 0001_0000
+Opcode 0001 → MOV A, B
+MUX selects B (value 2)
+ALU: 2 + 0 = 2
+On clock edge: A ← 2, PC ← 3
+```
+
+**Cycle 3:**
+```
+PC = 3 → ROM[3] = 0000_0011
+Opcode 0000 → ADD A, Im
+MUX selects A (value 2)
+ALU: 2 + 3 = 5
+On clock edge: A ← 5, PC ← 4
+```
+
+**Cycle 4:**
+```
+PC = 4 → ROM[4] = 1011_0000
+Opcode 1011 → OUT Im
+ALU: 0 + 0 = 0
+On clock edge: OUT ← 0, PC ← 5
+LEDs show: 0000
+```
+
+**Cycle 5:**
+```
+PC = 5 → ROM[5] = 1001_0000
+Opcode 1001 → OUT B
+MUX selects B (value 2)
+ALU: 2 + 0 = 2
+On clock edge: OUT ← 2, PC ← 6
+LEDs show: 0010
+```
+
+**Cycle 6:**
+```
+PC = 6 → ROM[6] = 1111_0000
+Opcode 1111 → JMP
+Immediate = 0
+LOAD_PC asserted
+On clock edge: PC ← 0 (not PC + 1!)
+```
+
+**Cycle 7:**
+```
+PC = 0 → (Program repeats from beginning)
+```
+
+---
+
+## 10. Building the TD4
+
+### Breadboard Layout
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  POWER RAILS                                                │
+│  + ─────────────────────────────────────────────────── +    │
+│  - ─────────────────────────────────────────────────── -    │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐        │
+│  │ 74HC161 │  │ 74HC161 │  │ 74HC153 │  │ 74HC153 │        │
+│  │   PC    │  │  REG A  │  │  MUX    │  │  MUX    │        │
+│  └─────────┘  └─────────┘  └─────────┘  └─────────┘        │
+│                                                             │
+│  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐        │
+│  │ 74HC161 │  │ 74HC283 │  │ 74HC10  │  │ 74HC74  │        │
+│  │  REG B  │  │  ADDER  │  │ DECODER │  │  CARRY  │        │
+│  └─────────┘  └─────────┘  └─────────┘  └─────────┘        │
+│                                                             │
+│  ┌─────────┐  ┌─────────────────────────────────────┐      │
+│  │ 74HC540 │  │           ROM (DIP SWITCHES)        │      │
+│  │   OUT   │  │         16 x 8 bits = 128 switches  │      │
+│  └─────────┘  │   OR use AT28C16 EEPROM             │      │
+│               └─────────────────────────────────────┘      │
+│                                                             │
+│  [CLOCK] [RESET]  [INPUT SWITCHES 0-3]  [OUTPUT LEDS 0-3] │
+│                                                             │
+│  + ─────────────────────────────────────────────────── +    │
+│  - ─────────────────────────────────────────────────── -    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Wiring Checklist
+
+#### Power Connections (FIRST!)
+- [ ] VCC (pin 16) to +5V on all ICs
+- [ ] GND (pin 8) to ground on all ICs
+- [ ] Add 0.1µF decoupling capacitor near each IC
+- [ ] Add 10µF capacitor across main power rails
+
+#### Program Counter (74HC161 #1)
+- [ ] CLK (pin 2) ← System clock
+- [ ] CLR (pin 1) ← Reset (active low)
+- [ ] LOAD (pin 9) ← Instruction decoder (for JMP)
+- [ ] D0-D3 (pins 3-6) ← ALU output (for JMP address)
+- [ ] Q0-Q3 (pins 14,13,12,11) → ROM address inputs
+- [ ] ENP, ENT (pins 7,10) ← Logic for PC enable
+
+#### ROM Connections
+- [ ] A0-A3 ← PC outputs
+- [ ] D0-D3 → Immediate value to ALU B-input
+- [ ] D4-D7 → Opcode to instruction decoder
+
+#### ALU (74HC283)
+- [ ] A1-A4 (pins 5,3,14,12) ← MUX output (selected register)
+- [ ] B1-B4 (pins 6,2,15,9) ← Immediate from ROM
+- [ ] Σ1-Σ4 (pins 4,1,13,10) → Data bus to registers
+- [ ] C0 (pin 7) ← GND (or carry-in for future expansion)
+- [ ] C4 (pin 9) → Carry flag flip-flop
+
+#### MUX (74HC153 × 2)
+Connect in parallel to create 4-bit wide MUX:
+- [ ] S0, S1 ← Opcode bits OP0, OP1
+- [ ] I0 inputs ← Register A outputs
+- [ ] I1 inputs ← Register B outputs
+- [ ] I2 inputs ← Input port switches
+- [ ] I3 inputs ← GND (constant 0)
+- [ ] Y outputs → ALU A-inputs
+
+### ROM Programming Options
+
+#### Option A: DIP Switch Matrix (Most Educational)
+```
+For each address (0-15):
+  - 8 DIP switches set the instruction
+  - Address selected by PC through a decoder
+
+       Address 0    Address 1    ...   Address 15
+      ┌────────┐   ┌────────┐        ┌────────┐
+      │████████│   │████████│        │████████│
+      │▓▓▓▓░░░░│   │░░░░░░░░│        │▓▓▓▓▓▓▓▓│
+      └────────┘   └────────┘        └────────┘
+       0011_0001    0111_0010          1111_0000
+       MOV A,1      MOV B,2            JMP 0
+```
+
+#### Option B: Diode Matrix ROM (Classic Approach)
+```
+                Address Lines (from PC)
+                A3  A2  A1  A0
+                │   │   │   │
+        ┌───────┼───┼───┼───┼───────┐
+    D7 ─┤   ◄───┼───●───┼───┼───►   │
+    D6 ─┤   ◄───┼───┼───●───┼───►   │
+    D5 ─┤   ◄───●───┼───┼───●───►   │
+    D4 ─┤   ◄───┼───┼───┼───┼───►   │
+    D3 ─┤   ◄───┼───●───●───┼───►   │
+    D2 ─┤   ◄───●───┼───┼───┼───►   │
+    D1 ─┤   ◄───┼───┼───●───●───►   │
+    D0 ─┤   ◄───●───●───┼───┼───►   │
+        └───────────────────────────┘
+        
+    ● = 1N4148 diode (cathode to data line)
+    No diode = logic 0
+    Diode present = logic 1
+```
+
+#### Option C: EEPROM (AT28C16 or similar)
+- Most convenient for reprogramming
+- Use EEPROM programmer or Arduino to write
+- Only need 16 bytes of the 2KB capacity
+
+### Test Points to Add
+
+Add test LEDs or probe points for debugging:
+1. Clock signal
+2. PC outputs (Q0-Q3)
+3. ALU outputs (Σ1-Σ4)
+4. Carry flag
+5. Each control signal (LOAD_A, LOAD_B, LOAD_OUT, LOAD_PC)
+
+---
+
+## 11. Example Programs
+
+### Program 1: LED Counter (Knight Rider)
+
+```
+; Counts 0-15 on output LEDs, then repeats
+; Address  Binary      Hex   Assembly
+    0      0011_0000   30    MOV A, 0      ; A = 0
+    1      1001_0000   90    OUT B         ; (actually OUT A via trick)
+    2      0000_0001   01    ADD A, 1      ; A = A + 1
+    3      1110_0001   E1    JNC 1         ; If no overflow, goto 1
+    4      1111_0000   F0    JMP 0         ; Overflow! Reset
+```
+
+Wait—there's no `OUT A` instruction! We need a workaround:
+
+```
+; Corrected LED Counter
+    0      0011_0000   30    MOV A, 0      ; A = 0
+    1      0100_0000   40    MOV B, A      ; B = A
+    2      1001_0000   90    OUT B         ; Output B
+    3      0000_0001   01    ADD A, 1      ; A++
+    4      1110_0001   E1    JNC 1         ; Loop until overflow
+    5      1111_0000   F0    JMP 0         ; Start over
+```
+
+### Program 2: Alternating Pattern
+
+```
+; Alternates between 0101 and 1010 on LEDs
+    0      1011_0101   B5    OUT 5         ; Output 0101
+    1      1011_1010   BA    OUT 10        ; Output 1010  
+    2      1111_0000   F0    JMP 0         ; Repeat
+```
+
+### Program 3: Input Echo
+
+```
+; Reads input switches and displays on LEDs
+    0      0010_0000   20    IN A          ; Read input to A
+    1      0100_0000   40    MOV B, A      ; Copy to B
+    2      1001_0000   90    OUT B         ; Display B
+    3      1111_0000   F0    JMP 0         ; Repeat
+```
+
+### Program 4: Addition Calculator
+
+```
+; Adds two 4-bit numbers from input
+; First input, press button, second input, press button, shows sum
+; (Simplified version - assumes clock is manual button)
+    0      0010_0000   20    IN A          ; First number
+    1      0110_0000   60    IN B          ; Second number
+    2      0000_0000   00    ADD A, 0      ; A = A + 0 (sets up for next)
+    3      0001_0000   10    MOV A, B      ; A = B
+    4      0000_0000   00    ADD A, 0      ; Dummy (need ADD A,B which doesn't exist!)
+```
+
+Hmm, TD4 can't directly add A and B. Let's try a different approach:
+
+```
+; Add input to running total
+    0      0011_0000   30    MOV A, 0      ; Clear accumulator
+    1      0110_0000   60    IN B          ; Read input to B
+    2      0100_0000   40    MOV B, A      ; Save A to B
+    3      0010_0000   20    IN A          ; Read new input to A
+    ; ... TD4 is limited here!
+```
+
+**Key insight**: TD4's limitations show why real CPUs need more instructions!
+
+### Program 5: Fibonacci Sequence (Partial)
+
+```
+; Generates Fibonacci: 1, 1, 2, 3, 5, 8, 13... (mod 16)
+; F(n) = F(n-1) + F(n-2)
+; Uses A as F(n-1), B as F(n-2)
+
+    0      0011_0001   31    MOV A, 1      ; A = 1 (F1)
+    1      0111_0001   71    MOV B, 1      ; B = 1 (F0)
+    2      0100_0000   40    MOV B, A      ; temp = B; B = A
+    ; Can't do: A = A + temp
+    ; TD4 limitation: can only add IMMEDIATE to register, not register to register!
+```
+
+**This reveals TD4's fundamental limitation**: No register-to-register addition. The only way to add A and B is to use IN port or Immediate values!
+
+### Program 6: Practical LED Chaser
+
+```
+; "Knight Rider" style LED pattern: 1-2-4-8-4-2-1-2-4-8-...
+    0      1011_0001   B1    OUT 1         ; 0001
+    1      1011_0010   B2    OUT 2         ; 0010
+    2      1011_0100   B4    OUT 4         ; 0100
+    3      1011_1000   B8    OUT 8         ; 1000
+    4      1011_0100   B4    OUT 4         ; 0100
+    5      1011_0010   B2    OUT 2         ; 0010
+    6      1111_0000   F0    JMP 0         ; Loop
+```
+
+---
+
+## 12. Extensions and Modifications
+
+### 12.1 Adding Subtraction
+
+TD4 can only add. To subtract, use two's complement:
+
+```
+A - B = A + (~B + 1)
+
+Example: 7 - 3
+  7 = 0111
+  3 = 0011
+ ~3 = 1100
+~3+1= 1101 (which is -3 in two's complement)
+7 + (-3) = 0111 + 1101 = 10100 → 0100 = 4 ✓
+```
+
+But TD4 can't compute ~B easily without hardware mods. 
+
+**Hardware modification**: Add XOR gates before ALU B-input, controlled by a SUB signal.
+
+### 12.2 Expanding to 8-bit
+
+To make an 8-bit version:
+- Replace 74HC283 with two cascaded 74HC283s (or one 74HC283 + 74HC283)
+- Double all register widths
+- Expand MUX to 8-bit wide
+- Expand ROM data width to 12 bits (4 opcode + 8 immediate)
+
+### 12.3 Adding More Instructions
+
+Current unused opcodes (8, A, C, D) could implement:
+- **NOP**: No operation (useful for timing)
+- **AND**: Logical AND (needs new ALU hardware)
+- **NOT**: Bitwise invert A
+- **SHL**: Shift left (multiply by 2)
+
+### 12.4 Memory for Data (RAM)
+
+TD4 has no RAM—only ROM for instructions. To add data memory:
+
+```
+┌──────────────────────────────────────────────┐
+│                   TD4 + RAM                   │
+│                                               │
+│  ROM (instructions) ◄──── PC                  │
+│          │                                    │
+│          ▼                                    │
+│       Decoder                                 │
+│          │                                    │
+│          ▼                                    │
+│  RAM (data) ◄─────── Address from instruction │
+│      ▲   │                                    │
+│      │   ▼                                    │
+│      └─ ALU ◄──── Registers                   │
+│                                               │
+└──────────────────────────────────────────────┘
+```
+
+New instructions needed:
+- **LOAD addr**: A ← RAM[addr]
+- **STORE addr**: RAM[addr] ← A
+
+### 12.5 Stack and Subroutines
+
+For CALL/RET functionality:
+1. Add a stack pointer register (SP)
+2. Add RAM for stack storage
+3. Implement PUSH, POP, CALL, RET
+
+This significantly increases complexity but enables recursion!
+
+---
+
+## Appendix A: Quick Reference Card
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    TD4 QUICK REFERENCE                       │
+├─────────────────────────────────────────────────────────────┤
+│  REGISTERS                                                   │
+│    A, B    : 4-bit general purpose                          │
+│    OUT     : 4-bit output port                              │
+│    PC      : 4-bit program counter (0-15)                   │
+│    C       : 1-bit carry flag                               │
+├─────────────────────────────────────────────────────────────┤
+│  INSTRUCTION FORMAT                                          │
+│    [OPCODE:4][IMMEDIATE:4]                                  │
+├─────────────────────────────────────────────────────────────┤
+│  OPCODE  MNEMONIC      OPERATION                            │
+│    0     ADD A, Im     A ← A + Im                           │
+│    1     MOV A, B      A ← B                                │
+│    2     IN A          A ← Input Port                       │
+│    3     MOV A, Im     A ← Im                               │
+│    4     MOV B, A      B ← A                                │
+│    5     ADD B, Im     B ← B + Im                           │
+│    6     IN B          B ← Input Port                       │
+│    7     MOV B, Im     B ← Im                               │
+│    9     OUT B         Output ← B                           │
+│    B     OUT Im        Output ← Im                          │
+│    E     JNC Im        if C=0: PC ← Im                      │
+│    F     JMP Im        PC ← Im                              │
+├─────────────────────────────────────────────────────────────┤
+│  UNUSED OPCODES: 8, A, C, D                                 │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Appendix B: Comparison with Other Educational CPUs
+
+| Feature | TD4 | SAP-1 | HACK | 6502 |
+|---------|-----|-------|------|------|
+| Data width | 4-bit | 8-bit | 16-bit | 8-bit |
+| Address space | 16 bytes | 16 bytes | 32K×2 | 64KB |
+| Registers | 2 GP + OUT | 1 (A) | 2 (A,D) | 3 (A,X,Y) |
+| Instructions | 12 | 5 | ~28 | 56 |
+| ALU operations | ADD only | ADD, SUB | ADD, AND, NOT | Full |
+| RAM | No | No | 16K | Yes |
+| Stack | No | No | Call stack | Yes |
+| IC count | ~10 | ~15 | ~25 | 1 |
+| Clock cycles/instr | 1 | 6 | 1-2 | 2-7 |
+
+---
+
+## Appendix C: Troubleshooting Guide
+
+| Symptom | Possible Cause | Solution |
+|---------|---------------|----------|
+| Nothing works | Power not connected | Check VCC and GND |
+| Random behavior | Missing decoupling caps | Add 0.1µF near each IC |
+| PC doesn't count | Clock not reaching 161 | Check CLK wiring |
+| Wrong instruction | ROM programmed incorrectly | Verify ROM contents |
+| Carry always 0/1 | Carry FF not connected | Check 74HC74 wiring |
+| Jump doesn't work | LOAD not reaching PC | Trace decoder output |
+| Output stuck | OUT register not loading | Check LOAD_OUT signal |
+
+---
+
+## Conclusion
+
+The TD4 is a masterpiece of minimalist design. With just 10 ICs, it demonstrates:
+
+1. **Fetch-Decode-Execute cycle** in hardware
+2. **Stored-program architecture** (von Neumann concept)
+3. **Control signal generation** from opcodes
+4. **Conditional branching** with flags
+5. **Register transfer** operations
+
+Building and understanding the TD4 gives you intuition that transfers directly to understanding real CPUs—you'll never look at a computer the same way again.
+
+**Suggested next steps after TD4:**
+1. Build it on a breadboard
+2. Write several programs
+3. Add hardware modifications
+4. Move to 8-bit (SAP-1 or similar)
+5. Study the HACK computer (Nand2Tetris)
+6. Explore real vintage CPUs (6502, Z80)
+
+Happy building! 🔧
