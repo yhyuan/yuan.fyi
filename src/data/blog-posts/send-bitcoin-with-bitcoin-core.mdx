@@ -1,0 +1,62 @@
+---
+title: Send Bitcoin with Bitcoin Core
+slug: send-bitcoin-with-bitcoin-core
+publishDate: 2024-08-02
+description: Learn about Send Bitcoin with Bitcoin Core.
+date: 2024-08-02
+tags: ['Bitcoin']
+draft: false
+---
+
+Here's how to split transaction creation, signing, and broadcasting across different computers:
+You need to start bitcoind.
+
+```bash
+bitcoind -conf="C:\Users\<UserName>\AppData\Local\Bitcoin\bitcoin.conf" -datadir="D:\Bitcoin" -printtoconsole
+```
+
+1. On Computer 1 (Create unsigned transaction):
+   You need to check the transaction with YOUR_TXID has not been spent. The total of bitcoin in transations is smaller than the amount to be sent. The diference will be paided to miner.
+
+```bash
+bitcoin-cli -conf="C:\Users\<UserName>\AppData\Local\Bitcoin\bitcoin.conf" createrawtransaction '[{"txid":"YOUR_TXID","vout":0}]' '{"RECIPIENT_ADDRESS":0.1}'
+```
+
+It will generate a Unsigned Hex string.
+
+2. On Computer 2 (Sign transaction):
+   In cold wallet machine, you also need to start `bitcoind`. It is fine that you failed with synchronize with the main net.
+
+```bash
+bitcoind -conf="C:\Users\<UserName>\AppData\Local\Bitcoin\bitcoin.conf" -datadir="D:\Bitcoin" -printtoconsole
+```
+
+Create a json string with transactions and append as the last parameter to sign the transation. PRIVATE_KEY is in WIF format.
+
+```bash
+bitcoin-cli -conf="C:\Users\<UserName>\AppData\Local\Bitcoin\bitcoin.conf" signrawtransactionwithkey "UNSIGNED_HEX" '["PRIVATE_KEY"]' '[{"txid":"YOUR_TXID","vout":0,"scriptPubKey":"76a9......","amount":0.1016}]'
+```
+
+It will create a hex string and a complete sign to show whether the signing is successful or not.
+
+```json
+{
+  "hex": "0200000001b........",
+  "complete": true
+}
+```
+
+3. On Computer 1 (Broadcast):
+
+Go back the machine which is connected with mainnet and use the following method to send out the transation.
+
+```bash
+bitcoin-cli -conf="C:\Users\<UserName>\AppData\Local\Bitcoin\bitcoin.conf" sendrawtransaction "SIGNED_HEX"
+```
+
+Key points:
+
+- Computer 2 needs private keys
+- Copy hex strings between computers securely
+- Verify transaction details before broadcasting
+- Fees must be included in createrawtransaction

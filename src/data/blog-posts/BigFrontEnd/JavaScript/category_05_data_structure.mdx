@@ -1,0 +1,1163 @@
+---
+title: BigFrontEnd Category 5 Data Structure Questions
+slug: category-05-data-structure
+publishDate: 2024-06-02
+description: Learn about BigFrontEnd Category 5 Data Structure Questions.
+date: 2024-06-02
+tags: ["BigFrontEnd", "category"]
+draft: false
+---
+
+### Introduction
+
+This blog post summarizes the Data Structure questions found on BigFrontEnd.Dev.
+
+<TOCInline toc={props.toc} exclude="Introduction" />
+
+### 1.create a Priority Queue in JavaScript
+
+24.https://bigfrontend.dev/problem/create-a-priority-queue-in-JavaScript
+
+Priority Queue is a commonly used data structure in algorithm problem. Especially useful for Top K problem with a huge amount of input data, since it could avoid sorting the whole but keep a fixed-length sorted portion of it.
+
+Since there is no built-in Priority Queue in JavaScript, in a real interview, you should tell interview saying that "Suppose we already have a Priority Queue Class I can use", there is no time for you to write a Priority Queue from scratch.
+
+But it is a good coding problem to practice, so please implement a Priority Queue with following interface
+
+```js
+class PriorityQueue {
+  // compare is a function defines the priority, which is the order
+  // the elements closer to first element is sooner to be removed.
+  constructor(compare) {
+
+  }
+
+  // add a new element to the queue
+  // you need to put it in the right order
+  add(element) {
+  }
+  // remove the head element and return
+  poll() {
+
+  }
+  // get the head element
+  peek() {
+  }
+  // get the amount of items in the queue
+  size() {
+  }
+}
+```
+Here is an example to make it clearer
+```js
+const pq = new PriorityQueue((a, b) => a - b)
+// (a, b) => a - b means
+// smaller numbers are closer to index:0
+// which means smaller number are to be removed sooner
+pq.add(5)
+// now 5 is the only element
+pq.add(2)
+// 2 added
+pq.add(1)
+// 1 added
+pq.peek()
+// since smaller number are sooner to be removed
+// so this gives us 1
+pq.poll()
+// 1
+// 1 is removed, 2 and 5 are left
+pq.peek()
+// 2 is the smallest now, this returns 2
+pq.poll()
+// 2
+// 2 is removed, only 5 is left
+```
+Solution:
+1. add need to heapify up and remove needs to heapify down.
+2. `parentIndex = Math.floor((index - 1) / 2);` compare it with its parent. If smaller, swap with parent then, swap again on parent.
+3. `const leftIndex = 2 * parentIndex + 1;` and `const rightIndex = 2 * parentIndex + 2;`. Find the `let swappableIndex = parentIndex;`
+
+```js
+class PriorityQueue {
+  /**
+   * @param {(a: any, b: any) => -1 | 0 | 1} compare -
+   * compare function, similar to parameter of Array.prototype.sort
+   */
+  constructor(compare) {
+    this.compare = compare;
+    this.heap = [];
+  }
+
+  /**
+   * return {number} amount of items
+   */
+  size() {
+    return this.heap.length;
+  }
+
+  /**
+   * returns the head element
+   */
+  peek() {
+    return this.heap[0];
+  }
+
+  /**
+   * @param {any} value - new value to add
+   */
+  add(element) {
+    // Add to the end and heapify up if the size is greater than 1.
+    this.heap.push(element);
+
+    const heapSize = this.size();
+    if (heapSize > 1) {
+      this.heapifyUp(heapSize - 1);
+    }
+  }
+
+  /**
+   * remove the head element
+   * @return {any} the head element
+   */
+  poll() {
+    // swap with the end and pop out.
+    // heapify down the new top element if there is more than 1 element.
+    const heapSize = this.size();
+    if (heapSize <= 1) {
+      return this.heap.pop();
+    }
+
+    this.swap(0, heapSize - 1);
+    const head = this.heap.pop();
+    this.heapifyDown(0);
+    return head;
+  }
+
+  heapifyUp(index) {
+    const parentIndex = Math.floor((index - 1) / 2);
+
+    if (parentIndex < 0) {
+      return;
+    }
+
+    const comparison = this.compare(this.heap[index], this.heap[parentIndex]);
+    if (comparison < 0) {
+      this.swap(index, parentIndex);
+      this.heapifyUp(parentIndex);
+    }
+  }
+
+  heapifyDown(parentIndex) {
+    const leftIndex = 2 * parentIndex + 1;
+    const rightIndex = 2 * parentIndex + 2;
+    let swappableIndex = parentIndex;
+    const heapSize = this.size();
+    let comparison = 0;
+
+    if (leftIndex < heapSize) {
+      comparison = this.compare(
+        this.heap[leftIndex],
+        this.heap[swappableIndex],
+      );
+      if (comparison < 0) {
+        swappableIndex = leftIndex;
+      }
+    }
+
+    if (rightIndex < heapSize) {
+      comparison = this.compare(
+        this.heap[rightIndex],
+        this.heap[swappableIndex],
+      );
+      if (comparison < 0) {
+        swappableIndex = rightIndex;
+      }
+    }
+
+    if (swappableIndex !== parentIndex) {
+      this.swap(parentIndex, swappableIndex);
+      this.heapifyDown(swappableIndex);
+    }
+  }
+
+  swap(i, j) {
+    [this.heap[i], this.heap[j]] = [this.heap[j], this.heap[i]];
+  }
+}
+```
+
+### 2.find the K-th largest element in an unsorted array
+
+45.https://bigfrontend.dev/problem/find-the-K-th-largest-element-in-an-unsorted-array
+
+You are given an unsorted array of numbers, which might have duplicates, find the K-th largest element.
+
+The naive approach would be sort it first, but it costs O(nlogn), could you find a better approach?
+
+Maybe you can recall what is happening in Quick Sort or Priority Queue
+
+```js
+function findKThLargest(arr, k) {
+  // Max Heap
+  const priorityQueue = new PriorityQueue((a, b) => b - a);
+  arr.forEach((val) => priorityQueue.add(val));
+  for (let i = 0; i < k - 1; i++) {
+    priorityQueue.poll();
+  }
+  return priorityQueue.poll();
+}
+// N*LOG(N)
+// If k << n, we can maintain the heap with size K. O(N * LOG(K))
+```
+
+```js
+/**
+ * @param {number[]} nums
+ * @param {number} k
+ * @return {number}
+ */
+var findKthLargest = function (nums, k) {
+  // Min Heap
+  const heap = new Heap((a, b) => a - b);
+  for (let i = 0; i < k; i++) {
+    heap.add(nums[i]);
+  }
+  const n = nums.length;
+  for (let i = k; i < n; i++) {
+    if (heap.peek() < nums[i]) {
+      heap.poll();
+      heap.add(nums[i]);
+    }
+  }
+  return heap.peek();
+};
+```
+
+### 3.Find Top k Elements
+
+152.https://bigfrontend.dev/problem/top-k-elements
+
+Given an unsorted array of integers which might have duplicates, return the top k integers in non-ascending order.
+```js
+topK([1,10,8,9,10,2,3,4,8,8,6], 4)
+```
+What is the time & space cost of your code ? Could you do better ?
+
+### 4.highlight keywords in HTML string
+
+55.https://bigfrontend.dev/problem/highlight-keywords-in-HTML-string
+
+Suppose you are implementing an auto-complete in search input.
+
+When keywords are typed, you need to highlight the keywords, how would you do that?
+
+To simplify things, you need to create a function highlightKeywords(html:string, keywords: string[]), which wraps the keywords in html string, with `<em>` tag.
+
+Here is an example.
+```js
+highlightKeywords(
+  'Hello FrontEnd Lovers',
+  ['Hello', 'Front', 'JavaScript']
+)
+// '<em>Hello</em> <em>Front</em>End Lovers'
+```
+Pay attention to the overlapping and adjacent case. You should use the least tags as possible.
+```js
+highlightKeywords(
+  'Hello FrontEnd Lovers',
+  ['Front', 'End', 'JavaScript']
+)
+// 'Hello <em>FrontEnd</em> Lovers'
+highlightKeywords(
+  'Hello FrontEnd Lovers',
+  ['Front', 'FrontEnd', 'JavaScript']
+)
+// 'Hello <em>FrontEnd</em> Lovers'
+```
+note that space should not be included.
+
+```js
+class TrieNode {
+  constructor() {
+    this.children = new Map();
+    this.isEndOfWord = false;
+  }
+}
+
+class Trie {
+  constructor() {
+    this.root = new TrieNode();
+  }
+
+  insert(word) {
+    let currentNode = this.root;
+    for (const char of word) {
+      if (!currentNode.children.has(char)) {
+        currentNode.children.set(char, new TrieNode());
+      }
+      currentNode = currentNode.children.get(char);
+    }
+
+    currentNode.isEndOfWord = true;
+  }
+}
+
+/**
+ * @param {string} html
+ * @param {string[]} keywords
+ */
+function highlightKeywords(html, keywords) {
+  const trie = new Trie();
+  keywords.forEach((keyword) => {
+    trie.insert(keyword);
+  });
+
+  let node = trie.root;
+  let containedString = "";
+  let highlightedString = "";
+  for (const char of html) {
+    if (!node.children.has(char) && !containedString) {
+      highlightedString += char;
+    } else if (node.children.has(char)) {
+      containedString += char;
+      node = node.children.get(char);
+      if (node.isEndOfWord && node.children.size === 0) {
+        node = trie.root;
+      }
+    } else {
+      // !node.children.has(char) && containedString
+      highlightedString += `<em>${containedString}</em>${char}`;
+      containedString = "";
+    }
+  }
+
+  if (containedString) {
+    highlightedString += `<em>${containedString}</em>`;
+  }
+
+  return highlightedString;
+}
+```
+
+### 5.create a browser history
+
+59.https://bigfrontend.dev/problem/create-a-browser-history
+
+I believe you are very familiar about your browser you are currently visiting https://bigfrontend.dev with.
+
+The common actions relating to history are:
+
+new BrowserHistory() - when you open a new tab, it is set with an empty history
+goBack() - go to last entry, notice the entries are kept so that forward() could get us back
+forward() - go to next visited entry
+visit() - when you enter a new address or click a link, this adds a new entry but truncate the entries which we could forward() to.
+Say we start a new tab, this is the empty history.
+```js
+[ ]
+```
+Then visit url A, B, C in turn.
+```js
+[ A, B, C]
+        ↑
+```
+We are currently at C, we could goBack() to B, then to A
+```js
+[ A, B, C]
+  ↑
+```
+forward() get us to B
+```js
+[ A, B, C]
+     ↑
+```
+Now if we visit a new url D, since we are currently at B, C is truncated.
+```js
+[ A, B, D]
+        ↑
+```
+
+You are asked to implement a BrowserHistory class to mimic the behavior.
+
+Solution:
+
+```js
+class BrowserHistory {
+  /**
+   * @param {string} url
+   * if url is set, it means new tab with url
+   * otherwise, it is empty new tab
+   */
+  constructor(url) {
+    // Store the url, since the method `goBack()` should
+    // return the initial url if it is out of bounds.
+    /** For instance,
+     *  const bh = new BrowserHistory('X')
+     *  bh.visit('A')
+     *  bh.goBack()
+     *  bh.goBack()
+     *  console.log(bh.current); // should be be 'X' rather than undefined.
+     */
+    this.initialUrl = url;
+    this.urls = url ? [url] : [];
+    this.currentIndex = this.urls.length - 1;
+  }
+  /**
+   * @param { string } url
+   */
+  visit(url) {
+    this.currentIndex++;
+    this.urls[this.currentIndex] = url;
+  }
+
+  /**
+   * @return {string} current url
+   */
+  get current() {
+    return this.currentIndex >= 0
+      ? this.urls[this.currentIndex]
+      : this.initialUrl;
+  }
+
+  // go to previous entry
+  goBack() {
+    this.currentIndex--;
+  }
+
+  // go to next visited url
+  forward() {
+    this.currentIndex = Math.min(this.urls.length - 1, this.currentIndex + 1);
+  }
+}
+```
+
+### 6.Implement a Queue by using Stack
+
+13.https://bigfrontend.dev/problem/implement-a-queue-by-using-stack
+
+In JavaScript, we could use array to work as both a Stack or a queue.
+```js
+const arr = [1, 2, 3, 4]
+arr.push(5) // now array is [1, 2, 3, 4, 5]
+arr.pop() // 5, now the array is [1, 2, 3, 4]
+```
+Above code is a Stack, while below is a Queue
+```js
+const arr = [1, 2, 3, 4]
+arr.push(5) // now the array is [1, 2, 3, 4, 5]
+arr.shift() // 1, now the array is [2, 3, 4, 5]
+```
+now suppose you have a stack, which has only follow interface:
+```js
+class Stack {
+  push(element) { /* add element to stack */ }
+  peek() { /* get the top element */ }
+  pop() { /* remove the top element */}
+  size() { /* count of elements */}
+}
+```
+Could you implement a Queue by using only above Stack? A Queue must have following interface
+```js
+class Queue {
+  enqueue(element) { /* add element to queue, similar to Array.prototype.push */ }
+  peek() { /* get the head element*/ }
+  dequeue() { /* remove the head element, similar to Array.prototype.pop */ }
+  size() { /* count of elements */ }
+}
+```
+note
+
+you can only use Stack as provided, Array should be avoided for the purpose of practicing.
+
+Solution:
+```js
+/* you can use this Class which is bundled together with your code
+
+class Stack {
+  push(element) { // add element to stack }
+  peek() { // get the top element }
+  pop() { // remove the top element}
+  size() { // count of element }
+}
+*/
+
+/* Array is disabled in your code */
+
+class Queue {
+  constructor() {
+    this.stack1 = [];
+    this.stack2 = [];
+  }
+
+  // Enqueue operation
+  enqueue(value) {
+    this.stack1.push(value);
+  }
+
+  #transferAllElements() {
+    if (this.stack2.length === 0) {
+      // Transfer all elements from stack1 to stack2 if stack2 is empty
+      while (this.stack1.length > 0) {
+        this.stack2.push(this.stack1.pop());
+      }
+    }
+  }
+
+  // Dequeue operation
+  dequeue() {
+    this.#transferAllElements();
+    if (this.stack2.length === 0) {
+      return undefined;
+    }
+    return this.stack2.pop();
+  }
+
+  // Peek operation (returns the front element without removing it)
+  peek() {
+    this.#transferAllElements();
+    if (this.stack2.length === 0) {
+      return undefined;
+    }
+    return this.stack2[this.stack2.length - 1];
+  }
+
+  // Check if the queue is empty
+  size() {
+    return this.stack1.length + this.stack2.length;
+  }
+}
+```
+
+### 7.Implement a Stack by using Queue
+
+108.https://bigfrontend.dev/problem/Implement-a-Stack-by-using-Queue
+
+This is reversed problem of 13. Implement a Queue by using Stack
+
+In JavaScript, we could use array to work as both a Stack or a queue.
+```js
+const arr = [1, 2, 3, 4]
+arr.push(5) // now array is [1, 2, 3, 4, 5]
+arr.pop() // 5, now the array is [1, 2, 3, 4]
+```
+Above code is a Stack, while below is a Queue
+```js
+const arr = [1, 2, 3, 4]
+arr.push(5) // now the array is [1, 2, 3, 4, 5]
+arr.shift() // 1, now the array is [2, 3, 4, 5]
+```
+now suppose you have a Queue, which has only follow interface:
+```js
+class Queue {
+  enqueue(element) { /* add element to queue, similar to Array.prototype.push */ }
+  peek() { /* get the head element*/ }
+  dequeue() { /* remove the head element, similar to Array.prototype.pop */ }
+  size() { /* count of elements */ }
+}
+```
+Could you implement a Stack by using only above Queue? A Stack must have following interface
+```js
+class Stack {
+  push(element) { /* add element to stack */ }
+  peek() { /* get the top element */ }
+  pop() { /* remove the top element */}
+  size() { /* count of elements */}
+}
+```
+note
+
+you can only use Queue as provided. Don't use Array, it is not what this is for.
+
+Solution:
+
+```js
+/* you can use this Queue which is bundled together with your code
+class Queue {
+  enqueue(element) {
+    // add new element to the queue
+  }
+  peek() {
+    // return the head element
+  }
+  dequeue() {
+    // remove head element from the queue
+  }
+  size() {
+    // return the queue size
+  }
+}
+*/
+
+// you need to complete the following Stack, using only Queue
+class Stack {
+  constructor() {
+    this.queue1 = new Queue();
+    this.queue2 = new Queue();
+  }
+
+  push(element) {
+    this.queue1.enqueue(element);
+  }
+
+  peek() {
+    if (this.queue1.size() === 0) {
+      return undefined;
+    }
+    while (this.queue1.size() > 1) {
+      this.queue2.enqueue(this.queue1.dequeue());
+    }
+    const ans = this.queue1.peek();
+    // Move the last element.
+    this.queue2.enqueue(this.queue1.dequeue());
+    [this.queue1, this.queue2] = [this.queue2, this.queue1];
+    return ans;
+  }
+
+  pop() {
+    if (this.queue1.size() === 0) {
+      return undefined;
+    }
+    while (this.queue1.size() > 1) {
+      this.queue2.enqueue(this.queue1.dequeue());
+    }
+    const ans = this.queue1.dequeue();
+    [this.queue1, this.queue2] = [this.queue2, this.queue1];
+    return ans;
+  }
+
+  size() {
+    return this.queue1.size();
+  }
+}
+```
+
+### 8.merge sorted arrays
+
+81.https://bigfrontend.dev/problem/merge-sorted-arrays
+
+You are given a list of sorted non-descending integer arrays, write a function to merge them into one sorted non-descending array.
+```js
+merge(
+  [
+    [1,1,1,100,1000,10000],
+    [1,2,2,2,200,200,1000],
+    [1000000,10000001],
+    [2,3,3]
+  ]
+)
+```
+What is time complexity of your solution?
+
+**Solution:** Utilize a Priority Queue to identify the smallest value in each array.
+
+```js
+/**
+ * @param {number[][]} arrList
+ * non-descending integer array
+ * @return {number[]}
+ */
+function merge(arrList) {
+  // your code here
+  const priorityQueue = new PriorityQueue((a, b) => {
+    if (a[0] !== b[0]) {
+      return a[0] - b[0];
+    } else if (a[1] !== b[1]) {
+      return a[1] - b[1];
+    } else {
+      return a[2] - b[2];
+    }
+  });
+  arrList.forEach((list, index) => {
+    if (list.length > 0) {
+      priorityQueue.add([list[0], 0, index]);
+    }
+  });
+  const ans = [];
+  // console.log(ans);
+  while (priorityQueue.size() > 0) {
+    const [val, i, index] = priorityQueue.poll();
+    // console.log(`val: ${val}, i: ${i}, index: ${index}`);
+    ans.push(val);
+    if (i + 1 < arrList[index].length) {
+      priorityQueue.add([arrList[index][i + 1], i + 1, index]);
+    }
+  }
+  return ans;
+}
+```
+
+### 9.serialize and deserialize binary tree
+
+110.https://bigfrontend.dev/problem/serialize-and-deserialize-binary-tree
+
+Can you transform(serialize) a binary tree into a string and restore(deserialize) a binary tree from the string? Just like what JSON.stringify() and JSON.parse() do.
+
+For example, for a tree from 91. invert a binary tree
+
+BFE.dev would serialize it to [1,2,3,4,null,null,5,6,7,8,null,null,null,null,9]
+
+But there are more ways of doing it rather than above, any would be fine as long as your deserialize() and serialize() work as a pair.
+
+Your code is tested like this:
+```js
+const tree1 = ...
+expect(typeof serialize(tree1)).toBe('string')
+const tree2 = deserialize(serialize(tree1))
+expect(isIdentical(tree1, tree2)).toBe(true)
+```
+Binary tree in this problem consists of value of integers.
+
+**Solution:** This solution is identical to Leetcode 297: Serialize and Deserialize Binary Tree [Hard]. For more details, refer to Leetcode Pattern 5: Tree Search.
+
+```javascript
+// This is the class for the node
+// you can use this directly as it is bundled with your code
+
+// class Node {
+//   value: number
+//   left: null | Node
+//   right: null | Node
+//   constructor(val) {
+//     this.value = val
+//     this.left = null
+//     this.right = null
+//   }
+// }
+
+function serialize(root) {
+    if (root === null) {
+        return "()";
+    }
+    return `(${root.val}${serialize(root.left)}${serialize(root.right)})`;
+};
+
+function deserialize(data) {
+    data = data.slice(1, data.length - 1);
+    if (data === "") return null;
+    const index = data.indexOf("(");
+    const val = Number.parseInt(data.slice(0, index));
+    const root = new Node(val);
+    if (data.endsWith("()()")) {
+        return root;
+    }
+    if (data.endsWith("()")) {
+        root.left = deserialize(data.slice(index, data.length - 2));
+        return root;
+    }
+    if (data.startsWith("()")) {
+        root.right = deserialize(data.slice(index + 2, data.length));
+        return root;
+    }
+
+    const findLeftRightBorder = (index) => {
+        let i = index + 1;
+        let count = 1;
+        while (count > 0) {
+            if (data[i] === "(") {
+                count += 1;
+            }
+            if (data[i] === ")") {
+                count -= 1;
+            }
+            i += 1;
+        }
+        return i;
+    };
+    const border = findLeftRightBorder(index);
+    root.left = deserialize(data.slice(index, border));
+    root.right = deserialize(data.slice(border, data.length));
+    return root;
+}
+```
+
+### 10.binary tree vertical traversal
+137.https://bigfrontend.dev/problem/binary-tree-vertical-traversal
+Traverse a binary tree vertically from left to right, from top to bottom, the binary tree contains positive integers as node values.
+
+For above binary tree, vertical traversal should return
+```js
+[6,4,2,7,1,9,10,3,8,5]
+```
+
+**Solution:** We can create a new class named `TreeNodeWrapper` to wrap the tree node, along with its `x` and `y` positions and its parent node. Then, we can run a DFS (Depth-First Search) to build a `TreeNodeWrapper` for every tree node. After that, we sort the `TreeNodeWrapper` array based on the `x` and `y` positions and the parent node's position. Finally, we extract the values of the tree nodes and return the result.
+
+```javascript
+// This is the class for the node
+// you can use this directly as it is bundled with your code
+
+// class Node {
+//   value: number
+//   left: null | Node
+//   right: null | Node
+//   constructor(val) {
+//     this.value = val
+//     this.left = null
+//     this.right = null
+//   }
+// }
+class TreeNodeWrapper {
+  constructor(treeNode, x = null, y = null, parentNode = null) {
+    this.treeNode = treeNode
+    this.x = x
+    this.y = y
+    this.parentNode = parentNode
+  }
+}
+/**
+ * @param {Node} root
+ * @returns {number[]}
+ */
+function traverse(root) {
+  const rootWrapper = new TreeNodeWrapper(root, 0, 0, null)
+  const stack = [rootWrapper]
+  const results = []
+  while (stack.length > 0) {
+    const rootWrapper = stack.pop()
+    results.push(rootWrapper)
+    if (rootWrapper.treeNode.right !== null) {
+      stack.push(
+        new TreeNodeWrapper(
+          rootWrapper.treeNode.right,
+          rootWrapper.x + 1,
+          rootWrapper.y + 1,
+          rootWrapper
+        )
+      )
+    }
+    if (rootWrapper.treeNode.left !== null) {
+      stack.push(
+        new TreeNodeWrapper(
+          rootWrapper.treeNode.left,
+          rootWrapper.x - 1,
+          rootWrapper.y + 1,
+          rootWrapper
+        )
+      )
+    }
+  }
+  results.sort((a, b) => {
+    if (a.x !== b.x) return a.x - b.x
+    if (a.y !== b.y) return a.y - b.y
+    while (a.x === b.x && a.y === b.y) {
+      a = a.parentNode
+      b = b.parentNode
+    }
+    if (a.x !== b.x) return a.x - b.x
+    if (a.y !== b.y) return a.y - b.y
+  })
+  return results.map((result) => result.treeNode.value)
+}
+```
+
+### 11.LRU - Chrome storage automatic eviction
+
+169.https://bigfrontend.dev/problem/lru-chrome-storage-eviction
+
+Chrome uses LRU algorithm to evict data when it has to.
+
+Watch [this Youtube video](https://youtu.be/NNuTV-gjlZQ?t=387) for detail explanation, starting from 6:25 to 7:38.
+
+
+Now you are asked to implement similar - Implement a class LRUStorage.
+
+This is of course not to reflect the true implementation in Chrome.
+getData and setData should both be treated as data being 'used'.
+considering time precision issue, your class needs to accept getTimestamp as second argument of constructor function for our tests.
+```js
+interface OriginData {
+  origin: string
+  lastUsed: number
+  size: number
+  persistent: boolean
+}
+interface LRUStorage {
+  capacity: number
+  // to use the data for origin
+  // return size of the data or undefined if not exist
+  getData(origin: string): OriginData | undefined
+
+  // updating data for origin
+  // return boolean to indicate success or failure
+  // If the total size exceeds capacity,
+  // Least Recently Used non-persistent origin data other than itself should be evicted.
+  setData(origin: string, size: number): boolean
+  // manually clear data for origin
+  clearData(origin: string): void
+  // change data for origin to be persistent
+  // it only handles existing data not the data added later
+  // persistent data cannot be evicted unless manually clear it
+  makePersistent(origin: string): void
+}
+```
+
+**Solution:**
+
+This implementation will use a Map to store the data and maintain the order of usage, along with methods to handle the LRU eviction policy and persistence.
+
+Let's break down the implementation:
+
+1. Constructor:
+   - Initializes the storage with the given capacity.
+   - Uses a Map (`this.store`) to store the data, which maintains insertion order.
+   - Accepts a custom `getTimestamp` function for testing purposes.
+
+2. `getData`:
+   - Retrieves data for the given origin.
+   - Updates the `lastUsed` timestamp and moves the item to the end of the Map (most recently used).
+
+3. `setData`:
+   - Adds or updates data for the given origin.
+   - If the new size exceeds capacity, it returns false.
+   - Evicts least recently used non-persistent data if necessary to make room.
+   - Updates the current size and stores the new data.
+
+4. `clearData`:
+   - Removes data for the given origin and updates the current size.
+
+5. `makePersistent`:
+   - Marks the data for the given origin as persistent.
+
+6. `evictLRU`:
+   - Helper method to evict the least recently used non-persistent data.
+   - Excludes the origin that's currently being set (to avoid evicting itself).
+
+This implementation ensures that:
+- Data access and updates are treated as usage (updating `lastUsed`).
+- The LRU eviction policy is applied when necessary.
+- Persistent data is not evicted unless manually cleared.
+- The total size of stored data doesn't exceed the capacity.
+
+The use of a Map allows for efficient order maintenance and lookup, making it suitable for implementing the LRU cache behavior.
+
+
+```javascript
+class MyLRUStorage {
+  constructor(capacity, getTimestamp = () => Date.now()) {
+    this.capacity = capacity;
+    this.currentSize = 0;
+    this.store = new Map();
+    this.getTimestamp = getTimestamp;
+  }
+
+  getData(origin) {
+    const data = this.store.get(origin);
+    if (data) {
+      data.lastUsed = this.getTimestamp();
+      this.store.delete(origin);
+      this.store.set(origin, data);
+    }
+    return data;
+  }
+
+  setData(origin, size) {
+    let data = this.store.get(origin);
+    if (data) {
+      this.currentSize -= data.size;
+    }
+
+    if (size > this.capacity) {
+      return false;
+    }
+
+    while (this.currentSize + size > this.capacity) {
+      if (!this.evictLRU(origin)) {
+        return false;
+      }
+    }
+
+    data = {
+      origin,
+      lastUsed: this.getTimestamp(),
+      size,
+      persistent: data ? data.persistent : false
+    };
+
+    this.store.delete(origin);
+    this.store.set(origin, data);
+    this.currentSize += size;
+
+    return true;
+  }
+
+  clearData(origin) {
+    const data = this.store.get(origin);
+    if (data) {
+      this.currentSize -= data.size;
+      this.store.delete(origin);
+    }
+  }
+
+  makePersistent(origin) {
+    const data = this.store.get(origin);
+    if (data) {
+      data.persistent = true;
+      this.store.delete(origin);
+      this.store.set(origin, data);
+    }
+  }
+
+  evictLRU(excludeOrigin) {
+    let lruOrigin = null;
+    let lruTimestamp = Infinity;
+
+    for (const [origin, data] of this.store) {
+      if (!data.persistent && origin !== excludeOrigin && data.lastUsed < lruTimestamp) {
+        lruOrigin = origin;
+        lruTimestamp = data.lastUsed;
+      }
+    }
+
+    if (lruOrigin) {
+      this.clearData(lruOrigin);
+      return true;
+    }
+
+    return false;
+  }
+}
+```
+
+### 12. create callback on message channel
+
+171.https://bigfrontend.dev/problem/some-message-channel
+
+We have SomeChannel which allows us to send messages between 2 ports.
+```js
+const {port1, port2} = new SomeChannel()
+port2.onmessage = (message) => {
+  console.log(message) // hi
+}
+port1.postMessage('hi')
+```
+It looks like MessageChannel, but SomeChannel is not in good condition, it has random delay in sending the messages, which means the order messages are sent might be different from the order they are received.
+
+Now your job is to create a BetterChannel that enables communication between ports with callback and reply handle, but on top of SomeChannel.
+```js
+const {port1, port2} = new BetterChannel()
+port2.onmessage = (message, reply) => {
+  if (message === 'ping?') {
+    reply('pong!')
+  }
+  if (message === 'pong?') {
+    reply('ping!')
+  }
+}
+port1.postMessage('ping?', (data) => {
+  console.log(data) // 'pong!'
+})
+```
+1. you should avoid global state outside of the classes.
+2. internally SomeChannel must be used.
+3. though there might be delays, messages are guaranteed to be delivered through SomeChannel, but it is worthy for you to think about the case in which messages might be dropped.
+
+**Solution:**
+
+Let's implement a `BetterChannel` class that uses `SomeChannel` internally and provides a more reliable communication mechanism with callbacks and reply handling. Here's an implementation that meets the requirements:
+
+```javascript
+class BetterChannel {
+  constructor() {
+    const { port1, port2 } = new SomeChannel();
+    this.port1 = new BetterPort(port1);
+    this.port2 = new BetterPort(port2);
+  }
+}
+
+class BetterPort {
+  constructor(somePort) {
+    this.somePort = somePort;
+    this.messageQueue = [];
+    this.messageId = 0;
+    this.callbacks = new Map();
+    this.onmessage = null;
+
+    this.somePort.onmessage = (message) => this.handleMessage(message);
+  }
+
+  postMessage(message, callback) {
+    const id = this.messageId++;
+    const wrappedMessage = { id, type: 'message', content: message };
+
+    if (callback) {
+      this.callbacks.set(id, callback);
+    }
+
+    this.somePort.postMessage(JSON.stringify(wrappedMessage));
+  }
+
+  handleMessage(rawMessage) {
+    const message = JSON.parse(rawMessage);
+
+    if (message.type === 'message') {
+      const reply = (replyContent) => {
+        const replyMessage = { id: message.id, type: 'reply', content: replyContent };
+        this.somePort.postMessage(JSON.stringify(replyMessage));
+      };
+
+      if (this.onmessage) {
+        this.onmessage(message.content, reply);
+      }
+    } else if (message.type === 'reply') {
+      const callback = this.callbacks.get(message.id);
+      if (callback) {
+        callback(message.content);
+        this.callbacks.delete(message.id);
+      }
+    }
+  }
+}
+```
+
+Let's break down this implementation:
+
+1. `BetterChannel` class:
+   - Creates a new `SomeChannel` instance.
+   - Wraps each port from `SomeChannel` with a `BetterPort` instance.
+
+2. `BetterPort` class:
+   - Wraps a port from `SomeChannel`.
+   - Maintains a message queue, message ID counter, and a map of callbacks.
+   - Implements the `postMessage` method and message handling.
+
+3. `postMessage` method:
+   - Assigns a unique ID to each message.
+   - Wraps the message with metadata (ID and type).
+   - Stores the callback if provided.
+   - Sends the wrapped message through the `SomeChannel` port.
+
+4. Message handling:
+   - Parses incoming messages.
+   - For 'message' type:
+     - Creates a `reply` function that can be used to respond to the message.
+     - Calls the `onmessage` handler with the message content and reply function.
+   - For 'reply' type:
+     - Retrieves and calls the stored callback, then removes it from the map.
+
+This implementation addresses several key points:
+
+- It maintains the order of messages and their replies by using unique message IDs.
+- It handles the potential delay in `SomeChannel` by using callbacks instead of relying on message order.
+- It provides a `reply` function to easily respond to messages.
+- It wraps and unwraps messages to add necessary metadata for tracking.
+
+To use this `BetterChannel`:
+
+```javascript
+const { port1, port2 } = new BetterChannel();
+
+port2.onmessage = (message, reply) => {
+  if (message === 'ping?') {
+    reply('pong!');
+  }
+  if (message === 'pong?') {
+    reply('ping!');
+  }
+};
+
+port1.postMessage('ping?', (data) => {
+  console.log(data); // 'pong!'
+});
+```
+
+This implementation ensures that even if `SomeChannel` delivers messages out of order, the responses will be correctly matched to their original messages using the ID system. It also avoids global state by encapsulating all necessary data within the `BetterPort` instances.
+
+While this implementation doesn't explicitly handle dropped messages (as the problem statement guarantees delivery), you could add timeout mechanisms or retry logic in the `postMessage` method if needed to handle potential message drops in a real-world scenario.

@@ -1,0 +1,843 @@
+---
+title: Leetcode Pattern 11 Monotonic Stack
+slug: pattern-11-monotonic-stack
+publishDate: 2024-05-16
+description: Learn about Leetcode Pattern 11 Monotonic Stack.
+date: 2024-05-16
+tags: ["leetcode", "pattern"]
+draft: false
+---
+
+### Introduction
+
+In the realm of algorithm design and data structures, the monotonic stack is a versatile and often underutilized tool. It helps solve a variety of problems related to sequences and arrays, especially those involving comparisons and order.
+
+A monotonic stack is a data structure that maintains a stack where elements are ordered in a monotonically increasing or decreasing fashion. The primary characteristic of a monotonic stack is that it maintains a specific order of elements throughout its operations. This property allows it to efficiently solve problems that involve finding the next or previous greater or smaller element in a sequence.
+
+**Types of Monotonic Stack Problems**
+
+1. **Next vs Previous:**
+   - **Next**: To find the next greater or smaller element, traverse the array from right to left. Use `reversed(range(n))` with an initial value of `n`.
+   - **Previous**: To find the previous greater or smaller element, traverse the array from left to right. Use `range(n)` with an initial value of `-1`.
+
+2. **Greater vs Smaller:**
+   - **Greater**: For problems requiring the next greater element, pop elements from the stack based on the condition `nums[stack[-1]] <= nums[i]`. This condition ensures that the stack maintains a decreasing order.
+   - **GreaterOrEqual**: For problems requiring the next greater or equal element, use `nums[stack[-1]] < nums[i]` to decide when to pop. This ensures the stack is in decreasing order.
+   - **Smaller**: For problems requiring the next smaller element, pop elements based on the condition `nums[stack[-1]] >= nums[i]`. This condition maintains an increasing order in the stack.
+   - **SmallerOrEqual**: For problems requiring the next smaller or equal element, use `nums[stack[-1]] > nums[i]` to determine when to pop. This keeps the stack in increasing order.
+
+```python
+def nextGreater(nums): # previous/next, Greater/GreaterOrEqual/Smaller/SmallerOrEqual
+    n = len(nums)
+    IndexRange = # reversed(range(n)) or range(n) # previous/next
+    initVal = # n or - 1 # previous/next
+    result = [initVal] * n
+    stack = []
+    for i in IndexRange:
+        # Pop Condition decide the stack is a Decreasing stack or increasing stack.
+        while len(stack) > 0 and condition():
+            stack.pop()
+        result[i] = initVal if len(stack) == 0 else stack[-1]
+        stack.append(i)
+    return result
+```
+
+<TOCInline toc={props.toc} exclude="Introduction" />
+
+### Questions
+
+#### 84. Largest Rectangle in Histogram
+
+Given an array of integers heights representing the histogram's bar height where the width of each bar is 1, return the area of the largest rectangle in the histogram.
+
+Solution:
+
+```python
+class Solution:
+    def largestRectangleArea(self, heights: List[int]) -> int:
+        def nextSmaller(nums):
+            n = len(nums)
+            IndexRange = reversed(range(n)) # from right to left
+            initVal = n  # from right to left
+            result = [initVal] * n
+            stack = []
+            for i in IndexRange:
+                # Decreasing stack.
+                while len(stack) > 0 and nums[stack[-1]] >= nums[i]:
+                    stack.pop()
+                result[i] = initVal if len(stack) == 0 else stack[-1]
+                stack.append(i)
+            return result
+
+        def PreviousSmallerOrEqual(nums):
+            n = len(nums)
+            IndexRange = range(n) # from left to right
+            initVal = -1  # from left to right
+            result = [initVal] * n
+            stack = []
+            for i in IndexRange:
+                # Decreasing stack.
+                while len(stack) > 0 and nums[stack[-1]] > nums[i]:
+                    stack.pop()
+                result[i] = initVal if len(stack) == 0 else stack[-1]
+                stack.append(i)
+            return result
+        left = PreviousSmallerOrEqual(heights)
+        right = nextSmaller(heights)
+        n = len(heights)
+        ans = 0
+        for i in range(n):
+            height = heights[i]
+            # i to right[i] - 1 is always greater than heights[i]
+            # left[i] + 1 to i is also greater than heights[i]
+            # the width is right[i] - 1 - (left[i] + 1) + 1 = right[i] - left[i] - 1
+            width = right[i] - left[i] - 1
+            ans = max(ans, height * width)
+        return ans
+```
+
+#### 85. Maximal Rectangle
+
+Given a rows x cols binary matrix filled with 0's and 1's, find the largest rectangle containing only 1's and return its area.
+
+Solution:
+Use `largestRectangleArea` in 84. Largest Rectangle in Histogram
+
+```python
+class Solution:
+    def maximalRectangle(self, matrix: List[List[str]]) -> int:
+        m = len(matrix)
+        n = len(matrix[0])
+        heights = [0] * n
+        ans = 0
+        for i in range(m):
+            for j in range(n):
+                if matrix[i][j] == "1":
+                    heights[j] += 1
+                else:
+                    heights[j] = 0
+            ans = max(ans, largestRectangleArea(heights))
+        return ans
+```
+
+#### 316. Remove Duplicate Letters
+
+Given a string s, remove duplicate letters so that every letter appears once and only once. You must make sure your result is the smallest in lexicographical order among all possible results.
+
+s consists of lowercase English letters.
+
+Note: This question is the same as 1081: https://leetcode.com/problems/smallest-subsequence-of-distinct-characters/
+Solution:
+
+```python
+class Solution:
+    def removeDuplicateLetters(self, s: str) -> str:
+        # Frequency count of each character
+        freq = {char: 0 for char in s}
+        for char in s:
+            freq[char] += 1
+
+        stack = []
+        seen = set()
+
+        for char in s:
+            # Decrease the frequency count for the current character
+            freq[char] -= 1
+
+            # If the character is already in the stack, we skip it
+            if char in seen:
+                continue
+
+            # Maintain the stack such that the resulting characters are in the smallest lexicographical order
+            while stack and char < stack[-1] and freq[stack[-1]] > 0:
+                seen.remove(stack.pop())
+
+            # Push the current character onto the stack and mark it as seen
+            stack.append(char)
+            seen.add(char)
+
+        # The result is the concatenation of the characters in the stack
+        return ''.join(stack)
+```
+
+```python
+class Solution:
+    def removeDuplicateLetters(self, s: str) -> str:
+        last_occur = {ch:i for i, ch in enumerate(s)}
+        #print(last_occur)
+        stack = []
+        visited = set()
+        for i, ch in enumerate(s):
+            if ch in visited:continue
+            # Increasing monotonic stack if the character appears later. If it is the last appearance, we will add it to stack.
+            while len(stack) > 0 and ch < stack[-1] and last_occur[stack[-1]] > i:
+                c = stack.pop()
+                visited.remove(c)
+            stack.append(ch)
+            visited.add(ch)
+        return "".join(stack)
+```
+
+#### 402. Remove K Digits
+
+Given string num representing a non-negative integer num, and an integer k, return the smallest possible integer after removing k digits from num.
+
+num consists of only digits.
+num does not have any leading zeros except for the zero itself.
+
+Solution:
+
+```python
+class Solution:
+    def removeKdigits(self, num: str, k: int) -> str:
+        # PreviousSmallerOrEqual(nums)
+        # decreasing stack
+        stack = []
+        for digit in num:
+            while k > 0 and stack and stack[-1] > digit:
+                stack.pop()
+                k -= 1
+            stack.append(digit)
+
+        # If there are still digits to remove, remove from the end
+        while k > 0:
+            stack.pop()
+            k -= 1
+
+        # Convert the stack to a string and remove leading zeros
+        result = ''.join(stack).lstrip('0')
+
+        # If result is empty, return "0"
+        return result if result else "0"
+```
+
+#### 456. 132 Pattern
+
+Given an array of n integers nums, a 132 pattern is a subsequence of three integers nums[i], nums[j] and nums[k] such that i < j < k and nums[i] < nums[k] < nums[j].
+
+Return true if there is a 132 pattern in nums, otherwise, return false.
+
+Solution:
+
+```python
+class Solution:
+    def find132pattern(self, nums: List[int]) -> bool:
+        def nextGreaterOrEqual(nums):
+            n = len(nums)
+            IndexRange = reversed(range(n)) # from right to left
+            initVal = n  # from right to left
+            result = [initVal] * n
+            stack = []
+            for i in IndexRange:
+                # Decreasing stack.
+                while len(stack) > 0 and nums[stack[-1]] < nums[i]:
+                    stack.pop()
+                result[i] = initVal if len(stack) == 0 else stack[-1]
+                stack.append(i)
+            return result
+        def findMinimal(nums):
+            n = len(nums)
+            minVals = [None] * n
+            minVals[0] = nums[0]
+            for i in range(1, n):
+                minVals[i] = min(minVals[i - 1], nums[i])
+            return minVals
+        minVals = findMinimal(nums)
+        nextGreaterIndices = nextGreaterOrEqual(nums)
+        for j in range(len(nums) - 1):
+            # from j + 1 to nextGreaterIndices[j] - 1 is less than nums[j]
+            # Only nums[nextGreaterIndices[j]] may greater or equal to nums[j]
+            # So If we choose k from j + 1 to nextGreaterIndices[j] - 1, we can
+            # make sure k > j and also nums[j] > nums[k]
+            # If nums[k] >  minVals[j], which is the min value between [0, j],
+            # it means that there is a i, whose value is less than nums[k] and w
+            # whose index is also less than j (becaue nums[i] < nums[k] < nums[j]).
+            for k in range(j + 1, nextGreaterIndices[j]):
+                if nums[k] > minVals[j]:
+                    return True
+        return False
+
+class Solution:
+    def find132pattern(self, nums: List[int]) -> bool:
+        n = len(nums)
+        minVals = [0] * n
+        minVals[0] = nums[0]
+        for i in range(1, n):
+            minVals[i] = min(minVals[i - 1], nums[i])
+        stack = []
+        for i in reversed(range(1, n)):
+            minVal = minVals[i - 1] # s1 to make sure s3 > s1
+            curr = nums[i]
+            while len(stack) > 0 and stack[-1] <= minVal: # s2 > s1
+                stack.pop()
+            if len(stack) > 0 and stack[-1] < curr:
+                return True
+            stack.append(nums[i]);
+        return False
+```
+
+#### 42. Trapping Rain Water
+
+Given n non-negative integers representing an elevation map where the width of each bar is 1, compute how much water it can trap after raining.
+
+```python
+class Solution:
+    def trap(self, height: List[int]) -> int:
+        stack = []
+        water_trapped = 0
+        # previousGreaterOrEqual(nums)
+        n = len(height)
+        indexRange = range(n)
+        for i in indexRange:
+            while stack and height[stack[-1]] < height[i]:
+                # Pop the top of the stack, which represents the height of the valley.
+                top = stack.pop()
+                # If the stack becomes empty after popping, break out of the loop since no left boundary exists.
+                if not stack:
+                    break
+                # Calculate the distance between the current bar and the new top of the stack (which represents the left boundary).
+                distance = i - stack[-1] - 1
+                # Calculate the bounded height by taking the minimum of the heights of the left and right boundaries and subtracting the height of the valley.
+                bounded_height = min(height[i], height[stack[-1]]) - height[top]
+                water_trapped += distance * bounded_height
+            stack.append(i)
+
+        return water_trapped
+```
+
+Example: [4, 2, 0, 3, 2, 5]
+
+#### 496. Next greater element
+
+The next greater element of some element x in an array is the first greater element that is to the right of x in the same array.
+
+You are given two distinct 0-indexed integer arrays nums1 and nums2, where nums1 is a subset of nums2.
+
+For `each 0 <= i < nums1.length`, find the index j such that nums1[i] == nums2[j] and determine the next greater element of nums2[j] in nums2. If there is no next greater element, then the answer for this query is -1.
+
+Return an array ans of length nums1.length such that ans[i] is the next greater element as described above.
+
+
+All integers in nums1 and nums2 are unique.
+
+All the integers of nums1 also appear in nums2.
+
+Solution:
+Next Greater Element means that we need find from right to left. Meanwhile, we need to pop out the stack if the stack top is smaller than the current number because we want to find the one greater than the current number.
+
+```python
+class Solution:
+    def nextGreaterElement(self, nums1: List[int], nums2: List[int]) -> List[int]:
+        def nextGreater(nums):
+            n = len(nums)
+            IndexRange = reversed(range(n)) # from right to left
+            initVal = n  # from right to left
+            result = [initVal] * n
+            stack = []
+            for i in IndexRange:
+                # Decreasing stack.
+                while len(stack) > 0 and nums[stack[-1]] <= nums[i]:
+                    stack.pop()
+                result[i] = initVal if len(stack) == 0 else stack[-1]
+                stack.append(i)
+            return result
+        nextGreaterIndices = nextGreater(nums2)
+        lookup = {}
+        n = len(nums2)
+        for i in range(len(nums2)):
+            lookup[nums2[i]] = nextGreaterIndices[i]
+        return list(map(lambda num: -1 if lookup[num] == n else nums2[lookup[num]], nums1))
+```
+
+#### 503. Next Greater Element II
+
+Given a circular integer array nums (i.e., the next element of nums[nums.length - 1] is nums[0]), return the next greater number for every element in nums.
+
+The next greater number of a number x is the first greater number to its traversing-order next in the array, which means you could search circularly to find its next greater number. If it doesn't exist, return -1 for this number.
+
+Solution:
+
+1. Because we want to find circular elements, we can double the array.
+2. Next Greater Element means that we need find from right to left. So we use `reversed(range(2 * n))`
+3. Meanwhile, we need to pop out the stack if the stack top is smaller than or equal to the current number because we want to find the one greater than the current number.
+
+```python
+class Solution:
+    def nextGreaterElements(self, nums: List[int]) -> List[int]:
+        def nextGreater(nums):
+            n = len(nums)
+            IndexRange = reversed(range(n)) # from right to left
+            initVal = n  # from right to left
+            result = [initVal] * n
+            stack = []
+            for i in IndexRange:
+                # Decreasing stack.
+                while len(stack) > 0 and nums[stack[-1]] <= nums[i]:
+                    stack.pop()
+                result[i] = initVal if len(stack) == 0 else stack[-1]
+                stack.append(i)
+            return result
+        nextGreaters = nextGreater(nums + nums)
+        n = len(nums)
+        return list(map(lambda i: -1 if i == 2 * n else nums[i % n],nextGreaters[:n]))
+```
+
+#### 581. Shortest Unsorted Continuous Subarray
+
+Given an integer array nums, you need to find one continuous subarray that if you only sort this subarray in ascending order, then the whole array will be sorted in ascending order.
+
+Return the shortest such subarray and output its length.
+
+
+Follow up: Can you solve it in O(n) time complexity?
+
+```python
+class Solution:
+    def findUnsortedSubarray(self, nums: List[int]) -> int:
+        n = len(nums)
+        start, end = -1, -1
+        max_seen, min_seen = float('-inf'), float('inf')
+
+        # Traverse from left to right to find the right boundary
+        for i in range(n):
+            if nums[i] < max_seen:
+                end = i
+            else:
+                max_seen = nums[i]
+
+        # Traverse from right to left to find the left boundary
+        for i in range(n-1, -1, -1):
+            if nums[i] > min_seen:
+                start = i
+            else:
+                min_seen = nums[i]
+
+        # If start and end are not updated, it means the array is already sorted
+        if start == -1:
+            return 0
+
+        return end - start + 1
+```
+
+#### 739. Daily Temperatures
+
+Given an array of integers temperatures represents the daily temperatures, return an array answer such that answer[i] is the number of days you have to wait after the ith day to get a warmer temperature. If there is no future day for which this is possible, keep answer[i] == 0 instead.
+
+Solution:
+For every temperature at `i`, `nextGreater(i)` means that
+
+1. temperatures[nextGreater(i)] > temperature[i]
+2. i + 1, i + 2, .... `nextGreater(i) - 1 <= temperature[i]`
+
+```python
+class Solution:
+    def dailyTemperatures(self, temperatures: List[int]) -> List[int]:
+        def nextGreater(nums):
+            n = len(nums)
+            IndexRange = reversed(range(n)) # from right to left
+            initVal = n  # from right to left
+            result = [initVal] * n
+            stack = []
+            for i in IndexRange:
+                # Decreasing stack.
+                while len(stack) > 0 and nums[stack[-1]] <= nums[i]:
+                    stack.pop()
+                result[i] = initVal if len(stack) == 0 else stack[-1]
+                stack.append(i)
+            return result
+        # from i to right[i] - 1, temperatures[i] is the largest and tempearture[right[i]] is larger than temperature[i]
+        nextGreaters = nextGreater(temperatures)
+        n = len(temperatures)
+        ans = [0] * n
+        for i in range(n):
+            ans[i] = 0 if nextGreaters[i] == n else nextGreaters[i] - i
+        return ans
+```
+
+#### 1762. Buildings With an Ocean View
+
+There are n buildings in a line. You are given an integer array heights of size n that represents the heights of the buildings in the line.
+
+The ocean is to the right of the buildings. A building has an ocean view if the building can see the ocean without obstructions. Formally, a building has an ocean view if all the buildings to its right have a smaller height.
+
+Return a list of indices (0-indexed) of buildings that have an ocean view, sorted in increasing order.
+
+
+```python
+class Solution:
+    def findBuildings(self, heights: List[int]) -> List[int]:
+        def nextGreaterOrEqual(nums):
+            n = len(nums)
+            IndexRange = reversed(range(n)) # from right to left
+            initVal = n  # from right to left
+            result = [initVal] * n
+            stack = []
+            for i in IndexRange:
+                # Decreasing stack.
+                while len(stack) > 0 and nums[stack[-1]] < nums[i]:
+                    stack.pop()
+                result[i] = initVal if len(stack) == 0 else stack[-1]
+                stack.append(i)
+            return result
+        nextGreaterOrEqualIndices = nextGreaterOrEqual(heights)
+        ans = []
+        n = len(heights)
+        for i in range(n):
+            if nextGreaterOrEqualIndices[i] == n:
+                ans.append(i)
+        return ans
+```
+
+#### 1944. Number of Visible People in a Queue
+
+There are n people standing in a queue, and they numbered from 0 to n - 1 in left to right order. You are given an array heights of distinct integers where heights[i] represents the height of the ith person.
+
+A person can see another person to their right in the queue if everybody in between is shorter than both of them. More formally, the ith person can see the jth person if i < j and min(heights[i], heights[j]) > max(heights[i+1], heights[i+2], ..., heights[j-1]).
+
+Return an array answer of length n where answer[i] is the number of people the ith person can see to their right in the queue.
+
+All the values of heights are unique.
+
+```python
+class Solution:
+    def canSeePersonsCount(self, heights: List[int]) -> List[int]:
+        n = len(heights)
+        answer = [0] * n
+        stack = []
+        # nextGreaterOrEqual
+        for i in reversed(range(n)):
+            count = 0
+            # Decreasing stack.
+            while stack and heights[stack[-1]] < heights[i]:
+                stack.pop()
+                count += 1
+            if stack:
+                count += 1
+            answer[i] = count
+            stack.append(i)
+
+        return answer
+```
+
+#### 901. Online Stock Span
+
+Design an algorithm that collects daily price quotes for some stock and returns the span of that stock's price for the current day.
+
+The span of the stock's price today is defined as the maximum number of consecutive days (starting from today and going backward) for which the stock price was less than or equal to today's price.
+
+For example, if the price of a stock over the next 7 days were [100,80,60,70,60,75,85], then the stock spans would be [1,1,1,2,1,4,6].
+Implement the StockSpanner class:
+
+StockSpanner() Initializes the object of the class.
+int next(int price) Returns the span of the stock's price given that today's price is price.
+
+At most 104 calls will be made to next.
+Solution:
+
+```python
+class StockSpanner:
+
+    def __init__(self):
+        self.stack = []
+        self.prices = []
+
+    def next(self, price: int) -> int:
+        while len(self.stack) > 0 and self.prices[self.stack[-1]] <= price:
+            self.stack.pop()
+        ans = len(self.prices) + 1 if len(self.stack) == 0 else len(self.prices) - self.stack[-1]
+        self.stack.append(len(self.prices))
+        self.prices.append(price)
+        return ans
+```
+
+#### 907. Sum of Subarray Minimums
+
+Given an array of integers arr, find the sum of min(b), where b ranges over every (contiguous) subarray of arr. Since the answer may be large, return the answer modulo 109 + 7.
+
+Solution:
+
+```python
+class Solution:
+    def sumSubarrayMins(self, arr: List[int]) -> int:
+        def PreviousSmallerOrEqual(nums):
+            n = len(nums)
+            IndexRange = range(n) # from left to right
+            initVal = -1  # from left to right
+            result = [initVal] * n
+            stack = []
+            for i in IndexRange:
+                # Decreasing stack.
+                while len(stack) > 0 and nums[stack[-1]] > nums[i]:
+                    stack.pop()
+                result[i] = initVal if len(stack) == 0 else stack[-1]
+                stack.append(i)
+            return result
+        def nextSmaller(nums):
+            n = len(nums)
+            IndexRange = reversed(range(n)) # from right to left
+            initVal = n  # from right to left
+            result = [initVal] * n
+            stack = []
+            for i in IndexRange:
+                # increasing stack.
+                while len(stack) > 0 and nums[stack[-1]] >= nums[i]:
+                    stack.pop()
+                result[i] = initVal if len(stack) == 0 else stack[-1]
+                stack.append(i)
+            return result
+        right = nextSmaller(arr)
+        left = PreviousSmallerOrEqual(arr)
+        ans = 0
+        n = len(arr)
+        for i in range(n):
+            ans += (i - left[i]) * (right[i] - i) * arr[i]
+            ans = ans % 1000000007
+        return ans
+```
+
+#### 2104. Sum of Subarray Ranges
+
+You are given an integer array nums. The range of a subarray of nums is the difference between the largest and smallest element in the subarray.
+
+Return the sum of all subarray ranges of nums.
+
+A subarray is a contiguous non-empty sequence of elements within an array.
+
+Follow-up: Could you find a solution with O(n) time complexity?
+Solution:
+
+```python
+class Solution:
+    def subArrayRanges(self, nums: List[int]) -> int:
+        def nextGreater(nums):
+            n = len(nums)
+            IndexRange = reversed(range(n)) # from right to left
+            initVal = n  # from right to left
+            result = [initVal] * n
+            stack = []
+            for i in IndexRange:
+                # Decreasing stack.
+                while len(stack) > 0 and nums[stack[-1]] <= nums[i]:
+                    stack.pop()
+                result[i] = initVal if len(stack) == 0 else stack[-1]
+                stack.append(i)
+            return result
+
+        def nextSmaller(nums):
+            n = len(nums)
+            IndexRange = reversed(range(n)) # from right to left
+            initVal = n  # from right to left
+            result = [initVal] * n
+            stack = []
+            for i in IndexRange:
+                # increasing stack.
+                while len(stack) > 0 and nums[stack[-1]] >= nums[i]:
+                    stack.pop()
+                result[i] = initVal if len(stack) == 0 else stack[-1]
+                stack.append(i)
+            return result
+
+        def previousGreaterOrEqual(nums):
+            n = len(nums)
+            IndexRange = range(n) # from left to right
+            initVal = -1  # from left to right
+            result = [initVal] * n
+            stack = []
+            for i in IndexRange:
+                # Decreasing stack.
+                while len(stack) > 0 and nums[stack[-1]] < nums[i]:
+                    stack.pop()
+                result[i] = initVal if len(stack) == 0 else stack[-1]
+                stack.append(i)
+            return result
+
+        def PreviousSmallerOrEqual(nums):
+            n = len(nums)
+            IndexRange = range(n) # from left to right
+            initVal = -1  # from left to right
+            result = [initVal] * n
+            stack = []
+            for i in IndexRange:
+                # Decreasing stack.
+                while len(stack) > 0 and nums[stack[-1]] > nums[i]:
+                    stack.pop()
+                result[i] = initVal if len(stack) == 0 else stack[-1]
+                stack.append(i)
+            return result
+
+        def calExtremeSum(nums, left, right):
+            n = len(nums)
+            ans = 0
+            for i in range(n):
+                ans += (i - left[i])*(right[i] - i) * nums[i]
+            return ans
+
+        minLeft = PreviousSmallerOrEqual(nums)
+        minRight = nextSmaller(nums)
+        maxLeft = previousGreaterOrEqual(nums)
+        maxRight = nextGreater(nums)
+        max_sum = calExtremeSum(nums, maxLeft, maxRight)
+        min_sum = calExtremeSum(nums, minLeft, minRight)
+        return max_sum - min_sum
+```
+
+#### 2281. Sum of Total Strength of Wizards
+
+As the ruler of a kingdom, you have an army of wizards at your command.
+
+You are given a 0-indexed integer array strength, where strength[i] denotes the strength of the ith wizard. For a contiguous group of wizards (i.e. the wizards' strengths form a subarray of strength), the total strength is defined as the product of the following two values:
+
+The strength of the weakest wizard in the group.
+The total of all the individual strengths of the wizards in the group.
+Return the sum of the total strengths of all contiguous groups of wizards. Since the answer may be very large, return it modulo 109 + 7.
+
+A subarray is a contiguous non-empty sequence of elements within an array.
+
+Solution:
+
+```python
+class Solution:
+    def totalStrength(self, strength: List[int]) -> int:
+        n = len(strength)
+        preSum = [0]
+        for i in range(n):
+            nextPreSum = strength[i] + preSum[-1]
+            preSum.append(nextPreSum)
+        prePreSum = [preSum[0]]
+        for i in range(1, n + 1):
+            prePreSum.append(preSum[i] + prePreSum[-1])
+        # The total between i and j can be calculated: if i == 0, return preSum[j]
+        # if i != 0, return preSum[j] - preSum[i - 1]
+        def previousSmallerOrEqual(nums):
+            n = len(nums)
+            IndexRange = range(n) # from left to right
+            initVal = -1  # from left to right
+            result = [initVal] * n
+            stack = []
+            for i in IndexRange:
+                # Decreasing stack.
+                while len(stack) > 0 and nums[stack[-1]] > nums[i]:
+                    stack.pop()
+                result[i] = initVal if len(stack) == 0 else stack[-1]
+                stack.append(i)
+            return result
+        def nextSmaller(nums):
+            n = len(nums)
+            IndexRange = reversed(range(n)) # from right to left
+            initVal = n  # from right to left
+            result = [initVal] * n
+            stack = []
+            for i in IndexRange:
+                # increasing stack.
+                while len(stack) > 0 and nums[stack[-1]] >= nums[i]:
+                    stack.pop()
+                result[i] = initVal if len(stack) == 0 else stack[-1]
+                stack.append(i)
+            return result
+
+        left = previousSmallerOrEqual(strength)
+        right = nextSmaller(strength)
+
+        ans = 0
+        ans_1 = 0
+        for i in range(n):
+            #[left[i] + 1, right[i] - 1]
+            #print(i)
+            minVal = strength[i]
+            # The sum of the array starts at left[i] + 1:
+            # strength[left[i] + 1].....strength[i] = preSum[i] - preSum[left[i]]
+            # strength[left[i] + 1].....strength[i + 1] = preSum[i + 1] - preSum[left[i]]
+            # strength[left[i] + 1].....strength[i + 2] = preSum[i + 2] - preSum[left[i]]
+            # ......
+            # strength[left[i] + 1].....strength[right[i] - 1] = preSum[right[i] - 1] - preSum[left[i]]
+            # the total is PreSum[i] + PreSum[i + 1] + PreSum[i + 2] + ... + PreSum[right[i] - 1] - (right[i] - i) * preSum[left[i]]
+            # the sum of the array starts at left[i] + 2
+            # the total is PreSum[i] + PreSum[i + 1] + PreSum[i + 2] + ... + PreSum[right[i] - 1] - (right[i] - i) * preSum[left[i] + 1]
+            # ..........
+            # the sum of the array starts at i - 1
+            # the total is PreSum[i] + PreSum[i + 1] + PreSum[i + 2] + ... + PreSum[right[i] - 1] - (right[i] - i) * preSum[i - 2]
+            # the sum of the array starts at i
+            # the total is PreSum[i] + PreSum[i + 1] + PreSum[i + 2] + ... + PreSum[right[i] - 1] - (right[i] - i) * preSum[i - 1]
+            # If we add these totals together.
+            # (PreSum[i] + PreSum[i + 1] + PreSum[i + 2] + ... + PreSum[right[i] - 1]) * (i - left[i])
+            #. - (right[i] - i) * (preSum[left[i]] + preSum[left[i] + 1] + .. + preSum[i - 2] + preSum[i - 1])
+            # If we precalculate PrePreSum, PreSum[i] + PreSum[i + 1] + PreSum[i + 2] + ... + PreSum[right[i] - 1]
+            # = PrePreSum[right[i] - 1] - PrePreSum[i - 1]
+            # The final result will be
+            # (PrePreSum[right[i] - 1] - PrePreSum[i - 1]) * (i - left[i]) - (PrePreSum[i - 1] - PrePreSum[left[i] - 1]) * (right[i] - i)
+            #diff1 = prePreSum[right[i] - 1] if i == 0 else prePreSum[right[i] - 1] - prePreSum[i - 1]
+            #diff2 = prePreSum[i - 1] if left[i] <= 0 else prePreSum[i - 1] - prePreSum[left[i] - 1]
+            #total = (prePreSum[right[i] - 1] - prePreSum[i - 1]) * (i - left[i]) - (prePreSum[i - 1] - prePreSum[left[i] - 1]) * (right[i] - i)
+            #total = diff1 * (i - left[i]) - diff2 * (right[i] - i)
+            #ans += minVal * total
+            leftSum = prePreSum[i] - prePreSum[max(0, left[i])]
+            rightSum = prePreSum[right[i]] - prePreSum[i]
+            leftLen = i - left[i]
+            rightLen = right[i] - i
+            ans += strength[i] * (rightSum * leftLen - leftSum * rightLen)
+            ans = ans % 1000000007
+            '''
+            for k in range(left[i] + 1, right[i]):
+                if k == i:
+                    ans += minVal * strength[k] * (i - left[i]) * (right[i] - i)
+                elif k < i:
+                    ans += minVal * strength[k] * (k - left[i]) * (right[i] - i)
+                else:
+                    ans += minVal * strength[k] * (i - left[i]) * (right[i] - k)
+                ans = ans % 1000000007
+            '''
+
+            #for j in range(left[i] + 1, i + 1):
+            #    for k in range(i, right[i]):
+            #        sumVal = preSum[k] if j == 0 else preSum[k] - preSum[j - 1]
+            #        ans_1 += minVal * sumVal
+            #        ans_1 = ans_1 % 1000000007
+            #print("i - left[i]: {}".format(i - left[i]))
+            #print("right[i] - i: {}".format(right[i] - i))
+            #print("i: {}, minVal:{}, left: {}, right: {}, ans: {}, ans_1: {}".format(i, minVal, left[i], right[i], ans, ans_1))
+        return ans
+```
+
+#### 1019. Next Greater Node In Linked List
+
+You are given the head of a linked list with n nodes.
+
+For each node in the list, find the value of the next greater node. That is, for each node, find the value of the first node that is next to it and has a strictly larger value than it.
+
+Return an integer array answer where answer[i] is the value of the next greater node of the ith node (1-indexed). If the ith node does not have a next greater node, set answer[i] = 0.
+
+
+```python
+# Definition for singly-linked list.
+# class ListNode:
+#     def __init__(self, val=0, next=None):
+#         self.val = val
+#         self.next = next
+class Solution:
+    def nextLargerNodes(self, head: Optional[ListNode]) -> List[int]:
+        values = []
+        while head:
+            values.append(head.val)
+            head = head.next
+        def nextGreater(nums):
+            n = len(nums)
+            IndexRange = reversed(range(n)) # from right to left
+            initVal = n  # from right to left
+            result = [initVal] * n
+            stack = []
+            for i in IndexRange:
+                # Decreasing stack.
+                while len(stack) > 0 and nums[stack[-1]] <= nums[i]:
+                    stack.pop()
+                result[i] = initVal if len(stack) == 0 else stack[-1]
+                stack.append(i)
+            return result
+        nextGreaterIndices = nextGreater(values)
+        n = len(values)
+        return list(map(lambda index: 0 if index == n else values[index], nextGreaterIndices))
+```
+
+## Reference
+
+- [StackOverflow: Intuition behind using a monotonic stack](https://stackoverflow.com/a/55783476/6627776)
+- [[JAVA Solution] With visualization and easy explained!](https://leetcode.com/problems/online-stock-span/discuss/640358/JAVA-Solution-With-visualization-and-easy-explained)

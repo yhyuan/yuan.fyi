@@ -1,0 +1,272 @@
+---
+title: Vite vs Rspack A Comprehensive Comparison of Modern Build Tools
+slug: vite-vs-rspack
+publishDate: 2024-07-18
+description: Learn about Vite vs Rspack A Comprehensive Comparison of Modern Build Tools.
+date: 2024-07-18
+tags: ['React']
+draft: false
+---
+
+### Introduction
+
+Modern web development requires efficient build tools to handle complex applications. Vite and Rspack are two popular options that have emerged to address the challenges of modern web development. Let's dive into a detailed comparison of these tools.
+
+<TOCInline toc={props.toc} exclude="Introduction" />{' '}
+
+#### Overview
+
+##### Vite
+
+- Created by Evan You (creator of Vue.js)
+- Built on top of esbuild (for dev) and Rollup (for prod)
+- Focus on developer experience and fast HMR
+- Language: TypeScript/JavaScript
+
+##### Rspack
+
+- Created by ByteDance
+- Built in Rust
+- Webpack-compatible API
+- Focus on build performance and compatibility
+- Language: Rust
+
+#### Key Differences
+
+##### 1. Architecture and Performance
+
+###### Vite
+
+```javascript
+// vite.config.js
+export default {
+  build: {
+    target: 'esnext',
+    minify: 'esbuild',
+  },
+}
+```
+
+- Uses native ES modules during development
+- Two-phase approach: dev (esbuild) and build (Rollup)
+- No bundling in development
+- Very fast cold starts
+
+###### Rspack
+
+```javascript
+// rspack.config.js
+module.exports = {
+  entry: './src/index.js',
+  builtins: {
+    minifyOptions: {
+      passes: 2,
+    },
+  },
+}
+```
+
+- Single bundler approach
+- Written in Rust for maximum performance
+- Bundling in both development and production
+- Extremely fast builds
+
+##### 2. Development Experience
+
+###### Vite
+
+- Instant server start
+- Lightning-fast HMR
+- Rich plugin ecosystem
+- Built-in features like CSS modules, PostCSS
+
+```javascript
+// vite.config.js
+export default {
+  plugins: [react()],
+  css: {
+    modules: {
+      localsConvention: 'camelCase',
+    },
+  },
+}
+```
+
+###### Rspack
+
+- Fast server start
+- Webpack-compatible plugins
+- Growing ecosystem
+- Native support for common features
+
+```javascript
+// rspack.config.js
+module.exports = {
+  module: {
+    rules: [
+      {
+        test: /\.css$/,
+        use: ['style-loader', 'css-loader'],
+      },
+    ],
+  },
+}
+```
+
+##### 3. Configuration and Migration
+
+###### Vite
+
+- Simple, modern configuration
+- Less configuration needed out of the box
+- May require changes when migrating from Webpack
+
+```javascript
+// vite.config.js
+export default {
+  resolve: {
+    alias: {
+      '@': '/src',
+    },
+  },
+  server: {
+    proxy: {
+      '/api': 'http://localhost:3000',
+    },
+  },
+}
+```
+
+###### Rspack
+
+- Webpack-like configuration
+- Easy migration from Webpack projects
+- More configuration options
+
+```javascript
+// rspack.config.js
+module.exports = {
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, 'src'),
+    },
+  },
+  devServer: {
+    proxy: {
+      '/api': 'http://localhost:3000',
+    },
+  },
+}
+```
+
+##### 4. Features Comparison
+
+| Feature                | Vite              | Rspack            |
+| ---------------------- | ----------------- | ----------------- |
+| Hot Module Replacement | ✅ Fast           | ✅ Very Fast      |
+| CSS Modules            | ✅ Built-in       | ✅ Built-in       |
+| TypeScript Support     | ✅ Native         | ✅ Native         |
+| JSX Support            | ✅ Built-in       | ✅ Built-in       |
+| Code Splitting         | ✅ Advanced       | ✅ Basic          |
+| Legacy Browser Support | ✅ Via plugins    | ✅ Built-in       |
+| Watch Mode             | ✅ Very fast      | ✅ Extremely fast |
+| Plugin System          | ✅ Rich ecosystem | ⚠️ Growing        |
+| Webpack Compatibility  | ❌ Limited        | ✅ High           |
+
+##### 5. Build Performance Comparison
+
+###### Cold Start Time
+
+- Vite: < 300ms
+- Rspack: < 200ms
+
+###### HMR Update Time
+
+- Vite: ~50ms
+- Rspack: ~20ms
+
+###### Production Build Time (Large Project)
+
+- Vite: Minutes
+- Rspack: Seconds to minutes
+
+#### Use Cases
+
+##### When to Choose Vite
+
+1. New projects with modern architecture
+2. Projects requiring extensive plugin customization
+3. Development-focused workflows
+4. Projects using Vue.js
+
+Example Vite setup:
+
+```javascript
+// vite.config.js
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+export default defineConfig({
+  plugins: [react()],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+        },
+      },
+    },
+  },
+})
+```
+
+##### When to Choose Rspack
+
+1. Large-scale applications
+2. Projects migrating from Webpack
+3. Performance-critical builds
+4. Projects requiring Webpack compatibility
+
+Example Rspack setup:
+
+```javascript
+// rspack.config.js
+module.exports = {
+  entry: {
+    main: './src/index.js',
+  },
+  optimization: {
+    splitChunks: {
+      chunks: 'all',
+    },
+  },
+  builtins: {
+    react: {
+      development: true,
+    },
+  },
+}
+```
+
+#### Conclusion
+
+Both Vite and Rspack are excellent build tools with different strengths:
+
+- **Vite** excels in developer experience and modern development workflows, with a focus on simplicity and fast development server startup.
+- **Rspack** shines in build performance and Webpack compatibility, making it an excellent choice for large-scale applications and teams transitioning from Webpack.
+
+Choose Vite if:
+
+- You prioritize developer experience
+- You're starting a new project
+- You need a rich plugin ecosystem
+- You're using Vue.js
+
+Choose Rspack if:
+
+- Build performance is critical
+- You're migrating from Webpack
+- You need Webpack compatibility
+- You're working on a large-scale application
+
+Remember that both tools are actively developed and their capabilities continue to evolve. Consider your specific project requirements, team expertise, and scaling needs when making your choice.

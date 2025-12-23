@@ -1,0 +1,290 @@
+---
+title: Top 50 Python interview questions
+slug: top-50-python-interview-questions
+publishDate: 2025-11-20
+description: Learn about Top 50 Python interview questions.
+date: 2025-11-20
+tags: ['Interview']
+draft: false
+---
+
+## Fundamental Concepts (Questions 1-10)
+
+1. **Explain Python's memory management model. How does reference counting work, and what is the role of the garbage collector?** This tests understanding of Python's memory model and when objects are deallocated.
+
+2. **What is the difference between mutable and immutable types in Python? How does this affect function arguments?** Understanding mutability is crucial for avoiding bugs with default arguments and side effects.
+
+3. **Explain the difference between `is` and `==`. When should you use each?** This tests understanding of identity vs equality and Python's object model.
+
+4. **What are Python's built-in data types? Explain the time complexity of common operations on lists, sets, and dictionaries.** This reveals algorithmic thinking and understanding of data structure performance.
+
+5. **Explain how Python's dynamic typing works. What is duck typing?** This tests understanding of Python's type system and philosophy.
+
+6. **What is the difference between deep copy and shallow copy? When would each be appropriate?** This is crucial for understanding object copying and avoiding unintended mutations.
+
+7. **Explain Python's namespaces and scope resolution (LEGB rule).** Understanding scope is fundamental to predicting variable resolution behavior.
+
+8. **What are Python's string methods? Explain the difference between `str`, `repr`, and `bytes`.** This tests understanding of string representation and encoding.
+
+9. **How does Python handle integer arithmetic differently from languages like C or Java?** This tests knowledge of Python's arbitrary precision integers.
+
+10. **Explain the Global Interpreter Lock (GIL). What are its implications for multithreading?** This is crucial for understanding Python's concurrency limitations.
+
+## Data Structures and Collections (Questions 11-17)
+
+11. **Explain the difference between lists and tuples. Beyond immutability, what are the performance implications?** This tests deeper understanding of when to use each type.
+
+12. **How do dictionaries work internally in Python? Explain hash tables, collision resolution, and why dict ordering is guaranteed in Python 3.7+.** This tests understanding of fundamental data structures and Python evolution.
+
+13. **What are sets and frozensets? Explain their use cases and internal implementation.** This tests knowledge of set operations and when immutability matters.
+
+14. **Explain list comprehensions, dict comprehensions, and generator expressions. How do they differ in memory usage?** This tests understanding of Python's expressive syntax and performance implications.
+
+15. **What is the `collections` module? Explain `defaultdict`, `Counter`, `deque`, and `namedtuple` with use cases.** This tests knowledge of specialized data structures.
+
+16. **How would you implement an LRU cache in Python? What built-in tools can help?** This tests algorithmic thinking and knowledge of `functools.lru_cache`.
+
+17. **Explain `ChainMap` and `OrderedDict`. When would you use them?** This tests knowledge of less common but useful collections.
+
+## Functions and Decorators (Questions 18-25)
+
+18. **Explain how Python functions are first-class objects. What are the implications?** This is fundamental to understanding Python's functional programming capabilities.
+
+19. **What are `*args` and `**kwargs`? Explain unpacking in function calls and definitions.** This tests understanding of variable arguments and parameter passing.
+
+20. **Explain closures in Python. How do they work, and what are practical use cases?** Understanding closures is essential for decorators and functional patterns.
+
+21. **What are decorators? Implement a decorator that measures function execution time.** This is one of the most important Python concepts to master.
+
+22. **How do you create a decorator that takes arguments? Explain the nested function structure.** This tests deeper decorator knowledge and closure understanding.
+
+23. **What is the difference between `@staticmethod`, `@classmethod`, and instance methods? When would you use each?** This tests understanding of object-oriented Python.
+
+24. **Explain the `functools` module. What are `partial`, `wraps`, and `reduce`?** This tests knowledge of functional programming utilities.
+
+25. **How do you create a decorator that works on both functions and methods? What's the issue with `self`?** This tests advanced decorator knowledge.
+
+## Object-Oriented Programming (Questions 26-33)
+
+26. **Explain Python's class system. How does `__init__` differ from `__new__`?** This tests understanding of object creation and initialization.
+
+27. **What is multiple inheritance in Python? Explain the Method Resolution Order (MRO) and the C3 linearization algorithm.** This is crucial for understanding complex inheritance hierarchies.
+
+28. **Explain data classes (`@dataclass`) in Python 3.7+. How do they compare to regular classes and `namedtuple`?** This tests knowledge of modern Python features.
+
+29. **What are abstract base classes (ABCs)? How do you use the `abc` module?** This tests understanding of interfaces and abstract classes in Python.
+
+30. **Explain property decorators (`@property`). How do you create getters, setters, and deleters?** This tests understanding of encapsulation and attribute access.
+
+31. **What are magic methods (dunder methods)? Explain `__str__`, `__repr__`, `__eq__`, `__hash__`, and their importance.** This tests knowledge of Python's protocol system.
+
+32. **How do you implement operator overloading in Python? Provide examples of `__add__`, `__getitem__`, etc.** This tests understanding of how to make custom objects behave like built-ins.
+
+33. **Explain descriptors in Python. How do they relate to properties?** This is an advanced topic that tests deep understanding of attribute access.
+
+## Generators and Iterators (Questions 34-38)
+
+34. **What is the difference between an iterator and an iterable? Implement both from scratch.** This tests understanding of Python's iteration protocol.
+
+35. **Explain generators and the `yield` keyword. How do they differ from regular functions?** Understanding generators is crucial for memory-efficient programming.
+
+36. **What is the difference between `yield` and `return` in a generator? What about `yield from`?** This tests nuanced generator knowledge.
+
+37. **How do you create infinite generators? Provide practical examples.** This tests understanding of lazy evaluation and memory efficiency.
+
+38. **Explain generator delegation with `yield from`. When is it useful?** This tests knowledge of Python 3.3+ features for generator composition.
+
+## Context Managers and File Handling (Questions 39-41)
+
+39. **What are context managers? Explain the `with` statement and the context management protocol.** This is essential for resource management.
+
+40. **How do you create a custom context manager using `__enter__` and `__exit__`? What about using `@contextmanager`?** This tests practical knowledge of context manager creation.
+
+41. **Explain the different file opening modes in Python. What's the difference between text and binary modes?** This tests understanding of file I/O.
+
+## Concurrency and Parallelism (Questions 42-46)
+
+42. **Explain the difference between threads, processes, and async/await in Python. When would you use each?** This tests understanding of Python's concurrency models.
+
+43. **How does `asyncio` work? Explain the event loop, coroutines, and `async`/`await`.** This tests knowledge of modern asynchronous Python.
+
+44. **What is the `threading` module? How do you synchronize threads using locks, events, and semaphores?** This tests practical threading knowledge despite GIL limitations.
+
+45. **Explain the `multiprocessing` module. How does it bypass the GIL? What are the trade-offs?** This tests understanding of true parallelism in Python.
+
+46. **What is `concurrent.futures`? Compare `ThreadPoolExecutor` and `ProcessPoolExecutor`.** This tests knowledge of high-level concurrency APIs.
+
+## Advanced Topics and Internals (Questions 47-50)
+
+47. **What are metaclasses? Explain `type` as a metaclass and when you'd create custom metaclasses.** This is one of the most advanced Python topics.
+
+48. **Explain how Python imports work. What are the differences between absolute and relative imports? What is `sys.path`?** This tests understanding of Python's module system.
+
+49. **What are type hints and the `typing` module? Explain `Optional`, `Union`, `Generic`, and `Protocol`.** This tests knowledge of modern Python type annotation.
+
+50. **How does Python's bytecode compilation work? What are `.pyc` files, and how does the `dis` module help?** This tests understanding of Python's execution model.
+
+## Bonus Deep-Dive Questions
+
+**Memory Management Challenge:**
+```python
+a = [1, 2, 3]
+b = a
+c = a[:]
+d = list(a)
+a.append(4)
+# What are the values of a, b, c, d? Explain.
+```
+
+**Mutable Default Argument Pitfall:**
+```python
+def append_to_list(value, lst=[]):
+    lst.append(value)
+    return lst
+
+print(append_to_list(1))
+print(append_to_list(2))
+# What's the output? Why? How do you fix it?
+```
+
+**Closure and Late Binding:**
+```python
+functions = []
+for i in range(3):
+    functions.append(lambda: i)
+
+print([f() for f in functions])
+# What's the output? Why? How do you fix it?
+```
+
+**Descriptor Implementation:**
+```python
+class Validator:
+    def __init__(self, min_value, max_value):
+        self.min_value = min_value
+        self.max_value = max_value
+    
+    def __get__(self, obj, objtype=None):
+        # Implement
+        pass
+    
+    def __set__(self, obj, value):
+        # Implement validation
+        pass
+
+class Person:
+    age = Validator(0, 150)
+# Complete the descriptor
+```
+
+**GIL Demonstration:**
+```python
+import threading
+import time
+
+counter = 0
+
+def increment():
+    global counter
+    for _ in range(1000000):
+        counter += 1
+
+threads = [threading.Thread(target=increment) for _ in range(2)]
+for t in threads:
+    t.start()
+for t in threads:
+    t.join()
+
+print(counter)  # Why isn't this 2000000?
+```
+
+**Generator Pipeline:**
+```python
+def numbers():
+    for i in range(10):
+        yield i
+
+def square(nums):
+    for n in nums:
+        yield n * n
+
+def filter_even(nums):
+    for n in nums:
+        if n % 2 == 0:
+            yield n
+
+# Create a pipeline: numbers -> square -> filter_even
+# Explain why this is memory efficient
+```
+
+**Metaclass Example:**
+```python
+class Singleton(type):
+    _instances = {}
+    
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super().__call__(*args, **kwargs)
+        return cls._instances[cls]
+
+class Database(metaclass=Singleton):
+    def __init__(self):
+        print("Initializing database")
+
+# Explain how this enforces the singleton pattern
+```
+
+**Async Context Manager:**
+```python
+class AsyncResource:
+    async def __aenter__(self):
+        # Implement async acquisition
+        pass
+    
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        # Implement async cleanup
+        pass
+
+# When and why would you use this?
+```
+
+**Type Hint Complexity:**
+```python
+from typing import TypeVar, Generic, Protocol, Callable
+
+T = TypeVar('T')
+U = TypeVar('U')
+
+class Mapper(Generic[T, U]):
+    def map(self, func: Callable[[T], U], items: list[T]) -> list[U]:
+        return [func(item) for item in items]
+
+# Explain generics and how this provides type safety
+```
+
+**Decorator with State:**
+```python
+def call_counter(func):
+    def wrapper(*args, **kwargs):
+        wrapper.calls += 1
+        return func(*args, **kwargs)
+    wrapper.calls = 0
+    return wrapper
+
+@call_counter
+def greet(name):
+    return f"Hello, {name}"
+
+# How does this maintain state across calls?
+```
+
+These 50+ questions comprehensively cover Python from fundamentals through expert-level topics, including:
+- Core language features and internals
+- Data structures and algorithms
+- Object-oriented and functional programming
+- Concurrency and parallelism
+- Modern Python features (3.7-3.12)
+- Performance considerations
+- Design patterns and best practices
+
+The questions test not just knowledge but deep understanding of how Python works under the hood and how to write idiomatic, efficient Python code.

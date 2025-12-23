@@ -1,0 +1,993 @@
+---
+title: Leetcode Pattern 4 Linked List
+slug: pattern-04-linked-list
+publishDate: 2024-05-03
+description: Learn about Leetcode Pattern 4 Linked List.
+date: 2024-05-03
+tags: ["leetcode", "pattern"]
+draft: false
+---
+
+### Introduction
+
+A linked list is a linear data structure in which elements, known as nodes, are connected using pointers. Unlike arrays, where elements are stored in contiguous memory locations, linked list nodes are scattered throughout memory, with each node pointing to the next in the sequence. This structure allows for efficient insertion and deletion of elements, making linked lists a powerful tool for dynamic data management.
+
+Common linked list operations often involve inserting or deleting a node, `cur`, between a `prev` node and a `next` node. The crucial step is to identify the `prev` node and update its `next` pointer. For insertion, it's also necessary to update the `next` pointer of the `cur` node. To simplify handling edge cases, such as when dealing with the head node, a dummy head can be used at the start of the linked list.
+
+1. Insertion Operation: We need to update the `cur.next` with `prev.next` (let the `cur`'s next pointer point to the `next` node) and update the `prev.next` with `cur` (let the `prev`'s next pointer point to the `cur` node)
+
+```python
+# prev -> next
+# Insert cur
+cur.next = prev.next
+prev.next = cur
+
+# If we do not use dummy head, we have to deal with edge case: Adding in front of head
+cur.next = head
+head = cur
+```
+
+2. Deletion Operation: We just need to update the `prev.next` with `cur.next`.
+
+```python
+# prev -> cur -> next
+prev.next = cur.next
+
+# If we do not use dummy head, we have to deal with edge case: Deleting the head
+head = head.next
+```
+
+3. Reverse a List: The recursive approach is simpler, as it primarily handles edge cases and moves the current head to the last node of the recursively called result, which is `head.next`. On the other hand, the iterative method requires inserting the new node at the head and updating the relevant variables to ensure the insertion is done correctly.
+
+```typescript
+// Recursive method
+function reverseList(head: ListNode | null): ListNode | null {
+    if (head === null || head.next === null) return head;
+
+    const nextHead = reverseList(head.next);
+    // the last node of nextHead linked list is head.next.
+    // We will put head as the last node of the nextHead linked list
+    head.next.next = head;
+    head.next = null;
+    return nextHead;
+};
+
+// Iterative method
+function reverseList(head: ListNode | null): ListNode | null {
+    let newHead: ListNode | null = null
+    let current = head;
+    while (current) {
+        // back up current.next
+        const nextNode = current.next;
+
+        // Insert the current in front of newHead and update newHead with current
+        current.next = newHead;
+        newHead = current;
+
+        // update current with current.next
+        current = nextNode;
+    }
+    return newHead;
+};
+```
+
+4. Find Nth node
+```typescript
+const findNthNode = (head: ListNode | null, nth: number): ListNode | null => {
+    let p = head;
+    let count = 1;
+    while (p !== null) {
+        if (count === nth) {
+            return p;
+        }
+        count += 1;
+        p = p.next;
+    }
+    return null;
+}
+```
+
+5. Find middle node
+We can use the fast/slow pointers to find the middle node. Check Pattern 2: Two pointers for the detail.
+
+<TOCInline toc={props.toc} exclude="Introduction" />
+
+### Linked List Problems
+
+#### 206.Reverse Linked List[Easy]
+
+Given the head of a singly linked list, reverse the list, and return the reversed list.
+
+**Solution:** We can solve this problem using either recursive or iterative methods.
+
+```typescript
+function reverseList(head: ListNode | null): ListNode | null {
+    if (head === null || head.next === null) return head;
+
+    const nextHead = reverseList(head.next);
+    // the last node of nextHead linked list is head.next.
+    // We will put head as the last node of the nextHead linked list
+    head.next.next = head;
+    head.next = null;
+    return nextHead;
+};
+
+function reverseList(head: ListNode | null): ListNode | null {
+    let newHead: ListNode | null = null
+    let current = head;
+    while (current) {
+        // back up current.next
+        const nextNode = current.next;
+
+        // Insert the current in front of newHead and update newHead with current
+        current.next = newHead;
+        newHead = current;
+
+        // update current with current.next
+        current = nextNode;
+    }
+    return newHead;
+};
+```
+
+#### 92.Reverse Linked List II[Medium]
+
+Given the head of a singly linked list and two integers left and right where `left <= right`, reverse the nodes of the list from position left to position right, and return the reversed list.
+
+Follow up: Could you do it in one pass?
+
+**Solution:** First, we locate the node just before the left node (`preLeftNode`) and the right node. Then, we reverse the list between the left and right nodes and update the necessary links.
+
+```typescript
+function reverseBetween(head: ListNode | null, left: number, right: number): ListNode | null {
+    const reverseList = (head: ListNode | null): ListNode | null => {
+        if (head === null || head.next === null) return head;
+        const ans = reverseList(head.next);
+        head.next.next = head;
+        head.next = null;
+        return ans;
+    };
+    const findNthNode = (head: ListNode | null, nth: number): ListNode | null => {
+        let p = head;
+        let count = 1;
+        while (p !== null) {
+            if (count === nth) {
+                return p;
+            }
+            count += 1;
+            p = p.next;
+        }
+        return null;
+    }
+    const calSize = (head: ListNode | null): number => {
+        let count = 0;
+        let p = head;
+        while (p !== null) {
+            p = p.next
+            count += 1;
+        }
+        return count;
+    };
+    const size = calSize(head);
+    if (left === right) return head;
+
+    if (left === 1) {
+        if (size === right) {
+            return reverseList(head);
+        } else {
+            const p = findNthNode(head, right);
+            const pNext = p.next;
+            p.next = null;
+            const newHead = reverseList(head);
+            // Now head is the last node and we put pNext behind it.
+            head.next = pNext;
+            return newHead;
+        }
+    }
+    // Find left and right node and the one before left and the one after right.
+    const preLeftNode = findNthNode(head, left - 1);
+    const leftNode = preLeftNode.next;
+    const rightNode = findNthNode(head, right);
+    const afterRightNode = rightNode.next;
+    // Make the middle part a single linked list.
+    preLeftNode.next = null;
+    rightNode.next = null;
+    // reverse the middle part
+    reverseList(leftNode);
+    // Join it back
+    preLeftNode.next = rightNode;
+    leftNode.next = afterRightNode;
+    return head;
+};
+```
+
+#### 25.Reverse Nodes in k-Group[Hard]
+
+Given the head of a linked list, reverse the nodes of the list k at a time, and return the modified list.
+
+k is a positive integer and is less than or equal to the length of the linked list. If the number of nodes is not a multiple of k then left-out nodes, in the end, should remain as it is.
+
+You may not alter the values in the list's nodes, only nodes themselves may be changed.
+
+Follow-up: Can you solve the problem in O(1) extra memory space?
+
+**Solution:** We loop through the list, identifying pairs of left and right nodes with a distance of k. We reverse these segments and continue moving forward until reaching the last element.
+
+```typescript
+function reverseKGroup(head: ListNode | null, k: number): ListNode | null {
+    const reverseList = (head: ListNode | null): ListNode | null => {
+        if (head === null || head.next === null) return head;
+        const ans = reverseList(head.next);
+        head.next.next = head;
+        head.next = null;
+        return ans;
+    };
+    const findNthNode = (head: ListNode | null, nth: number): ListNode | null => {
+        let p = head;
+        let count = 1;
+        while (p !== null) {
+            if (count === nth) {
+                return p;
+            }
+            count += 1;
+            p = p.next;
+        }
+        return null;
+    }
+    const dummy = new ListNode(0);
+    dummy.next = head;
+    let preLeft = dummy;
+    let left = head;
+    let right = head;
+    while (true) {
+        right = findNthNode(left, k);
+        if (right === null) break;
+        // backup right.next
+        const rightNext = right.next;
+        // Make the block a single linked list.
+        preLeft.next = null;
+        right.next = null;
+        // Reverse it
+        reverseList(left);
+        // Join it back
+        preLeft.next = right;
+        left.next = rightNext;
+        // Move preLeft and left forward.
+        preLeft = left;
+        left = preLeft.next;
+    }
+    return dummy.next;
+};
+```
+
+#### 61.Rotate List[Medium]
+
+Given the head of a linked list, rotate the list to the right by k places.
+
+**Solution:** First, we determine the size of the linked list and use it to ensure that k is less than the size of the list by taking k modulo the list size. Next, we locate the node at position n - k and split the list at that point. Finally, we rejoin the two parts by switching their positions, resulting in the desired configuration.
+
+```typescript
+function rotateRight(head: ListNode | null, k: number): ListNode | null {
+    if (head === null) return head;
+    const calSize = (head: ListNode | null): number => {
+        let count = 0;
+        let p = head;
+        while (p !== null) {
+            p = p.next
+            count += 1;
+        }
+        return count;
+    };
+    const n = calSize(head);
+
+    k = k % n;
+    if (k === 0) return head;
+
+    const findNthNode = (head: ListNode | null, nth: number): ListNode | null => {
+        let p = head;
+        let count = 1;
+        while (p !== null) {
+            if (count === nth) {
+                return p;
+            }
+            count += 1;
+            p = p.next;
+        }
+        return null;
+    };
+    const newEnd = findNthNode(head, n - k);
+    const newHead = newEnd.next;
+    newEnd.next = null;
+    // cut it in the middle.
+    // Find the lastNode
+    let p = newHead;
+    while (p.next !== null) {
+        p = p.next;
+    }
+    p.next = head;
+    return newHead;
+};
+```
+#### 83. Remove Duplicates from Sorted List[Easy]
+
+Given the head of a sorted linked list, delete all duplicates such that each element appears only once. Return the linked list sorted as well.
+
+The list is guaranteed to be sorted in ascending order.
+
+Two points move forward.
+
+**Solution:** We maintain two pointers: one pointing to the current node and the other pointing to the next node. We move both pointers forward simultaneously. If the values of the nodes are the same, we remove the duplicate node.
+
+```typescript
+function deleteDuplicates(head: ListNode | null): ListNode | null {
+    if (head === null || head.next === null) return head;
+    let p = head;
+    let pNext = head.next;
+    while (pNext !== null) {
+        if (p.val === pNext.val) {
+            // Remove pNext
+            p.next = pNext.next;
+        } else {
+            p = p.next;
+        }
+        pNext = p.next;
+    }
+    return head;
+};
+```
+
+#### 82. Remove Duplicates from Sorted List II[Medium]
+
+Given the head of a sorted linked list, delete all nodes that have duplicate numbers, leaving only distinct numbers from the original list. Return the linked list sorted as well.
+
+The list is guaranteed to be sorted in ascending order.
+
+**Solution:** We use three pointers: `prev`, `cur`, and `next` to create a window of three nodes. If `cur.val` is equal to `next.val`, we move `next` forward until it reaches a node with a different value. Then, we update `prev.next` to bypass all nodes with the same values, effectively removing the duplicates. If `cur.val` is not equal to `next.val`, we simply move the pointers forward without making any changes.
+
+```typescript
+function deleteDuplicates(head: ListNode | null): ListNode | null {
+    if (head === null || head.next === null) return head;
+    const dummy = new ListNode(0);
+    dummy.next = head;
+    let prev = dummy;
+    let cur = head;
+    let next = head.next;
+    while (next !== null) {
+        if (cur.val === next.val) {
+            // Find the end of the same values
+            while (next !== null && cur.val === next.val) {
+                next = next.next;
+            }
+            // next.val is not cur.val
+            // Drop all nodes between prev and next.
+            prev.next = next;
+
+            cur = next;
+            if (next === null) continue; // reach the end.
+            next = next.next;
+        } else {
+            prev = cur;
+            cur = next;
+            next = next.next;
+        }
+    }
+    return dummy.next;
+};
+```
+
+#### 21. Merge Two Sorted Lists[Easy]
+
+You are given the heads of two sorted linked lists list1 and list2.
+
+Merge the two lists into one sorted list. The list should be made by splicing together the nodes of the first two lists.
+
+Return the head of the merged linked list.
+
+Both list1 and list2 are sorted in non-decreasing order.
+
+**Solution:** We use two pointers, one for each list, and append the node with the smaller value to the result list. We continue this process until one of the lists is exhausted. Once one list is empty, we append the remaining nodes from the other list to the result.
+
+```typescript
+function mergeTwoLists(list1: ListNode | null, list2: ListNode | null): ListNode | null {
+    const dummy = new ListNode(0);
+    let p = dummy;
+    let p1 = list1;
+    let p2 = list2;
+    while (p1 !== null && p2 !== null) {
+        if (p1.val < p2.val) {
+            p.next = p1;
+            p1 = p1.next;
+        } else {
+            p.next = p2;
+            p2 = p2.next;
+        }
+        p = p.next;
+    }
+    if (p1 !== null) {
+        p.next = p1;
+    }
+    if (p2 !== null) {
+        p.next = p2;
+    }
+    return dummy.next;
+};
+```
+
+#### 86. Partition List[Medium]
+
+Given the head of a linked list and a value x, partition it such that all nodes less than x come before nodes greater than or equal to x.
+
+You should preserve the original relative order of the nodes in each of the two partitions.
+
+**Solution:** We use two pointers initialized with dummy nodes and append nodes to them based on their values as we traverse the linked lists.
+
+```typescript
+function partition(head: ListNode | null, x: number): ListNode | null {
+    const dummy1 = new ListNode(0);
+    const dummy2 = new ListNode(0);
+    let p1 = dummy1;
+    let p2 = dummy2;
+    let p = head;
+    while (p !== null) {
+        if (p.val < x) {
+            p1.next = p;
+            p1 = p1.next;
+            p = p.next;
+            p1.next = null;
+        } else {
+            p2.next = p;
+            p2 = p2.next;
+            p = p.next;
+            p2.next = null;
+        }
+    }
+    // Find the last Node of linked List 1.
+    p = dummy1;
+    while (p.next !== null) {
+        p = p.next;
+    }
+    // Link the linked list 2 to the Linked list 1
+    p.next = dummy2.next;
+    return dummy1.next;
+};
+```
+
+#### 148. Sort List[Medium]
+
+Given the head of a linked list, return the list after sorting it in ascending order.
+
+Follow up: Can you sort the linked list in O(n logn) time and O(1) memory (i.e. constant space)?
+
+**Solution:** We split the linked list in the middle and recursively sort each half. After sorting, we merge the two halves by comparing their values.
+
+```typescript
+// Find the middle point with fast and slow pointer and user merge sort to merge them.
+function sortList(head: ListNode | null): ListNode | null {
+    if (head === null) return null;
+    if (head.next === null) return head;
+    const findMiddleNode = (head: ListNode): ListNode => {
+        let fast = head.next;// It is not head.
+        let slow = head;
+        while (fast !== null && fast.next !== null) {
+            slow = slow.next;
+            fast = fast.next.next;
+        }
+        const mid = slow.next; //This is the middle point.
+        slow.next = null; // set the first half end null.
+        return mid;
+    };
+    const mid = findMiddleNode(head);
+
+    const mergeList = (head1: ListNode| null, head2: ListNode| null): ListNode | null => {
+        const dummy = new ListNode(0);
+        let p = dummy;
+        let p1 = head1;
+        let p2 = head2;
+        while (p1 !== null && p2 !== null) {
+            if (p1.val <= p2.val) {
+                p.next = p1;
+                p1 = p1.next;
+            } else {
+                p.next = p2;
+                p2 = p2.next;
+            }
+            p.next.next = null;
+            p = p.next;
+        }
+        if (p1 !== null) {
+            p.next = p1;
+        }
+        if (p2 !== null) {
+            p.next = p2;
+        }
+        return dummy.next;
+    };
+    return mergeList(sortList(head), sortList(mid));
+};
+```
+
+#### 143. Reorder List[Medium]
+
+Check pattern 02 Two pointers
+
+#### 141. Linked List Cycle[Easy]
+
+Check pattern 02 Two pointers
+
+#### 142. Linked List Cycle II[Medium]
+
+Check pattern 02 Two pointers
+
+#### 234. Palindrome Linked List[Easy]
+
+Check pattern 02 Two pointers
+
+#### 138. Copy List with Random Pointer[Medium]
+
+A linked list of length n is given such that each node contains an additional random pointer, which could point to any node in the list, or null.
+
+Construct a deep copy of the list. The deep copy should consist of exactly n brand new nodes, where each new node has its value set to the value of its corresponding original node. Both the next and random pointer of the new nodes should point to new nodes in the copied list such that the pointers in the original list and copied list represent the same list state. None of the pointers in the new list should point to nodes in the original list.
+
+For example, if there are two nodes X and Y in the original list, where X.random --> Y, then for the corresponding two nodes x and y in the copied list, x.random --> y.
+
+Return the head of the copied linked list.
+
+The linked list is represented in the input/output as a list of n nodes. Each node is represented as a pair of [val, random_index] where:
+
+val: an integer representing Node.val
+random_index: the index of the node (range from 0 to n-1) that the random pointer points to, or null if it does not point to any node.
+Your code will only be given the head of the original linked list.
+
+Node.random is null or is pointing to some node in the linked list.
+
+**Solution:** First, we copy the `next` pointers of the linked list. Then, we move two pointers forward through the two lists. If the `random` pointer is not null, we use another two pointers, `q1` and `q2`, from the heads to locate the corresponding node and update it.
+
+```typescript
+function copyRandomList(head: _Node | null): _Node | null {
+    // Copy the linear structure.
+    const dummy = new _Node(0);
+    let p1 = head;
+    let p2 = dummy;
+    while (p1 !== null) {
+        p2.next = new _Node(p1.val);
+        p2 = p2.next;
+        p1 = p1.next;
+    }
+
+    // Copy the random pointer
+    p1 = head;
+    p2 = dummy.next;
+    while (p1 !== null && p2 !== null) {
+        const random1 = p1.random;
+        if (random1 !== null) {
+            let q1 = head;
+            let q2 = dummy.next;
+            while (q1 !== null && q2 !== null) {
+                if (q1 === random1) {
+                    p2.random = q2; // Update the random pointer
+                    break;
+                }
+                q1 = q1.next;
+                q2 = q2.next;
+            }
+            // p2.random = random2;
+        }
+        p2 = p2.next;
+        p1 = p1.next;
+    }
+    return dummy.next;
+};
+```
+
+#### 707. Design Linked List[Medium]
+
+Design your implementation of the linked list. You can choose to use a singly or doubly linked list.
+A node in a singly linked list should have two attributes: val and next. val is the value of the current node, and next is a pointer/reference to the next node.
+If you want to use the doubly linked list, you will need one more attribute prev to indicate the previous node in the linked list. Assume all nodes in the linked list are 0-indexed.
+
+Implement the MyLinkedList class:
+
+MyLinkedList() Initializes the MyLinkedList object.
+int get(int index) Get the value of the indexth node in the linked list. If the index is invalid, return -1.
+void addAtHead(int val) Add a node of value val before the first element of the linked list. After the insertion, the new node will be the first node of the linked list.
+void addAtTail(int val) Append a node of value val as the last element of the linked list.
+void addAtIndex(int index, int val) Add a node of value val before the indexth node in the linked list. If index equals the length of the linked list, the node will be appended to the end of the linked list. If index is greater than the length, the node will not be inserted.
+void deleteAtIndex(int index) Delete the indexth node in the linked list, if the index is valid.
+
+Please do not use the built-in LinkedList library.
+At most 2000 calls will be made to get, addAtHead, addAtTail, addAtIndex and deleteAtIndex.
+
+Design a help function: getNode which helps to find the nth node. Meanwhile, deal with edge cases.
+
+**Solution:** We define a helper function called `getNode` and use it as a building block for other functions.
+
+```typescript
+class Node {
+    public val: number;
+    public next: Node;
+    constructor(val: number) {
+        this.val = val;
+        this.next = null;
+    }
+}
+
+class MyLinkedList {
+    private head: Node | null;
+    private size: number;
+
+    constructor() {
+        this.head = null;
+        this.size = 0;
+    }
+
+    getNode(index: number): Node | null {
+        if (index >= this.size) return null;
+        let p = this.head;
+        let count = 0;
+        while (p !== null) {
+            if (count === index) {
+                return p;
+            }
+            count += 1;
+            p = p.next;
+        }
+        return null;
+    }
+
+    get(index: number): number {
+        const node = this.getNode(index);
+        if (node === null) return -1;
+        return node.val;
+    }
+
+    addAtHead(val: number): void {
+        this.addAtIndex(0, val);
+    }
+
+    addAtTail(val: number): void {
+        this.addAtIndex(this.size, val);
+    }
+
+    addAtIndex(index: number, val: number): void {
+        if (index > this.size) {
+            return;
+        }
+        if (index === 0) {
+            const newHead = new Node(val);
+            newHead.next = this.head;
+            this.head = newHead;
+        } else {
+            const preNode = this.getNode(index - 1);
+            const preNodeNext = preNode.next;
+            preNode.next = new Node(val);
+            preNode.next.next = preNodeNext;
+        }
+        this.size += 1;
+    }
+
+    deleteAtIndex(index: number): void {
+        if (index >= this.size) {
+            return;
+        }
+        if (index === 0) {
+            this.head = this.head.next;
+        } else {
+            const preNode = this.getNode(index - 1);
+            preNode.next = preNode.next.next;
+        }
+        this.size -= 1;
+    }
+}
+```
+
+#### 160. Intersection of Two Linked Lists[Easy]
+
+Given the heads of two singly linked-lists headA and headB, return the node at which the two lists intersect. If the two linked lists have no intersection at all, return null.
+
+For example, the following two linked lists begin to intersect at node c1:
+
+The test cases are generated such that there are no cycles anywhere in the entire linked structure.
+
+Note that the linked lists must retain their original structure after the function returns.
+
+Custom Judge:
+
+The inputs to the judge are given as follows (your program is not given these inputs):
+
+intersectVal - The value of the node where the intersection occurs. This is 0 if there is no intersected node.
+listA - The first linked list.
+listB - The second linked list.
+skipA - The number of nodes to skip ahead in listA (starting from the head) to get to the intersected node.
+skipB - The number of nodes to skip ahead in listB (starting from the head) to get to the intersected node.
+The judge will then create the linked structure based on these inputs and pass the two heads, headA and headB to your program. If you correctly return the intersected node, then your solution will be accepted.
+
+Follow up: Could you write a solution that runs in O(m + n) time and use only O(1) memory?
+
+Count the lengthes of A and B. Then, drop nodes in the longer linked list. Then, drop the nodes in both linked lists until the intersection node is found.
+
+**Solution:** First, we determine the lengths of both linked lists. We then advance the pointer of the longer list to match the length of the shorter list. Finally, we use two pointers to traverse both lists at the same speed until they meet. The meeting point is the intersection node.
+
+```typescript
+function getIntersectionNode(headA: ListNode | null, headB: ListNode | null): ListNode | null {
+    const getCount = (head: ListNode | null): number => {
+        let count = 0;
+        let p = head;
+        while (p !== null) {
+            p = p.next;
+            count += 1;
+        }
+        return count;
+    };
+    let countA = getCount(headA);
+    let countB = getCount(headB);
+    // make sure headA is shorter or equal to headB.
+    if (countA > countB) {
+        [countA, countB] = [countB, countA];
+        [headA, headB]   = [headB, headA];
+    }
+    if (countA < countB) {
+        // remove nodes in B to make they are equal.
+        while (countA < countB) {
+            headB = headB.next;
+            countB -= 1;
+        }
+    }
+    // now countA = countB
+    while (headA !== headB) {
+        headA = headA.next;
+        headB = headB.next;
+    }
+    return headA;
+};
+```
+
+#### 19. Remove Nth Node From End of List[Medium]
+
+Given the head of a linked list, remove the nth node from the end of the list and return its head.
+
+Follow up: Could you do this in one pass?
+
+**Solution:** We set up two pointers with a distance of n between them and move them forward at the same speed. When the front pointer reaches the end of the list, the back pointer will be at the target node. We then remove the target node.
+
+```typescript
+function removeNthFromEnd(head: ListNode | null, n: number): ListNode | null {
+    let front = head;
+    for (let i = 0; i < n; i++) {
+        front = front.next;
+    }
+    // the head is the one to be deleted.
+    if (front === null) {
+        return head.next;
+    }
+    let back = head;
+    while (front.next !== null) {
+        front = front.next;
+        back = back.next;
+    }
+    back.next = back.next.next;
+    return head;
+};
+```
+
+#### 203. Remove Linked List Elements[Easy]
+
+Given the head of a linked list and an integer val, remove all the nodes of the linked list that has Node.val == val, and return the new head.
+
+**Solution:** We can solve this using a recursive approach. If the list is empty, we simply return it. If the head's value matches the target value, we remove the head and continue with the rest of the list. If the head's value does not match the target, we recursively process the rest of the list and link the result back to the head.
+
+```typescript
+function removeElements(head: ListNode | null, val: number): ListNode | null {
+    if (head === null) return head;
+    // Remove the head
+    if (head.val === val) return removeElements(head.next, val);
+    // move to the next node.
+    head.next = removeElements(head.next, val);
+    return head;
+};
+```
+
+#### 328. Odd Even Linked List[Medium]
+
+Given the head of a singly linked list, group all the nodes with odd indices together followed by the nodes with even indices, and return the reordered list.
+
+The first node is considered odd, and the second node is even, and so on.
+
+Note that the relative order inside both the even and odd groups should remain as it was in the input.
+
+You must solve the problem in O(1) extra space complexity and O(n) time complexity.
+
+**Solution:** We create two separate linked lists: one for odd-indexed nodes and another for even-indexed nodes. As we iterate through the original linked list, we use a counter to determine which list to append each node to.
+
+```typescript
+function oddEvenList(head: ListNode | null): ListNode | null {
+    if (head === null || head.next === null || head.next.next === null) return head;
+
+    const oddDummy = new ListNode(0);
+    const evenDummy = new ListNode(0);
+    let count = 1;
+    let p = head;
+    let oddP = oddDummy;
+    let evenP = evenDummy;
+    while (p !== null) {
+        if (count % 2 === 1) { // oddDummy
+            // Put it behind the odd linked list
+            oddP.next = p;
+            p = p.next;
+            oddP = oddP.next;
+            oddP.next = null;
+        } else { // evenDummy
+            // Put it behind the even linked list
+            evenP.next = p;
+            p = p.next;
+            evenP = evenP.next;
+            evenP.next = null;
+        }
+        count += 1;
+    }
+    oddP.next = evenDummy.next;
+    return oddDummy.next;
+};
+```
+
+#### 2. Add Two Numbers[Medium]
+
+You are given two non-empty linked lists representing two non-negative integers. The digits are stored in reverse order, and each of their nodes contains a single digit. Add the two numbers and return the sum as a linked list.
+
+You may assume the two numbers do not contain any leading zero, except the number 0 itself.
+
+It is guaranteed that the list represents a number that does not have leading zeros.
+
+**Solution:** We use two pointers, `p1` and `p2`, to traverse the two linked lists. If either list runs out of nodes, we treat the value as 0. We sum the values from the two lists along with a carry. If the sum is greater than 9, we update the carry and add a new node with the digit value. Finally, if there's any remaining carry after processing all nodes, we append it as a new node to the linked list.
+
+```typescript
+function addTwoNumbers(l1: ListNode | null, l2: ListNode | null): ListNode | null {
+    const dummy = new ListNode(0);
+    let p = dummy;
+    let p1 = l1;
+    let p2 = l2;
+    let carry = 0;
+    while (p1 !== null || p2 !== null) {
+        const val1 = p1 === null ? 0 : p1.val;
+        const val2 = p2 === null ? 0 : p2.val;
+        let sum = val1 + val2 + carry;
+        carry = sum > 9 ? 1 : 0;
+        sum = sum > 9 ? sum - 10 : sum;
+        p.next = new ListNode(sum);
+        p = p.next;
+        if (p1 !== null) {
+            p1 = p1.next;
+        }
+        if (p2 !== null) {
+            p2 = p2.next;
+        }
+    }
+    if (carry > 0) {
+        p.next = new ListNode(carry);
+    }
+    return dummy.next;
+};
+```
+
+#### 430. Flatten a Multilevel Doubly Linked List[Medium]
+
+You are given a doubly linked list, which contains nodes that have a next pointer, a previous pointer, and an additional child pointer. This child pointer may or may not point to a separate doubly linked list, also containing these special nodes. These child lists may have one or more children of their own, and so on, to produce a multilevel data structure as shown in the example below.
+
+Given the head of the first level of the list, flatten the list so that all the nodes appear in a single-level, doubly linked list. Let curr be a node with a child list. The nodes in the child list should appear after curr and before curr.next in the flattened list.
+
+Return the head of the flattened list. The nodes in the list must have all of their child pointers set to null.
+
+
+How the multilevel linked list is represented in test cases:
+
+We use the multilevel linked list from Example 1 above:
+
+1---2---3---4---5---6--NULL
+|
+7---8---9---10--NULL
+|
+11--12--NULL
+The serialization of each level is as follows:
+
+[1,2,3,4,5,6,null]
+[7,8,9,10,null]
+[11,12,null]
+To serialize all levels together, we will add nulls in each level to signify no node connects to the upper node of the previous level. The serialization becomes:
+
+[1, 2, 3, 4, 5, 6, null]
+|
+[null, null, 7, 8, 9, 10, null]
+|
+[ null, 11, 12, null]
+Merging the serialization of each level and removing trailing nulls we obtain:
+
+[1,2,3,4,5,6,null,null,null,7,8,9,10,null,null,11,12]
+
+**Solution:** We define a helper function called `solver` to flatten the linked list, returning the head and tail of the resulting list.
+
+In the `solver` function, we first skip nodes that have a non-null `next` pointer and a null `child` pointer. When we encounter a node with a null `next` pointer and a non-null `child` pointer (indicating the last node with a valid child), we recursively process the child list and append it to the main list.
+
+If we find a node in the middle of the list with a child, we process both the child and the next pointers, and then insert the flattened child list into the main list.
+
+```typescript
+function flatten(head: _Node | null): _Node | null {
+    // return head and tail node after it is flattened.
+    const solver = (head: _Node | null): [_Node | null, _Node | null] => {
+        if (head === null) return [null, null];
+        let p = head;
+        while (p.next !== null && p.child === null) {
+            p = p.next;
+        }
+        // p.next === null || p.child !== null
+        // Reach the tail node
+        if (p.next === null) {
+            // p is the tail node.
+            if (p.child === null) {
+                // If it has no child, simply return head and tail.
+                return [head, p];
+            }
+            const [newHead, newTail] = solver(p.child);
+            p.child = null;
+            newHead.prev = p;
+            p.next = newHead;
+            return [head, newTail];
+        }
+        // Find a middle node with child.
+        const [newHead, newTail] = solver(p.child);
+        p.child = null;
+        const pNext = p.next;
+        p.next = newHead;
+        newHead.prev = p;
+
+
+        const [newRestHead, newRestTail] = solver(pNext);
+        newTail.next = newRestHead;
+        newRestHead.prev = newTail;
+        return [head, newRestTail]
+    }
+    const [newHead, newTail] = solver(head);
+    return newHead;
+};
+```
+
+#### 708. Insert into a Sorted Circular Linked List[Medium]
+
+Given a Circular Linked List node, which is sorted in non-descending order, write a function to insert a value insertVal into the list such that it remains a sorted circular list. The given node can be a reference to any single node in the list and may not necessarily be the smallest value in the circular list.
+
+If there are multiple suitable places for insertion, you may choose any place to insert the new value. After the insertion, the circular list should remain sorted.
+
+If the list is empty (i.e., the given node is null), you should create a new single circular list and return the reference to that single node. Otherwise, you should return the originally given node.
+
+**Solution:** When inserting a value into a circular sorted linked list, there are three scenarios to consider:
+
+1. **Between Two Nodes:** The value should be inserted between two nodes if it lies between their values.
+2. **Wrap-Around Point:** If the value is either smaller than the smallest value in the list or larger than the largest value, it should be inserted at the point where the list wraps around from the largest value back to the smallest.
+3. **Uniform List:** If all nodes in the list contain the same value, the new node can be inserted at any point.
+
+```typescript
+function insert(head: _Node | null, insertVal: number): _Node | null {
+    const node = new _Node(insertVal);
+    // Zero node, we can simply insert it.
+    if (head === null) {
+        node.next = node;
+        return node;
+    };
+    let p = head;
+    while (p.next !== head) {
+        // p.next.val > p.val and insertVal is within this range.
+        if (insertVal >= p.val && insertVal < p.next.val) {
+            break;
+        }
+        // p.next.val < p.val and insertVal is outside of this range.
+        // Insert it to falling cliff.
+        if (p.val > p.next.val && (insertVal >= p.val || insertVal <= p.next.val)) {
+            break;
+        }
+        p = p.next;
+    }
+    // Otherwise, insert to the head.
+    const next = p.next;
+    p.next = node;
+    node.next = next;
+    return head;
+}
+```

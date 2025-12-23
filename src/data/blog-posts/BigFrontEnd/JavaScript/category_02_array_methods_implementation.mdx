@@ -1,0 +1,868 @@
+---
+title: BigFrontEnd Category 2 Array Methods Questions
+slug: category-02-array-methods-implementation
+publishDate: 2024-05-26
+description: Learn about BigFrontEnd Category 2 Array Methods Questions.
+date: 2024-05-26
+tags: ['BigFrontEnd', 'category']
+draft: false
+---
+
+### Introduction
+
+This blog post summarizes the Array Methods implementation questions found on BigFrontEnd.Dev and leetcode.
+
+<TOCInline toc={props.toc} exclude="Introduction" />
+
+### 1.implement Array.prototype.flat()
+
+https://bigfrontend.dev/problem/implement-Array-prototype.flat
+
+There is already `Array.prototype.flat()` in JavaScript (ES2019), which reduces the nesting of Array.
+
+Could you manage to implement your own one?
+
+Here is an example to illustrate
+
+```js
+const arr = [1, [2], [3, [4]]]
+flat(arr)
+flat(arr, 1)
+flat(arr, 2)
+```
+
+follow up
+
+Are you able to solve it both recursively and iteratively?
+
+```javascript
+function flat(arr, depth = 1) {
+  // your imeplementation here
+  if (depth === 0) {
+    return arr;
+  }
+  if (!arr.some(val => Array.isArray(val))) {
+    return arr;
+  }
+  const result = [];
+  arr.forEach(val => {
+    if (Array.isArray(val)) {
+      result.push(...val);
+    } else {
+      result.push(val);
+    }
+  });
+  return flat(result, depth - 1);
+}
+```
+
+##### Recursive Solution with Reduce
+
+```js
+function flat(arr, depth = 1) {
+  return arr.reduce(
+    (acc, item) =>
+      Array.isArray(item) && depth > 0 ? acc.concat(flat(item, depth - 1)) : [...acc, item],
+    []
+  )
+}
+```
+
+##### Iterative Solution with Stack
+
+```js
+function flat(arr, depth = 1) {
+  const flatArray = []
+  let stack = [...arr.map((item) => [item, depth])]
+
+  while (stack.length > 0) {
+    const [item, depth] = stack.pop()
+    if (Array.isArray(item) && depth > 0) {
+      stack.push(...item.map((el) => [el, depth - 1]))
+    } else {
+      flatArray.push(item)
+    }
+  }
+
+  return flatArray.reverse()
+}
+```
+
+### 2.Shuffle an Array
+
+https://bigfrontend.dev/problem/can-you-shuffle-an-array
+
+How would you implement a shuffle() ?
+
+When passed with an array, it should modify the array inline to generate a randomly picked permutation at the same probability.
+
+for an array like this:
+
+```js
+const arr = [1, 2, 3, 4]
+```
+
+there would be possibly 4! = 24 permutations
+
+[1, 2, 3, 4]
+[1, 2, 4, 3]
+[1, 3, 2, 4]
+[1, 3, 4, 2]
+[1, 4, 2, 3]
+[1, 4, 3, 2]
+[2, 1, 3, 4]
+[2, 1, 4, 3]
+[2, 3, 1, 4]
+[2, 3, 4, 1]
+[2, 4, 1, 3]
+[2, 4, 3, 1]
+[3, 1, 2, 4]
+[3, 1, 4, 2]
+[3, 2, 1, 4]
+[3, 2, 4, 1]
+[3, 4, 1, 2]
+[3, 4, 2, 1]
+[4, 1, 2, 3]
+[4, 1, 3, 2]
+[4, 2, 1, 3]
+[4, 2, 3, 1]
+[4, 3, 1, 2]
+[4, 3, 2, 1]
+your `shuffle()` should transform the array in one of the above array, at the same 1/24 probability.
+
+notes
+
+Your `shuffle()` will be called multiple times, to calculate the probability on each possible result, and test again standard deviation
+
+ref: https://javascript.info/task/shuffle
+
+**Solution:** Iterate from reverse order and exchange position i with the a random index between [0, i]
+
+```javascript
+function shuffleArray(array) {
+  const n = array.length;
+  for (let i = n - 1; i > 0; i--) {
+    // Generate a random index between 0 and i
+    const j = Math.floor(Math.random() * (i + 1));
+    // Swap elements at indices i and j
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
+const myArray = [1, 2, 3, 4, 5];
+console.log(shuffleArray(myArray)); // Output: shuffled array
+```
+
+### 3.Implement `Array.prototype.reduce()`
+
+146.https://bigfrontend.dev/problem/implement-Array-prototype-reduce
+
+`Array.prototype.reduce()` is a handy method to process arrays.
+
+Here is a simple task - Could you implement it by yourself?
+
+```js
+;[1, 2, 3].myReduce((sum, item) => sum + item)
+// 6
+```
+
+do not use native Array.prototype.reduce() in your code
+your function is only tested against valid array (no array-like objects)
+thanks to pajadev for suggesting this
+
+**Solution:**
+Case 1: Empty array and undefined initial value. Throw errors.
+Case 2: Non-empty array and undefined initial value. Use the first element as initial value.
+Case 3: Non-emepty array and defined initial value.
+
+`callback` takes `acc`, `cur`, `index`, and `array` as the parameter.
+
+```javascript
+Array.prototype.myReduce = function(callback, initialValue) {
+  // Check if the array is empty and no initial value is provided
+  if (this.length === 0 && initialValue === undefined) {
+    throw new TypeError('Reduce of empty array with no initial value');
+  }
+
+  // Initialize accumulator
+  let accumulator = initialValue !== undefined ? initialValue : this[0];
+
+  // Start iteration from the second element if no initial value is provided
+  const startIndex = initialValue !== undefined ? 0 : 1;
+
+  // Iterate over array elements
+  for (let i = startIndex; i < this.length; i++) {
+    accumulator = callback(accumulator, this[i], i, this);
+  }
+
+  return accumulator;
+};
+const arr = [1, 2, 3, 4, 5];
+// Sum of array elements using myReduce
+const sum = arr.myReduce((accumulator, currentValue) => accumulator + currentValue, 0);
+console.log(sum); // Output: 15
+```
+
+### 4.Implement `Array.prototype.map()`
+
+151.https://bigfrontend.dev/problem/implement-Array-prototype-map
+
+Please implement your own `Array.prototype.map()`.
+
+```js
+;[1, 2, 3].myMap((num) => num * 2)
+```
+
+please avoid using Array.prototype.map() directly in your code.
+
+**Solution:** The `callback` function takes `cur`, `index`, and `array` as parameters.
+
+```javascript
+Array.prototype.myMap = function(callback) {
+  // Check if this is not an array
+  if (!Array.isArray(this)) {
+    throw new TypeError('Array.prototype.myMap called on non-array object');
+  }
+
+  // Create a new array to store the mapped values
+  const mappedArray = [];
+
+  // Iterate over each element of the array and apply the callback function
+  for (let i = 0; i < this.length; i++) {
+    mappedArray.push(callback(this[i], i, this));
+  }
+
+  return mappedArray;
+};
+const arr = [1, 2, 3, 4, 5];
+
+// Double each element using myMap
+const doubled = arr.myMap((element) => element * 2);
+console.log(doubled); // Output: [2, 4, 6, 8, 10]
+```
+
+### 5.Implement `array.last()`
+
+Write code that enhances all arrays such that you can call the array.last() method on any array and it will return the last element. If there are no elements in the array, it should return -1.
+
+You may assume the array is the output of JSON.parse.
+
+Example 1:
+
+Input: nums = [null, {}, 3]
+Output: 3
+Explanation: Calling nums.last() should return the last element: 3.
+Example 2:
+
+Input: nums = []
+Output: -1
+Explanation: Because there are no elements, return -1.
+
+Constraints:
+
+arr is a valid JSON array
+`0 <= arr.length <= 1000`
+
+**Solution:**
+
+```typescript
+// 2619. Array Prototype Last
+Array.prototype.last = function() {
+    if (this.length === 0) {
+        return -1;
+    }
+    // return this[this.length - 1];
+    return this.at(-1);
+};
+```
+
+### 6.Implement `Array.prototype.groupBy`
+
+Write code that enhances all arrays such that you can call the array.groupBy(fn) method on any array and it will return a grouped version of the array.
+
+A grouped array is an object where each key is the output of fn(arr[i]) and each value is an array containing all items in the original array with that key.
+
+The provided callback fn will accept an item in the array and return a string key.
+
+The order of each value list should be the order the items appear in the array. Any order of keys is acceptable.
+
+Please solve it without lodash's \_.groupBy function.
+
+Example 1:
+
+Input:
+
+```
+array = [
+  {"id":"1"},
+  {"id":"1"},
+  {"id":"2"}
+],
+fn = function (item) {
+  return item.id;
+}
+```
+
+Output:
+
+```
+{
+  "1": [{"id": "1"}, {"id": "1"}],
+  "2": [{"id": "2"}]
+}
+```
+
+Explanation:
+Output is from array.groupBy(fn).
+The selector function gets the "id" out of each item in the array.
+There are two objects with an "id" of 1. Both of those objects are put in the first array.
+There is one object with an "id" of 2. That object is put in the second array.
+Example 2:
+
+Input:
+
+```
+array = [
+  [1, 2, 3],
+  [1, 3, 5],
+  [1, 5, 9]
+]
+fn = function (list) {
+  return String(list[0]);
+}
+```
+
+Output:
+
+```
+{
+  "1": [[1, 2, 3], [1, 3, 5], [1, 5, 9]]
+}
+```
+
+Explanation:
+The array can be of any type. In this case, the selector function defines the key as being the first element in the array.
+All the arrays have 1 as their first element so they are grouped together.
+
+```
+{
+  "1": [[1, 2, 3], [1, 3, 5], [1, 5, 9]]
+}
+```
+
+Example 3:
+
+Input:
+
+```
+array = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+fn = function (n) {
+  return String(n > 5);
+}
+```
+
+Output:
+
+```
+{
+  "true": [6, 7, 8, 9, 10],
+  "false": [1, 2, 3, 4, 5]
+}
+```
+
+Explanation:
+The selector function splits the array by whether each number is greater than 5.
+
+Constraints:
+
+`0 <= array.length <= 105`
+fn returns a string
+
+**Solution:**
+
+```typescript
+// 2631. Group By
+declare global {
+    interface Array<T> {
+        groupBy(fn: (item: T) => string): Record<string, T[]>
+    }
+}
+Array.prototype.groupBy = function<T>(fn: (item: T) => string): Record<string, T[]> {
+    const grouped: Record<string, T[]> = {};
+    this.forEach((item) => {
+        const key = fn(item);
+        if (!grouped[key]) {
+            grouped[key] = [];
+        }
+        grouped[key].push(item);
+    });
+    return grouped;
+}
+```
+
+### 7.Implement `sortBy`
+
+https://leetcode.com/problems/sort-by/description/
+
+Given an array arr and a function fn, return a sorted array sortedArr. You can assume fn only returns numbers and those numbers determine the sort order of sortedArr. sortedArray must be sorted in ascending order by fn output.
+
+You may assume that fn will never duplicate numbers for a given array.
+
+Example 1:
+
+Input: arr = [5, 4, 1, 2, 3], fn = (x) => x
+Output: [1, 2, 3, 4, 5]
+Explanation: fn simply returns the number passed to it so the array is sorted in ascending order.
+Example 2:
+
+Input: arr = `[{"x": 1}, {"x": 0}, {"x": -1}]`, fn = (d) => d.x
+Output: `[{"x": -1}, {"x": 0}, {"x": 1}]`
+Explanation: fn returns the value for the "x" key. So the array is sorted based on that value.
+Example 3:
+
+Input: arr = [[3, 4], [5, 2], [10, 1]], fn = (x) => x[1]
+Output: [[10, 1], [5, 2], [3, 4]]
+Explanation: arr is sorted in ascending order by number at index=1.
+
+Constraints:
+
+arr is a valid JSON array
+fn is a function that returns a number
+`1 <= arr.length <= 5 * 10^5`
+
+**Solution:**
+
+```typescript
+// 2724. Sort By
+type JSONValue = null | boolean | number | string | JSONValue[] | { [key: string]: JSONValue };
+type Fn = (value: JSONValue) => number
+
+function sortBy(arr: JSONValue[], fn: Fn): JSONValue[] {
+    return arr.slice().sort((a, b) => fn(a) - fn(b));
+};
+```
+
+### 8.improve a function
+
+18.https://bigfrontend.dev/problem/improve-a-function
+
+```js
+// Given an input of array,
+// which is made of items with >= 3 properties
+let items = [
+  {color: 'red', type: 'tv', age: 18},
+  {color: 'silver', type: 'phone', age: 20},
+  {color: 'blue', type: 'book', age: 17}
+]
+// an exclude array made of key value pair
+const excludes = [
+  {k: 'color', v: 'silver'},
+  {k: 'type', v: 'tv'},
+  ...
+]
+function excludeItems(items, excludes) {
+  excludes.forEach( pair => {
+    items = items.filter(item => item[pair.k] === item[pair.v])
+  })
+
+  return items
+}
+```
+
+What does this function excludeItems do?
+Is this function working as expected ?
+What is the time complexity of this function?
+How would you optimize it ?
+note
+
+we only judge by the result, not the time cost. please submit the best approach you can.
+
+**Solution:**
+
+```js
+/**
+ * @param {object[]} items
+ * @param { Array< {k: string, v: any} >} excludes
+ * @return {object[]}
+ */
+function excludeItems(items, excludes) {
+  const createExcludesMap = (excludes) => {
+    const excludesMap = new Map();
+
+    for (const { k, v } of excludes) {
+      if (!excludesMap.has(k)) {
+        excludesMap.set(k, new Set());
+      }
+      excludesMap.get(k).add(v);
+    }
+    return excludesMap;
+  };
+  const excludesMap = createExcludesMap(excludes);
+  return items.filter((item) =>
+    Object.keys(item).every(
+      // Time complexity of V8's Set.has() is practically O(1).
+      (key) => !excludesMap.has(key) || !excludesMap.get(key).has(item[key])
+    )
+  );
+}
+let items = [
+  {color: 'red', type: 'tv', age: 18},
+  {color: 'silver', type: 'phone', age: 20},
+  {color: 'blue', type: 'book', age: 17}
+]
+
+// an exclude array made of key value pair
+const excludes = [
+  {k: 'color', v: 'silver'},
+  {k: 'type', v: 'tv'},
+  ...
+]
+```
+
+### 9.Reorder array with new indexes
+
+25.https://bigfrontend.dev/problem/reorder-array-with-new-indexes
+
+Suppose we have an array of items - A, and another array of indexes in numbers - B
+
+```js
+const A = ['A', 'B', 'C', 'D', 'E', 'F']
+const B = [1, 5, 4, 3, 2, 0]
+```
+
+You need to reorder A, so that the A[i] is put at index of B[i], which means B is the new index for each item of A.
+
+For above example A should be modified inline to following
+
+```js
+;['F', 'A', 'E', 'D', 'C', 'B']
+```
+
+The input are always valid.
+
+follow-up
+
+It is fairly easy to do this by using extra O(n) space, could you solve it with O(1) space?
+
+**Solution:** At position `i`, swap `items[i]` and `items[newOrder[i]]`, as well as `newOrder[i]` and `newOrder[newOrder[i]]`. This achieves two goals:
+
+1. Ensures `items[i]` has the correct element (`newOrder[i] === i`).
+2. Keeps the `newOrder` valid for the original element at position `i`.
+
+Example:
+
+Initial arrays:
+
+```
+const A = ['A', 'B', 'C', 'D', 'E', 'F'];
+const B = [ 1, 5, 4, 3, 2, 0];
+```
+
+Step-by-step process:
+
+```
+=> i = 0
+const A = ['B', 'A', 'C', 'D', 'E', 'F'];
+const B = [ 5, 1, 4, 3, 2, 0];
+```
+
+```js
+/**
+ * @param {any[]} items
+ * @param {number[]} newOrder
+ * @return {void}
+ */
+function sort(items, newOrder) {
+  for (let i = 0; i < newOrder.length; i++) {
+    const newIndex = newOrder[i]
+    if (newIndex !== i) {
+      swap(newOrder, newIndex, i)
+      swap(items, newIndex, i)
+    }
+  }
+}
+
+function swap(arr, i, j) {
+  ;[arr[i], arr[j]] = [arr[j], arr[i]]
+}
+```
+
+### 10.remove duplicates from an array
+
+66.https://bigfrontend.dev/problem/remove-duplicates-from-an-array
+
+Given an array containing all kinds of data, please implement a function deduplicate() to remove the duplicates.
+
+You should modify the array in place. Order doesn't matter.
+
+What is time & space cost of your approach?
+
+**Solution:** If order does not need to be preserved, use `[...new Set(arr)]`. Alternatively, use a two-pointer method where the first pointer explores the array and the second pointer writes unique elements.
+
+```js
+function deduplicate(arr) {
+  let i = 0 // explore
+  let j = 0 // write
+  const n = arr.length
+  const seen = new Set()
+  while (i < n) {
+    if (!seen.has(arr[i])) {
+      seen.add(arr[i])
+      arr[j] = arr[i]
+      j += 1
+    }
+    i += 1
+  }
+  arr.length = j
+}
+```
+
+### 11.support negative Array index in JavaScript
+
+88.https://bigfrontend.dev/problem/support-negative-Array-index
+
+Python supports negative list index , while JavaScript doesn't.
+
+Can you write a wrapper function to make negative array index possible?
+
+```js
+const originalArr = [1, 2, 3]
+const arr = wrap(originalArr)
+arr[0] // 1
+arr[1] // 2
+arr[2] // 3
+arr[3] // undefined
+arr[-1] // 3
+arr[-2] // 2
+arr[-3] // 1
+arr[-4] // undefined
+```
+
+All methods on arr should be applied to the original array, which means
+
+```js
+arr.push(4)
+arr[3] // 4
+originalArr[3] // 4
+arr.shift()
+arr[0] // 2
+originalArr[0] // 2
+arr.bfe = 'bfe'
+originalArr.bfe // 'bfe'
+arr[-1] = 5
+arr // [2,3,5]
+originalArr // [2,3,5]
+originalArr[2] = 6
+arr // [2,3,6]
+originalArr // [2,3,6]
+```
+
+**Solution:**
+
+Define a handler for the `Proxy` to wrap the array. In the handler, define `get` and `set` methods to check whether the prop is a number and convert it if necessary.
+
+```js
+/**
+ * @param {any[]} arr
+ * @returns {?} - sorry no type hint for this
+ */
+function wrap(arr) {
+  const isIndex = (prop) => typeof prop === 'string' && !isNaN(prop)
+  const convertIndex = (prop, length) => {
+    let index = Number(prop)
+    if (index < 0) {
+      index = length + index
+    }
+    return index
+  }
+  const handler = {
+    get(target, prop, receiver) {
+      // Handle negative indices
+      if (isIndex(prop)) {
+        return Reflect.get(target, convertIndex(prop, target.length), receiver)
+      }
+      // Handle all other properties normally
+      return Reflect.get(target, prop, receiver)
+    },
+    set(target, prop, value, receiver) {
+      // Handle negative indices
+      if (isIndex(prop)) {
+        const index = convertIndex(prop, target.length)
+        if (index < 0) {
+          throw new Error('Negative index out of bounds')
+        }
+        return Reflect.set(target, index, value, receiver)
+      }
+      // Handle all other properties normally
+      return Reflect.set(target, prop, value, receiver)
+    },
+  }
+  return new Proxy(arr, handler)
+}
+```
+
+### 12.implement Immer produce()
+
+164.https://bigfrontend.dev/problem/immerjs
+
+In [12. implement Immutability helper](https://bigfrontend.dev/problem/implement-Immutability-helper), we are asked to implement immutability helpers.
+
+These helpers requires extra effort for us to remember how to use them, while Immer takes another approach which might be easier to use.
+
+For example, we have a base state as below.
+
+```js
+const state = [
+  {
+    name: 'BFE',
+  },
+  {
+    name: '.',
+  },
+]
+```
+
+We can use `produce()` to patch our modification and get a new state.
+
+```js
+const newState = produce(state, (draft) => {
+  draft.push({ name: 'dev' })
+  draft[0].name = 'bigfrontend'
+  draft[1].name = '.' // set with the same value
+})
+```
+
+Unchanged parts are not cloned.
+
+```js
+expect(newState).not.toBe(state)
+expect(newState).toEqual([
+  {
+    name: 'bigfrontend',
+  },
+  {
+    name: '.',
+  },
+  {
+    name: 'dev',
+  },
+])
+expect(newState[0]).not.toBe(state[0])
+expect(newState[1]).toBe(state[1])
+expect(newState[2]).not.toBe(state[2])
+```
+
+Please implement your `produce()`.
+
+This is not to recreate Immer, test cases only cover the basic usage.
+You only need to support basic usage on plain object and array, things like Map/Set, Auto freezing .etc are out of scope.
+You need to make sure unchanged parts are not cloned.
+
+**Solution:**
+
+This code implements a recursive proxy-based system for creating an immutable data structure with efficient updates. Let's break it down:
+
+1. `proxify` function:
+   This function takes two arguments: `data` (the object to be proxied) and `updaters` (an array of update functions).
+
+2. Proxy creation:
+   It returns a new `Proxy` object wrapping the `data`.
+
+3. Get trap:
+
+   - If the accessed property is an object or array (but not a function), it creates a clone.
+   - For arrays, it uses spread syntax (`[...val]`), and for objects, it uses object spread (`{...val}`).
+   - It creates an `updater` function that will be used to propagate changes up the object tree.
+   - It recursively calls `proxify` on the clone, adding the new `updater` to the `updaters` array.
+   - For primitive values, it returns the value as-is.
+
+4. Set trap:
+
+   - If the new value is different from the current value, it updates the target.
+   - It then calls all the `updaters` in reverse order, propagating the change up the object tree.
+
+5. DeleteProperty trap:
+   - If a property is successfully deleted, it calls all the `updaters` in reverse order, similar to the set trap.
+
+Key points:
+
+- Lazy cloning: Objects are only cloned when accessed, not immediately.
+- Change propagation: When a change occurs, it's propagated up the object tree using the `updaters`.
+- Immutability: The original data structure is not modified; instead, new objects are created as needed.
+
+This implementation allows for efficient immutable updates to nested data structures. When you modify a deeply nested property, only the path to that property is cloned, leaving the rest of the structure untouched.
+
+The use of `updaters` ensures that changes at any level of the object tree are reflected in all parent objects, maintaining consistency throughout the structure.
+
+```javascript
+/**
+ * @param {any} base
+ * @param {(draft: any) => any} recipe
+ * @returns {any}
+ */
+const proxify = (data, updaters) => {
+  return new Proxy(data, {
+    // create clones in get, as only needed
+    // but only link them in set traps, in order to avoid unnecessary cloning.
+    get: function (target, key) {
+      const val = Reflect.get(target, key)
+      // if function met, meaning prototype functions on Array here in our scope
+      if (Object(val) === val && !(val instanceof Function)) {
+        console.log(`get key: ${key}`)
+        // object
+        const clone = Array.isArray(val) ? [...val] : { ...val }
+        const updater = (newVal) => {
+          console.log('updater', key)
+          target[key] = newVal
+          return target
+        }
+        const proxy = proxify(clone, [...updaters, updater])
+        return proxy
+      } else {
+        // primitive
+        return val
+      }
+    },
+    // when data changes, link clones up
+    set: function (target, key, value) {
+      const prevVal = Reflect.get(target, key)
+      if (prevVal !== value) {
+        target[key] = value
+        updaters.reduceRight((result, updater) => updater(result), target)
+      }
+      return true
+    },
+    // when data changes, link clones up
+    deleteProperty: function (target, key) {
+      const deleted = Reflect.deleteProperty(target, key)
+      if (deleted) {
+        updaters.reduceRight((result, updater) => updater(result), target)
+      }
+      return deleted
+    },
+  })
+}
+
+const produce = (base, recipe) => {
+  // proxy
+  // resurisve proxify the properties
+  // {a:{e: {}, b:{c: {d: 0}}}}
+  // a.b.c.d = 1
+  // a proxy - clone - {b:{c: {d: 0}}},  [(clone) => parent.a = clone]
+  // a.b proxy - clone - {c: {d: 0}} [(clone) => parent.a = clone, (clone) => a.b = clone]
+  // a.b.c proxy - clone - {d: 0}
+  // a.b.c.d = 1
+  // clone as needed in get trap on proxy
+  // in set trap, we chain the clone up if data changed
+  // {d: 1}
+  // {c: {d: 1}}
+  // {b:{c: {d: 1}}
+  // {a:{e: {}, b:{c: {d: 1}}}}
+  const root = {
+    result: base,
+  }
+  const proxy = proxify(root, [])
+  recipe(proxy.result)
+  return root.result
+}
+```

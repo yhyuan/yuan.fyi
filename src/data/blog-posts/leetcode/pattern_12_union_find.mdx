@@ -1,0 +1,828 @@
+---
+title: Leetcode Pattern 12 Union Find
+slug: pattern-12-union-find
+publishDate: 2024-05-18
+description: Learn about Leetcode Pattern 12 Union Find.
+date: 2024-05-18
+tags: ["leetcode", "pattern"]
+draft: false
+---
+
+### Introduction
+
+Union-Find, also known as Disjoint Set Union (DSU), is a powerful data structure used to manage and merge disjoint sets. It's especially useful in scenarios where you need to group elements and efficiently query whether two elements belong to the same group. This data structure is pivotal in solving problems related to connected components, network connectivity, and even some graph algorithms.
+
+Union-Find has the following Basic Operations:
+
+- **Find**: Determine which set a particular element belongs to. This operation is crucial for checking if two elements are in the same set.
+- **Union**: Merge two sets into one. This operation is used to combine two distinct sets into a single set.
+
+Union-Find is typically implemented with two primary techniques to optimize its performance:
+
+- **Path Compression**: This technique helps in speeding up the `find` operation by making nodes point directly to the root of their set. After performing a `find` operation, the nodes in the path are updated to point directly to the root, thus flattening the structure and improving future query times.
+
+- **Union by Rank (or Size)**: This technique optimizes the `union` operation by ensuring that the smaller tree (in terms of height or size) is always added under the larger tree. This helps in keeping the trees flat and ensures that the operations remain efficient.
+
+
+1.Simplest Union Find (Union without Rank):
+
+```python
+class UnionFind:
+    def __init__(self, n):
+        self.parent = list(range(n))
+        self.count = n
+
+    def find(self, x):
+        if self.parent[x] == x:
+            return self.parent[x]
+        self.parent[x] = self.find(self.parent[x])  # Path compression
+        return self.parent[x]
+
+    def union(self, x, y):
+        root_x = self.find(x)
+        root_y = self.find(y)
+        if root_x == root_y:
+            return False
+        # move x tree to y tree
+        self.parent[root_x] = root_y
+        self.count -= 1
+        return True
+
+    def connected(self, x, y):
+        return self.find(x) == self.find(y)
+
+    def getCount(self):
+        return self.count
+```
+
+2.Union Find (Union with Rank):
+
+```python
+class UnionFind:
+    def __init__(self, n):
+        self.parent = [i for i in range(n)]
+        self.rank = [0] * n
+        self.count = n
+
+    def find(self, x):
+        if self.parent[x] != x:
+            self.parent[x] = self.find(self.parent[x])  # Path compression
+        return self.parent[x]
+
+    def union(self, x, y):
+        root_x = self.find(x)
+        root_y = self.find(y)
+        if root_x != root_y:
+            # Change the lower tree's parent (with smaller rank) to the higher tree parent.
+            # If both of them have the same heights, change the parent in either ways. But, we have to increase the rank by 1.
+            if self.rank[root_x] < self.rank[root_y]:
+                self.parent[root_x] = root_y
+            elif self.rank[root_x] > self.rank[root_y]:
+                self.parent[root_y] = root_x
+            else:
+                self.parent[root_y] = root_x
+                self.rank[root_x] += 1
+            self.count -= 1
+            return True
+        return False
+
+    def connected(self, x, y):
+        return self.find(x) == self.find(y)
+
+    def getCount(self):
+        return self.count
+# Example usage:
+n = 5
+uf = UnionFind(n)
+uf.union(0, 1)
+uf.union(1, 2)
+uf.union(3, 4)
+print(uf.connected(0, 2))  # Output: True
+print(uf.connected(0, 3))  # Output: False
+```
+
+2.Union Find (Find and Union with cost or weights):
+
+```python
+class UnionFind:
+    def __init__(self):
+        self.parent = {}
+        self.coef = {}
+
+    def find(self, x):
+        if x not in self.parent:
+            self.parent[x] = x
+            self.coef[x] = 1
+        if self.parent[x] == x:
+            return self.parent[x], self.coef[x]
+        self.parent[x], coef = self.find(self.parent[x])
+        self.coef[x] *= coef
+        return self.parent[x], self.coef[x]
+
+    def union(self, x, y, value):
+        root_x, coef_x = self.find(x)
+        root_y, coef_y = self.find(y)
+        if root_x == root_y:
+            return False
+        self.parent[root_x] = root_y
+        # x / y = value
+        self.coef[root_x] = (coef_y * value) / coef_x
+        return True
+
+    def evaluate(self, x, y):
+        if x not in self.parent or y not in self.parent:
+            return -1
+        if x == y:
+            return 1
+        rootX, coef_x = self.find(x)
+        rootY, coef_y = self.find(y)
+        if rootX == rootY:
+            return coef_x / coef_y
+        else:
+            return -1
+```
+
+<TOCInline toc={props.toc} exclude="Introduction" />
+
+### Union Find Questions
+
+#### 1697.Checking Existence of Edge Length Limited Paths
+
+An undirected graph of n nodes is defined by edgeList, where edgeList[i] = [ui, vi, disi] denotes an edge between nodes ui and vi with distance disi. Note that there may be multiple edges between two nodes.
+
+Given an array queries, where queries[j] = [pj, qj, limitj], your task is to determine for each queries[j] whether there is a path between pj and qj such that each edge on the path has a distance strictly less than limitj .
+
+Return a boolean array answer, where answer.length == queries.length and the jth value of answer is true if there is a path for queries[j] is true, and false otherwise.
+
+There may be multiple edges between two nodes.
+Explain:
+Sort the edges and queries with index by weights and limits.
+For each query, add the edges below limit and test whether the target nodes are connected or not.
+
+```python
+class Solution:
+    def distanceLimitedPathsExist(self, n: int, edgeList: List[List[int]], queries: List[List[int]]) -> List[bool]:
+        edgeList.sort(key=lambda x: x[2])
+        queries = [(p, q, limit, i) for i, (p, q, limit) in enumerate(queries)]
+        queries.sort(key=lambda x: x[2])
+        uf = UnionFind(n)
+        edgeIndex = 0
+        answer = [False] * len(queries)
+        for p, q, limit, queryIndex in queries:
+            while edgeIndex < len(edgeList) and edgeList[edgeIndex][2] < limit:
+                [u, v, dist] = edgeList[edgeIndex]
+                uf.union(u, v)
+                edgeIndex += 1
+            if uf.connected(p, q):
+                answer[queryIndex] = True
+        return answer
+```
+
+#### 1061. Lexicographically Smallest Equivalent String
+
+You are given two strings of the same length s1 and s2 and a string baseStr.
+
+We say s1[i] and s2[i] are equivalent characters.
+
+For example, if s1 = "abc" and s2 = "cde", then we have 'a' == 'c', 'b' == 'd', and 'c' == 'e'.
+Equivalent characters follow the usual rules of any equivalence relation:
+
+Reflexivity: 'a' == 'a'.
+Symmetry: 'a' == 'b' implies 'b' == 'a'.
+Transitivity: 'a' == 'b' and 'b' == 'c' implies 'a' == 'c'.
+For example, given the equivalency information from s1 = "abc" and s2 = "cde", "acd" and "aab" are equivalent strings of baseStr = "eed", and "aab" is the lexicographically smallest equivalent string of baseStr.
+
+Return the lexicographically smallest equivalent string of baseStr by using the equivalency information from s1 and s2.
+
+s1, s2, and baseStr consist of lowercase English letters.
+
+Explain:
+Find the groups and its smallest char. Build a lookup for each char.
+
+```python
+class Solution:
+    def smallestEquivalentString(self, s1: str, s2: str, baseStr: str) -> str:
+        uf = UnionFind(26)
+        # Union the equivalent characters
+        for a, b in zip(s1, s2):
+            uf.union(ord(a) - ord('a'), ord(b) - ord('a'))
+
+        from collections import defaultdict
+        # where the default value for each key is an empty list ([])
+        groups = defaultdict(list)
+        for i in range(26):
+            root = uf.find(i)
+            groups[root].append(i)
+
+        lookup = {}
+        for group in groups.values():
+            group.sort()
+            for i in range(1, len(group)):
+                lookup[group[i]] = group[0]
+
+        result = []
+        for char in baseStr:
+            charCode = ord(char) - ord('a')
+            if charCode in lookup:
+                charCode = lookup[charCode]
+            smallest_char = chr(charCode + ord('a'))
+            result.append(smallest_char)
+
+        return ''.join(result)
+```
+
+#### 305.Number of Islands II
+
+You are given an empty 2D binary grid grid of size m x n. The grid represents a map where 0's represent water and 1's represent land. Initially, all the cells of grid are water cells (i.e., all the cells are 0's).
+
+We may perform an add land operation which turns the water at position into a land. You are given an array positions where positions[i] = [ri, ci] is the position (ri, ci) at which we should operate the ith operation.
+
+Return an array of integers answer where answer[i] is the number of islands after turning the cell (ri, ci) into a land.
+
+An island is surrounded by water and is formed by connecting adjacent lands horizontally or vertically. You may assume all four edges of the grid are all surrounded by water.
+
+Follow up: Could you solve it in time complexity O(k log(mn)), where k == positions.length?
+
+```python
+class Solution:
+    def numIslands2(self, m: int, n: int, positions: List[List[int]]) -> List[int]:
+        uf = UnionFind(m * n)
+        ans = [0] * len(positions)
+        state = [([0] * n) for i in range(m)]
+        def isValidLand(pos):
+            (x, y) = pos
+            return x >= 0 and x < m and y >=0 and y < n and state[x][y] == 1
+
+        count = 0
+        for i in range(len(positions)):
+            [x, y] = positions[i]
+            # If the new point has been marked as land, just continue the loop
+            if state[x][y] == 1:
+                ans[i] = count
+                continue
+            state[x][y] = 1
+            neighbors = [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)]
+            count += 1
+            for neighbor in neighbors:
+                if isValidLand(neighbor):
+                    result = uf.union(neighbor[0] * n + neighbor[1], x * n + y)
+                    # If the new point is connected with another land, do not increase count
+                    if result:
+                        count -= 1
+            ans[i] = count
+        return ans
+```
+
+#### 990. Satisfiability of Equality Equations
+
+You are given an array of strings equations that represent relationships between variables where each string equations[i] is of length 4 and takes one of two different forms: "xi==yi" or "xi!=yi".Here, xi and yi are lowercase letters (not necessarily different) that represent one-letter variable names.
+
+Return true if it is possible to assign integers to variable names so as to satisfy all the given equations, or false otherwise.
+
+
+```python
+class Solution:
+    def equationsPossible(self, equations: List[str]) -> bool:
+        uf = UnionFind(26)
+        n = len(equations)
+        # Use Equal relations to build a UF
+        for i in range(n):
+            equaltion = equations[i]
+            if equaltion[1] == "=": # Equal
+                uf.union(ord(equaltion[0]) - ord('a'),  ord(equaltion[3]) - ord('a'))
+        # Use UF to test whether the not equal relations can be met.
+        for i in range(n):
+            equaltion = equations[i]
+            if equaltion[1] == "!": # Not Equal
+                root_x = uf.find(ord(equaltion[0]) - ord('a'))
+                root_y = uf.find(ord(equaltion[3]) - ord('a'))
+                if root_x == root_y:
+                    return False
+        return True
+```
+
+#### 737. Sentence Similarity II
+
+We can represent a sentence as an array of words, for example, the sentence "I am happy with leetcode" can be represented as arr = ["I","am",happy","with","leetcode"].
+
+Given two sentences sentence1 and sentence2 each represented as a string array and given an array of string pairs similarPairs where similarPairs[i] = [xi, yi] indicates that the two words xi and yi are similar.
+
+Return true if sentence1 and sentence2 are similar, or false if they are not similar.
+
+Two sentences are similar if:
+
+They have the same length (i.e., the same number of words)
+sentence1[i] and sentence2[i] are similar.
+Notice that a word is always similar to itself, also notice that the similarity relation is transitive. For example, if the words a and b are similar, and the words b and c are similar, then a and c are similar.
+
+xi and yi consist of English letters.
+
+```python
+class UnionFind:
+    def __init__(self):
+        self.parent = {}
+
+    def find(self, x):
+        if x not in self.parent:
+            self.parent[x] = x
+        if self.parent[x] != x:
+            self.parent[x] = self.find(self.parent[x])
+        return self.parent[x]
+
+    def union(self, x, y):
+        root_x = self.find(x)
+        root_y = self.find(y)
+        if root_x == root_y:
+            return False
+        self.parent[root_x] = root_y
+        return True
+class Solution:
+    def areSentencesSimilarTwo(self, sentence1: List[str], sentence2: List[str], similarPairs: List[List[str]]) -> bool:
+        if len(sentence1) != len(sentence2):
+            return False
+        uf = UnionFind()
+        for similarPair in similarPairs:
+            [word1, word2] = similarPair
+            uf.union(word1, word2)
+        for i in range(len(sentence1)):
+            word1 = sentence1[i]
+            word2 = sentence2[i]
+            if uf.find(word1) != uf.find(word2):
+                return False
+        return True
+```
+
+#### 1101. The Earliest Moment When Everyone Become Friends
+
+There are n people in a social group labeled from 0 to n - 1. You are given an array logs where logs[i] = [timestampi, xi, yi] indicates that xi and yi will be friends at the time timestampi.
+
+Friendship is symmetric. That means if a is friends with b, then b is friends with a. Also, person a is acquainted with a person b if a is friends with b, or a is a friend of someone acquainted with b.
+
+Return the earliest time for which every person became acquainted with every other person. If there is no such earliest time, return -1.
+
+All the values timestampi are unique.
+All the pairs (xi, yi) occur at most one time in the input.
+
+```python
+class Solution:
+    def earliestAcq(self, logs: List[List[int]], n: int) -> int:
+        # logs.sort(key=lambda x: x[0])
+        logs = sorted(logs, key=lambda x: x[0])
+        uf = UnionFind(n)
+        for time, i, j in logs:
+            uf.union(i, j)
+            if uf.getCount() == 1:
+                return time
+        return -1
+```
+
+#### 261. Graph Valid Tree
+
+You have a graph of n nodes labeled from 0 to n - 1. You are given an integer n and a list of edges where edges[i] = [ai, bi] indicates that there is an undirected edge between nodes ai and bi in the graph.
+
+Return true if the edges of the given graph make up a valid tree, and false otherwise.
+
+There are no self-loops or repeated edges.
+
+```python
+class Solution:
+    def validTree(self, n: int, edges: List[List[int]]) -> bool:
+        # First, we check if the number of edges is exactly n−1. If not, the graph cannot be a tree.
+        if len(edges) != n - 1:
+            return False
+        uf = UnionFind(n)
+        for a, b in edges:
+            if not uf.union(a, b):
+                return False
+        return True
+```
+
+#### 684. Redundant Connection
+
+In this problem, a tree is an undirected graph that is connected and has no cycles.
+
+You are given a graph that started as a tree with n nodes labeled from 1 to n, with one additional edge added. The added edge has two different vertices chosen from 1 to n, and was not an edge that already existed. The graph is represented as an array edges of length n where edges[i] = [ai, bi] indicates that there is an edge between nodes ai and bi in the graph.
+
+Return an edge that can be removed so that the resulting graph is a tree of n nodes. If there are multiple answers, return the answer that occurs last in the input.
+
+There are no repeated edges.
+The given graph is connected.
+
+```python
+class Solution:
+    def findRedundantConnection(self, edges: List[List[int]]) -> List[int]:
+        n = 0
+        for edge in edges:
+            n = max(n, edge[0])
+            n = max(n, edge[1])
+        uf = UnionFind(n)
+        ans = []
+        for edge in edges:
+            [x, y] = edge
+            if not uf.union(x - 1, y - 1):
+                ans.append(edge)
+
+        return ans[-1]
+```
+
+#### 1627. Graph Connectivity With Threshold
+
+We have n cities labeled from 1 to n. Two different cities with labels x and y are directly connected by a bidirectional road if and only if x and y share a common divisor strictly greater than some threshold. More formally, cities with labels x and y have a road between them if there exists an integer z such that all of the following are true:
+
+x % z == 0,
+y % z == 0, and
+z > threshold.
+Given the two integers, n and threshold, and an array of queries, you must determine for each queries[i] = [ai, bi] if cities ai and bi are connected directly or indirectly. (i.e. there is some path between them).
+
+Return an array answer, where answer.length == queries.length and answer[i] is true if for the ith query, there is a path between ai and bi, or answer[i] is false if there is no path.
+
+```python
+class Solution:
+    def areConnected(self, n: int, threshold: int, queries: List[List[int]]) -> List[bool]:
+        uf = UnionFind(n)
+        for step in range(threshold + 1, n // 2 + 1):
+            num = step
+            while num <= n:
+                uf.union(step - 1, num - 1)
+                num += step
+
+        ans = list(map(lambda query: uf.find(query[0] - 1) == uf.find(query[1] - 1), queries))
+        return ans
+```
+
+#### 685. Redundant Connection II
+
+In this problem, a rooted tree is a directed graph such that, there is exactly one node (the root) for which all other nodes are descendants of this node, plus every node has exactly one parent, except for the root node which has no parents.
+
+The given input is a directed graph that started as a rooted tree with n nodes (with distinct values from 1 to n), with one additional directed edge added. The added edge has two different vertices chosen from 1 to n, and was not an edge that already existed.
+
+The resulting graph is given as a 2D-array of edges. Each element of edges is a pair [ui, vi] that represents a directed edge connecting nodes ui and vi, where ui is a parent of child vi.
+
+Return an edge that can be removed so that the resulting graph is a rooted tree of n nodes. If there are multiple answers, return the answer that occurs last in the given 2D-array.
+
+Explain:
+
+To solve this problem, we need to handle two cases when adding an extra edge to a rooted tree:
+
+Case 1: Cycle Detection - The extra edge forms a cycle.
+Case 2: Node with Two Parents - The extra edge causes a node to have two parents.
+
+Initialize Union-Find Data Structure: This helps in detecting cycles.
+
+1. Detect Nodes with Two Parents: By keeping track of parent relationships, we can identify if a node has two parents.
+2. Identify and Remove Redundant Edge:
+   2.1 If a node with two parents is found, check if removing either of its two edges would result in a valid tree.
+   2.2 If no node with two parents is found, the extra edge causing the cycle is the redundant edge.
+
+```python
+class Solution:
+    def findRedundantDirectedConnection(self, edges: List[List[int]]) -> List[int]:
+        n = len(edges)
+        uf = UnionFind(n + 1)
+        parent = list(range(n + 1))
+        candidate1 = candidate2 = None
+
+        for u, v in edges:
+            if parent[v] != v:
+                candidate1 = (parent[v], v)
+                candidate2 = (u, v)
+                break
+            parent[v] = u
+
+        uf = UnionFind(n + 1)
+        for u, v in edges:
+            if (u, v) == candidate2:
+                continue
+            if not uf.union(u, v):
+                if candidate1:
+                    return candidate1
+                return (u, v)
+
+        return candidate2
+```
+
+#### 1258. Synonymous Sentences
+
+You are given a list of equivalent string pairs synonyms where synonyms[i] = [si, ti] indicates that si and ti are equivalent strings. You are also given a sentence text.
+
+Return all possible synonymous sentences sorted lexicographically.
+
+text consists of at most 10 words.
+All the pairs of synonyms are unique.
+The words of text are separated by single spaces.
+
+```python
+class UnionFind:
+    def __init__(self):
+        self.parent = {}
+
+    def find(self, x):
+        if x not in self.parent:
+            self.parent[x] = x
+        if self.parent[x] != x:
+            self.parent[x] = self.find(self.parent[x])
+        return self.parent[x]
+
+    def union(self, x, y):
+        root_x = self.find(x)
+        root_y = self.find(y)
+        if root_x == root_y:
+            return False
+        self.parent[root_x] = root_y
+        return True
+
+class Solution:
+    def generateSentences(self, synonyms: List[List[str]], text: str) -> List[str]:
+        # Step 1: Union-Find to group synonyms
+        uf = UnionFind()
+        for synonym in synonyms:
+            [word1, word2] = synonym
+            uf.union(word1, word2)
+
+        # Step 2: Create the synonym groups
+        from collections import defaultdict
+        groups = defaultdict(list)
+        for word in uf.parent:
+            root = uf.find(word)
+            groups[root].append(word)
+
+        for root in groups:
+            groups[root].sort()
+
+        # Step 3: Generate all possible sentences
+        words = text.split()
+        result = []
+
+        def dfs(index, path):
+            if index == len(words):
+                result.append(" ".join(path))
+                return
+            word = words[index]
+            if word in uf.parent:
+                root = uf.find(word)
+                for synonym in groups[root]:
+                    dfs(index + 1, path + [synonym])
+            else:
+                dfs(index + 1, path + [word])
+
+        dfs(0, [])
+        result.sort()
+        return result
+```
+
+#### 1579. Remove Max Number of Edges to Keep Graph Fully Traversable
+
+Alice and Bob have an undirected graph of n nodes and three types of edges:
+
+Type 1: Can be traversed by Alice only.
+Type 2: Can be traversed by Bob only.
+Type 3: Can be traversed by both Alice and Bob.
+Given an array edges where edges[i] = [typei, ui, vi] represents a bidirectional edge of type typei between nodes ui and vi, find the maximum number of edges you can remove so that after removing the edges, the graph can still be fully traversed by both Alice and Bob. The graph is fully traversed by Alice and Bob if starting from any node, they can reach all other nodes.
+
+Return the maximum number of edges you can remove, or return -1 if Alice and Bob cannot fully traverse the graph.
+
+All tuples (typei, ui, vi) are distinct.
+
+```python
+class Solution:
+    def maxNumEdgesToRemove(self, n: int, edges: List[List[int]]) -> int:
+        uf_alice = UnionFind(n + 1)
+        uf_bob = UnionFind(n + 1)
+        num_edges_used = 0
+        # Process type 3 edges first
+        for edge in edges:
+            if edge[0] == 3:
+                if uf_bob.union(edge[1], edge[2]):
+                    uf_alice.union(edge[1], edge[2])
+                    num_edges_used += 1
+
+        # Process type 1 edges for Alice
+        for edge in edges:
+            if edge[0] == 1:
+                if uf_alice.union(edge[1], edge[2]):
+                    num_edges_used += 1
+
+        # Process type 2 edges for Bob
+        for edge in edges:
+            if edge[0] == 2:
+                if uf_bob.union(edge[1], edge[2]):
+                    num_edges_used += 1
+
+        # Check if both Alice and Bob can fully traverse the graph
+        if all(uf_alice.find(i) == uf_alice.find(1) for i in range(2, n + 1)) and all(uf_bob.find(i) == uf_bob.find(1) for i in range(2, n + 1)):
+            return len(edges) - num_edges_used
+        else:
+            return -1
+```
+
+#### 1202. Smallest String With Swaps
+
+You are given a string s, and an array of pairs of indices in the string pairs where pairs[i] = [a, b] indicates 2 indices(0-indexed) of the string.
+
+You can swap the characters at any pair of indices in the given pairs any number of times.
+
+Return the lexicographically smallest string that s can be changed to after using the swaps.
+
+s only contains lower case English letters.
+
+```python
+class Solution:
+    def smallestStringWithSwaps(self, s: str, pairs: List[List[int]]) -> str:
+        n = len(s)
+        uf = UnionFind(n)
+        for a, b in pairs:
+            uf.union(a, b)
+
+        # Step 3: Grouping all connected indices
+        from collections import defaultdict
+        # where the default value for each key is an empty list ([])
+        groups = defaultdict(list)
+        for i in range(n):
+            root = uf.find(i)
+            groups[root].append(i)
+
+        # Step 4: For each group, sort the characters and place them back in the string
+        s = list(s)  # Convert string to list to mutate characters
+        for group in groups.values():
+            # Extract the characters
+            chars = [s[i] for i in group]
+            # Sort the characters
+            chars.sort()
+            # Place them back into the string
+            for idx, char in zip(sorted(group), chars):
+                s[idx] = char
+
+        return ''.join(s)
+```
+
+#### 547. Number of Provinces
+
+There are n cities. Some of them are connected, while some are not. If city a is connected directly with city b, and city b is connected directly with city c, then city a is connected indirectly with city c.
+
+A province is a group of directly or indirectly connected cities and no other cities outside of the group.
+
+You are given an n x n matrix isConnected where isConnected[i][j] = 1 if the ith city and the jth city are directly connected, and isConnected[i][j] = 0 otherwise.
+
+Return the total number of provinces.
+
+
+```python
+class Solution:
+    def findCircleNum(self, isConnected: List[List[int]]) -> int:
+        n = len(isConnected)
+        uf = UnionFind(n)
+        for i in range(n):
+            for j in range(i + 1, n):
+                if isConnected[i][j] == 1:
+                    uf.union(i, j)
+        return uf.getCount()
+```
+
+#### 323. Number of Connected Components in an Undirected Graph
+
+You have a graph of n nodes. You are given an integer n and an array edges where edges[i] = [ai, bi] indicates that there is an edge between ai and bi in the graph.
+
+Return the number of connected components in the graph.
+
+There are no repeated edges.
+
+```python
+class Solution:
+    def countComponents(self, n: int, edges: List[List[int]]) -> int:
+        uf = UnionFind(n)
+        for a, b in edges:
+            uf.union(a, b)
+        return uf.getCount()
+```
+
+#### 399. Evaluate Division
+
+You are given an array of variable pairs equations and an array of real numbers values, where equations[i] = [Ai, Bi] and values[i] represent the equation Ai / Bi = values[i]. Each Ai or Bi is a string that represents a single variable.
+
+You are also given some queries, where queries[j] = [Cj, Dj] represents the jth query where you must find the answer for Cj / Dj = ?.
+
+Return the answers to all queries. If a single answer cannot be determined, return -1.0.
+
+Note: The input is always valid. You may assume that evaluating the queries will not result in division by zero and that there is no contradiction.
+
+Note: The variables that do not occur in the list of equations are undefined, so the answer cannot be determined for them.
+
+Ai, Bi, Cj, Dj consist of lower case English letters and digits.
+
+```python
+# https://github.com/LeetCode-Feedback/LeetCode-Feedback/issues/6497
+class UnionFind:
+    def __init__(self):
+        self.parent = {}
+        self.coef = {}
+
+    def find(self, x):
+        if x not in self.parent:
+            self.parent[x] = x
+            self.coef[x] = 1
+        if self.parent[x] == x:
+            return self.parent[x], self.coef[x]
+        self.parent[x], coef = self.find(self.parent[x])
+        self.coef[x] *= coef
+        return self.parent[x], self.coef[x]
+
+    def union(self, x, y, value):
+        root_x, coef_x = self.find(x)
+        root_y, coef_y = self.find(y)
+        if root_x == root_y:
+            return False
+        self.parent[root_x] = root_y
+        # x / y = value
+        self.coef[root_x] = (coef_y * value) / coef_x
+        return True
+
+    def evaluate(self, x, y):
+        if x not in self.parent or y not in self.parent:
+            return -1
+        if x == y:
+            return 1
+        rootX, coef_x = self.find(x)
+        rootY, coef_y = self.find(y)
+        if rootX == rootY:
+            return coef_x / coef_y
+        else:
+            return -1
+
+class Solution:
+    def calcEquation(self, equations: List[List[str]], values: List[float], queries: List[List[str]]) -> List[float]:
+        uf = UnionFind()
+        n = len(equations)
+        for i in range(n):
+            x, y = equations[i]
+            value = values[i]
+            uf.union(x, y, value)
+
+        result = []
+        for i in range(len(queries)):
+            x, y = queries[i]
+            result.append(uf.evaluate(x, y))
+        return result
+```
+
+#### 1168. Optimize Water Distribution in a Village
+
+There are n houses in a village. We want to supply water for all the houses by building wells and laying pipes.
+
+For each house i, we can either build a well inside it directly with cost wells[i - 1] (note the -1 due to 0-indexing), or pipe in water from another well to it. The costs to lay pipes between houses are given by the array pipes where each pipes[j] = [house1j, house2j, costj] represents the cost to connect house1j and house2j together using a pipe. Connections are bidirectional, and there could be multiple valid connections between the same two houses with different costs.
+
+Return the minimum total cost to supply water to all houses.
+
+
+Solution:
+Add a virtual node for all wells and the cost to build a well is the weight. Sort the weigths and add it one by one until all nodes are connected.
+Kruskal's Algorithm
+
+```python
+class Solution:
+    def minCostToSupplyWater(self, n: int, wells: List[int], pipes: List[List[int]]) -> int:
+        uf = UnionFind(n + 1) # Add a virtual node: 0 for all wells
+        for idx, cost in enumerate(wells):
+            pipes.append([0, idx + 1, cost])
+        pipes.sort(key=lambda x: x[2])
+        ans = 0
+        for start, end, cost in pipes:
+            if uf.find(start) != uf.find(end):
+                uf.union(start, end)
+                ans += cost
+                if uf.count == 1:
+                    break
+        return ans
+```
+
+#### 1584. Min Cost to Connect All Points
+
+You are given an array points representing integer coordinates of some points on a 2D-plane, where points[i] = [xi, yi].
+
+The cost of connecting two points [xi, yi] and [xj, yj] is the manhattan distance between them: |xi - xj| + |yi - yj|, where |val| denotes the absolute value of val.
+
+Return the minimum cost to make all points connected. All points are connected if there is exactly one simple path between any two points.
+
+All pairs (xi, yi) are distinct.
+
+```python
+class Solution:
+    def minCostConnectPoints(self, points: List[List[int]]) -> int:
+        n = len(points)
+        distances = []
+        for i in range(n):
+            [p1x, p1y] = points[i]
+            for j in range(i + 1, n):
+                [p2x, p2y] = points[j]
+                dist = abs(p1x - p2x)  + abs(p1y - p2y)
+                distances.append((dist, i, j))
+        distances.sort(key = lambda item: item[0])
+        uf = UnionFind(n)
+        ans = 0
+        for distance in distances:
+            (dist, x, y) = distance
+            if uf.union(x, y):
+                ans += dist
+            if uf.getCount() == 1:
+                return ans
+        return ans
+```

@@ -1,0 +1,118 @@
+---
+title: BigFrontEnd Category 8 Jest Implementation Questions
+slug: category-08-jest-implementation
+publishDate: 2024-06-05
+description: Learn about BigFrontEnd Category 8 Jest Implementation Questions.
+date: 2024-06-05
+tags: ['BigFrontEnd', 'category']
+draft: false
+---
+
+### Introduction
+
+This blog post summarizes the Jest implementation related questions found on BigFrontEnd.Dev.
+
+<TOCInline toc={props.toc} exclude="Introduction" />
+
+### 1.implement `jest.spyOn()`
+
+38.https://bigfrontend.dev/problem/implement-spyOn
+If you did unit test before, you must be familiar with Spy.
+
+You are asked to create a spyOn(object, methodName), which works the same as jest.spyOn().
+
+To make it simple, here are the 2 requirements of spyOn
+
+original method should be called when spied one is called
+spy should have a calls array, which holds all the arguments in each call.
+Code to explain everything.
+
+```js
+const obj = {
+  data: 1,
+  increment(num) {
+    this.data += num
+  },
+}
+const spy = spyOn(obj, 'increment')
+obj.increment(1)
+console.log(obj.data) // 2
+obj.increment(2)
+console.log(obj.data) // 4
+console.log(spy.calls)
+// [ [1], [2] ]
+```
+
+**Solution:**
+
+```js
+/**
+ * @param {object} obj
+ * @param {string} methodName
+ */
+function spyOn(obj, methodName) {
+  const calls = []
+  const originalMethod = obj[methodName]
+  if (!originalMethod || typeof originalMethod !== 'function') {
+    throw new Error(`${methodName} does not exist`)
+  }
+  obj[methodName] = (...args) => {
+    calls.push(args)
+    originalMethod(...args)
+  }
+  return { calls }
+}
+```
+
+### 2.`toBe()` or `not.toBe()`
+
+161.https://bigfrontend.dev/problem/jest-assertion
+Here are some simple Jest test code.
+
+```js
+expect(3).toBe(3) // ✅
+expect(4).toBe(3) // ❌
+```
+
+We can reverse it with not.
+
+```js
+expect(3).not.toBe(3) // ❌
+expect(4).not.toBe(3) // ✅
+```
+
+Please implement myExpect() to support toBe() and also not.
+
+**Solution:**
+
+```js
+/**
+ * interface Matcher {
+ *  toBe(data: any): void
+ * }
+ */
+/**
+ * @param {any} input
+ * @returns {Matcher & {not: Matcher}}
+ */
+function myExpect(input) {
+  // x === input will fail with 0, -0 (return true) and NaN, NaN (return false)
+  const isEqual = (x, input) => {
+    return Object.is(x, input)
+  }
+  return {
+    toBe: (x) => {
+      if (!isEqual(x, input)) {
+        throw new Error()
+      }
+    },
+    not: {
+      toBe: (x) => {
+        if (isEqual(x, input)) {
+          throw new Error()
+        }
+      },
+    },
+  }
+}
+```

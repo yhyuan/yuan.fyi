@@ -4,128 +4,95 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a personal blog built with Next.js 14 (App Router), TypeScript, Tailwind CSS, and Contentlayer. It's based on the Tailwind Next.js Starter Blog template and is deployed at https://yuan.fyi. The blog focuses on technical content including JavaScript, TypeScript, React, LeetCode patterns, and web development topics.
+This is an Astro blog template built with Astro 5.x, featuring dark mode support, MDX integration, and Svelte components. The site is statically generated with SEO-friendly features including canonical URLs, OpenGraph metadata, RSS feeds, and sitemaps.
 
-## Important: Node.js Version Compatibility
+## Commands
 
-**This project requires Node.js 20.x LTS.** Contentlayer2 0.4.6 generates import statements using the deprecated `assert { type: 'json' }` syntax, which is not supported in Node.js 24+. The newer `with { type: 'json' }` syntax is required for Node 24+, but contentlayer2 hasn't been updated yet.
+All commands are run from the root of the project:
 
-**If you must use Node.js 24+:**
-1. A patch script (`scripts/patch-contentlayer.sh`) is included that runs after build
-2. However, this doesn't fully resolve the issue as contentlayer imports files during build
-3. Recommended: Use nvm to switch to Node 20.x: `nvm use 20`
+- `npm install` - Install dependencies
+- `npm run dev` - Start development server at `localhost:4321` (default Astro port)
+- `npm run build` - Build production site to `./dist/`
+- `npm run preview` - Preview production build locally
+- `npm run astro` - Run Astro CLI commands directly
 
-**Check your Node version:**
-```bash
-node --version  # Should be v20.x.x
-```
-
-## Development Commands
-
-### Setup
-```bash
-yarn                    # Install dependencies
-```
-
-### Development
-```bash
-yarn dev               # Start dev server at http://localhost:3000
-yarn start             # Alternative command to start dev server
-```
-
-### Build & Production
-```bash
-yarn build             # Build for production (includes post-build script)
-yarn serve             # Start production server
-yarn analyze           # Build with bundle analyzer
-```
-
-### Quality Checks
-```bash
-yarn lint              # Run ESLint with auto-fix on pages, app, components, lib, layouts, scripts
-```
-
-### Static Export (GitHub Pages/S3)
-```bash
-EXPORT=1 UNOPTIMIZED=1 yarn build              # Build static export
-EXPORT=1 UNOPTIMIZED=1 BASE_PATH=/myblog yarn build  # Build with base path
-```
+Note: The README mentions `localhost:3030` but Astro's default port is `4321`. Check `astro.config.mjs` for custom port configuration.
 
 ## Architecture
 
 ### Content Management
-- **Contentlayer** (`contentlayer.config.ts`): Defines content schema and processes MDX files
-  - `Blog` type: Blog posts in `data/blog/**/*.mdx`
-  - `Authors` type: Author profiles in `data/authors/**/*.mdx`
-  - Computed fields: reading time, slug, path, TOC
-  - Generates `tag-data.json` and search index on build
 
-### MDX Processing Pipeline
-- **Remark plugins**: GFM, math, code titles, frontmatter extraction, JSX images, GitHub alerts
-- **Rehype plugins**: Slug generation, autolink headings, KaTeX math, citations, Prism+ syntax highlighting, minification
+The project uses Astro's Content Collections API (v5 with loaders):
 
-### Key Directories
-- `app/`: Next.js 14 App Router pages and layouts
-- `components/`: Reusable React components (Header, Footer, MDXComponents, etc.)
-- `layouts/`: Blog post layouts (PostLayout, PostSimple, PostBanner) and list layouts (ListLayout, ListLayoutWithTags)
-- `data/`: Content and configuration
-  - `data/blog/`: All blog posts in MDX format (supports nested routing)
-  - `data/authors/`: Author profiles
-  - `data/siteMetadata.js`: Site configuration (title, social links, analytics, comments, search)
-  - `data/headerNavLinks.ts`: Navigation menu items
-  - `data/projectsData.ts`: Projects page data
-- `public/static/`: Static assets (images, favicons)
+- **Content Definition**: `src/content.config.js` defines the `posts` collection using the `glob()` loader
+- **Blog Posts**: Stored in `src/data/blog-posts/` as Markdown (`.md`) or MDX (`.mdx`) files
+- **Schema**: Posts require `title`, `slug`, `publishDate`, and `description` frontmatter fields
+- **Rendering**: Blog posts are rendered dynamically using `getCollection()` and `render()` from `astro:content`
 
-### Configuration Files
-- `next.config.js`: Next.js config with Contentlayer, bundle analyzer, CSP headers, SVG handling
-- `contentlayer.config.ts`: Content schema and MDX plugin configuration
-- `siteMetadata.js`: Site-wide settings (analytics, comments, search, social links)
-- `tailwind.config.js`: Tailwind customization
-- `tsconfig.json`: TypeScript configuration
+Key content flow:
+1. Posts are loaded from `src/data/blog-posts/` via the glob loader pattern `**/*.{md,mdx}`
+2. Collection schema validates frontmatter using Zod
+3. `src/pages/blog/index.astro` lists all posts sorted by `publishDate` (newest first)
+4. `src/pages/blog/[slug].astro` renders individual posts using dynamic routing with `getStaticPaths()`
+5. Reading time is calculated using the `reading-time` package on `post.body`
 
-### Blog Post Structure
-Posts are MDX files with frontmatter:
-- Required: `title`, `date`
-- Optional: `tags`, `lastmod`, `draft`, `summary`, `images`, `authors`, `layout`, `canonicalUrl`, `bibliography`
-- Supports nested routing (e.g., `blog/nested-route/post.mdx`)
-- Three layouts available: PostLayout (default 2-column), PostSimple (simplified), PostBanner (with banner image)
+### Component Structure
 
-### Integrations
-- **Analytics**: Umami (configured via env vars)
-- **Comments**: Giscus (configured via env vars)
-- **Newsletter**: Buttondown (via pliny)
-- **Search**: Kbar with local search index
+- **Layouts**: `src/layouts/BaseLayout.astro` is the main layout wrapper providing consistent header/footer and page structure
+- **Components**: Reusable UI components in `src/components/`
+  - `BaseHead.astro` - SEO metadata, OpenGraph tags, and theme initialization
+  - `Header.astro`, `Footer.astro`, `Nav.astro` - Navigation and layout structure
+  - `Bio.astro` - Author bio component
+  - `ThemeToggleButton.svelte` - Dark mode toggle (uses Svelte for reactivity)
+- **Pages**: `src/pages/` defines routes via file-based routing
+  - `index.astro` - Homepage
+  - `about.astro` - About page
+  - `blog/index.astro` - Blog listing
+  - `blog/[slug].astro` - Individual blog post template
 
-### Pre-commit Hooks
-- Husky configured with lint-staged
-- Auto-runs ESLint and Prettier on staged files
+### Styling
 
-## Environment Variables
-Create `.env` file (see `.env.example`):
-- `NEXT_UMAMI_ID`: Umami analytics website ID
-- `NEXT_PUBLIC_GISCUS_REPO`: GitHub repo for Giscus comments
-- `NEXT_PUBLIC_GISCUS_REPOSITORY_ID`: Giscus repository ID
-- `NEXT_PUBLIC_GISCUS_CATEGORY`: Giscus discussion category
-- `NEXT_PUBLIC_GISCUS_CATEGORY_ID`: Giscus category ID
-- `BASE_PATH`: Optional base path for deployment (e.g., `/myblog`)
+- Global styles in `src/styles/global.css` with CSS custom properties for theming
+- Font definitions in `src/styles/fonts.css`
+- Component-scoped styles using Astro's scoped `<style>` blocks
+- Dark mode implemented via `.theme-dark` class on `<html>` root element
+- Theme preference persists in localStorage and respects system preferences
 
-## Customization Points
-- `data/siteMetadata.js`: Update site title, author, social links, domain
-- `data/authors/default.mdx`: Update author information
-- `data/projectsData.ts`: Add/modify projects
-- `data/headerNavLinks.ts`: Modify navigation menu
-- `data/logo.svg`: Replace site logo
-- `public/static/`: Replace favicons and images
-- `tailwind.config.js` + `css/tailwind.css`: Customize styling
-- `css/prism.css`: Customize code block themes
-- `components/MDXComponents.tsx`: Add custom MDX components
+### Dark Mode Implementation
 
-## Security
-- CSP headers configured in `next.config.js` for giscus.app and analytics.umami.is
-- Additional security headers: Referrer-Policy, X-Frame-Options, X-Content-Type-Options, Strict-Transport-Security
-- Update CSP if adding new external services
+Theme switching logic:
+1. Inline script in `BaseHead.astro` prevents FOUC by checking localStorage and system preferences before page render
+2. `ThemeToggleButton.svelte` component handles user interaction and updates both DOM class and localStorage
+3. CSS custom properties in `global.css` define light/dark color values
 
-## Deployment
-- Primary: Vercel (automatic with git push)
-- Alternative: GitHub Pages via `.github/workflows/pages.yml`
-- Static hosting: Use `EXPORT=1` build command
+### Configuration
+
+- **Astro Config**: `astro.config.mjs` configures integrations (MDX, Svelte), markdown processing, and site metadata
+- **Markdown Plugins**:
+  - `remark-gfm` - GitHub Flavored Markdown support
+  - `remark-smartypants` - Smart typography (curly quotes, dashes)
+  - `rehype-external-links` - Opens external links in new tabs
+- **Syntax Highlighting**: Shiki with Nord theme
+- **Site URL**: Configured in `astro.config.mjs` as `site` property (used for canonical URLs and RSS)
+
+### TypeScript
+
+- Configuration in `tsconfig.json` uses modern ESM settings
+- `src/env.d.ts` provides Astro type definitions
+- No build/transpilation step - Astro runs TypeScript directly
+
+## Adding New Blog Posts
+
+1. Create a new `.md` or `.mdx` file in `src/data/blog-posts/`
+2. Add required frontmatter:
+   ```yaml
+   ---
+   title: "Post Title"
+   slug: "url-friendly-slug"
+   publishDate: "2025-03-14"
+   description: "Brief description for SEO and listing pages"
+   ---
+   ```
+3. Write content in Markdown (GFM and MDX supported)
+4. Posts automatically appear on `/blog` sorted by date
+5. Individual post route is `/blog/{slug}`

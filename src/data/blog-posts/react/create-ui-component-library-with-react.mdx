@@ -1,0 +1,704 @@
+---
+title: How to create a UI component library with React, Vite, and TypeScript
+slug: create-ui-component-library-with-react
+publishDate: 2025-01-30
+description: Learn about How to create a UI component library with React, Vite, and TypeScript.
+date: 2025-01-30
+tags: ['React']
+draft: false
+---
+
+### Introduction
+
+In this tutorial, I will illustrate the steps to create a React component library with Vite, TypeScript, and Storybook.
+
+<TOCInline toc={props.toc} exclude="Introduction" />{' '}
+
+### 1. **Create Project**
+
+create a project named `yuan-component-library` with `yarn create vite`. Remember to choose React as framwork and TypeScript as variant.
+
+```sh
+yyh@MSI:~/Downloads$ yarn create vite
+➤ YN0000: · Yarn 4.6.0
+➤ YN0000: ┌ Resolution step
+➤ YN0085: │ + create-vite@npm:6.1.1
+➤ YN0000: └ Completed
+➤ YN0000: ┌ Fetch step
+➤ YN0013: │ A package was added to the project (+ 262.29 KiB).
+➤ YN0000: └ Completed
+➤ YN0000: ┌ Link step
+➤ YN0000: │ ESM support for PnP uses the experimental loader API and is therefore experimental
+➤ YN0000: └ Completed
+➤ YN0000: · Done with warnings in 0s 54ms
+
+✔ Project name: … yuan-component-library
+✔ Select a framework: › React
+✔ Select a variant: › TypeScript
+
+Scaffolding project in /home/yyh/Downloads/yuan-component-library...
+
+Done. Now run:
+
+  cd yuan-component-library
+  yarn
+  yarn dev
+
+yyh@MSI:~/Downloads$ cd yuan-component*
+yyh@MSI:~/Downloads/yuan-component-library$ yarn
+! The local project doesn't define a 'packageManager' field. Corepack will now add one referencing yarn@4.6.0+sha512.5383cc12567a95f1d668fbe762dfe0075c595b4bfff433be478dbbe24e05251a8e8c3eb992a986667c1d53b6c3a9c85b8398c35a960587fbd9fa3a0915406728.
+! For more details about this field, consult the documentation at https://nodejs.org/api/packages.html#packagemanager
+
+➤ YN0000: · Yarn 4.6.0
+➤ YN0000: ┌ Resolution step
+➤ YN0085: │ + @eslint/js@npm:9.19.0, @types/react-dom@npm:18.3.5, @types/react@npm:18.3.18, and 295 more.
+➤ YN0000: └ Completed in 4s 262ms
+➤ YN0000: ┌ Fetch step
+➤ YN0013: │ 23 packages were added to the project (+ 43.71 MiB).
+➤ YN0000: └ Completed in 1s 146ms
+➤ YN0000: ┌ Link step
+➤ YN0000: │ ESM support for PnP uses the experimental loader API and is therefore experimental
+➤ YN0007: │ esbuild@npm:0.24.2 must be built because it never has been before or the last one failed
+➤ YN0000: └ Completed in 0s 411ms
+➤ YN0000: · Done with warnings in 5s 863ms
+```
+
+make a folder named lib and create a file named main.ts inside.
+
+```sh
+yyh@MSI:~/Downloads/yuan-component-library$ mkdir lib
+yyh@MSI:~/Downloads/yuan-component-library$ touch lib/main.ts
+```
+
+### 2. **Create Project Configuration**
+
+Firstly, we need to install the package `@types/node` to support the changes in `vite.config.ts`.
+
+```sh
+yarn add -D @types/node
+```
+
+In order to activate the vite's library mode, we will need to add the following code sniffet to `vite.config.ts`.
+
+```ts
+diff --git a/vite.config.ts b/vite.config.ts
+index 8b0f57b..3a142f8 100644
+--- a/vite.config.ts
++++ b/vite.config.ts
+@@ -1,7 +1,14 @@
+ import { defineConfig } from 'vite'
++import { resolve } from 'path'
+ import react from '@vitejs/plugin-react'
+
+ // https://vite.dev/config/
+ export default defineConfig({
+   plugins: [react()],
++  build: {
++    lib: {
++      entry: resolve(__dirname, 'lib/main.ts'),
++      formats: ['es'],
++    },
++  },
+ })
+yyh@MSI:~/Downloads/yuan-component-library$
+```
+
+Create a file named `tsconfig.lib.json` to make sure only files under lib will be bundled.
+
+```json
+{
+  "extends": "./tsconfig.app.json",
+  "include": ["lib"]
+}
+```
+
+Update `tsconfig.json`
+
+```
+diff --git a/tsconfig.json b/tsconfig.json
+index 1ffef60..801ce79 100644
+--- a/tsconfig.json
++++ b/tsconfig.json
+@@ -2,6 +2,7 @@
+   "files": [],
+   "references": [
+     { "path": "./tsconfig.app.json" },
++    { "path": "./tsconfig.lib.json" },
+     { "path": "./tsconfig.node.json" }
+   ]
+ }
+```
+
+Update the `package.json`
+
+```json
+-    "build": "tsc -b && vite build",
++    "build": "tsc -b ./tsconfig.lib.json && vite build",
+```
+
+Copy the file `vite-env.d.ts` from src folder to lib folder.
+
+```sh
+ cp src/vite-env.d.ts lib
+```
+
+We can try to run `yarn build` and it will create an empty file and `vite.svg` from the public folder.
+
+```sh
+$ yarn build
+vite v6.0.11 building for production...
+✓ 1 modules transformed.
+Generated an empty chunk: "main".
+dist/yuan-component-library.js  0.00 kB │ gzip: 0.02 kB
+✓ built in 190ms
+```
+
+In order to disable the copying from the public folder, we need to update the `vite.config.ts`
+
+```json
+diff --git a/vite.config.ts b/vite.config.ts
+index 3a142f8..6f0cda3 100644
+--- a/vite.config.ts
++++ b/vite.config.ts
+@@ -6,6 +6,7 @@ import react from '@vitejs/plugin-react'
+ export default defineConfig({
+   plugins: [react()],
+   build: {
++    copyPublicDir: false,
+     lib: {
+       entry: resolve(__dirname, 'lib/main.ts'),
+       formats: ['es'],
+```
+
+We also want to ship the type definitions. Firstly, we need to install `vite-plugin-dts`.
+
+```sh
+yarn add -D vite-plugin-dts
+```
+
+and Update the `vite.config.ts`.
+
+```json
+diff --git a/vite.config.ts b/vite.config.ts
+index 6f0cda3..515b15b 100644
+--- a/vite.config.ts
++++ b/vite.config.ts
+@@ -1,10 +1,11 @@
+ import { defineConfig } from 'vite'
+ import { resolve } from 'path'
+ import react from '@vitejs/plugin-react'
++import dts from 'vite-plugin-dts'
+
+ // https://vite.dev/config/
+ export default defineConfig({
+-  plugins: [react()],
++  plugins: [react(), dts({tsconfigPath: resolve(__dirname, "tsconfig.lib.json")})],
+   build: {
+     copyPublicDir: false,
+     lib: {
+```
+
+In order to avoid to bundle react and its related packages, we externalize them by changing `vite.config.ts`.
+
+```json
+diff --git a/vite.config.ts b/vite.config.ts
+index 515b15b..6dca76e 100644
+--- a/vite.config.ts
++++ b/vite.config.ts
+@@ -12,5 +12,8 @@ export default defineConfig({
+       entry: resolve(__dirname, 'lib/main.ts'),
+       formats: ['es'],
+     },
++    rollupOptions: {
++      external: ['react', 'react/jsx-runtime'],
++    }
+   },
+ })
+```
+
+In order to split the JavaScript for tree-shaking, we need to turn every file into an Rollup entry point.
+Firstly, we need to install `glob`
+
+```sh
+ yarn add -D glob
+```
+
+Then, we can update the `vite.config.ts`.
+
+```json
+diff --git a/vite.config.ts b/vite.config.ts
+index 6dca76e..065ee04 100644
+--- a/vite.config.ts
++++ b/vite.config.ts
+@@ -1,5 +1,7 @@
+ import { defineConfig } from 'vite'
+-import { resolve } from 'path'
++import { extname, relative, resolve } from 'path'
++import { fileURLToPath } from 'node:url'
++import { glob } from 'glob'
+ import react from '@vitejs/plugin-react'
+ import dts from 'vite-plugin-dts'
+
+@@ -14,6 +16,21 @@ export default defineConfig({
+     },
+     rollupOptions: {
+       external: ['react', 'react/jsx-runtime'],
++      input: Object.fromEntries(
++        glob.sync('lib/**/*.{ts,tsx}', {
++          ignore: ["lib/**/*.d.ts"],
++        }).map(file => [
++          // The name of the entry point
++          // lib/nested/foo.ts becomes nested/foo
++          relative(
++            'lib',
++            file.slice(0, file.length - extname(file).length)
++          ),
++          // The absolute path to the entry file
++          // lib/nested/foo.ts becomes /project/lib/nested/foo.ts
++          fileURLToPath(new URL(file, import.meta.url))
++        ])
++      )
+     }
+   },
+ })
+```
+
+Meanwhile, add the ouput in the same file.
+
+```json
+diff --git a/vite.config.ts b/vite.config.ts
+index d862ab3..95024b5 100644
+--- a/vite.config.ts
++++ b/vite.config.ts
+@@ -31,6 +31,10 @@ export default defineConfig({
+           fileURLToPath(new URL(file, import.meta.url))
+         ])
+       )
+-    }
++    },
++    output: {
++      assetFileNames: 'assets/[name][extname]',
++      entryFileNames: '[name].js',
++    },
+   },
+ })
+```
+
+Update the package.json file.
+
+```json
+diff --git a/package.json b/package.json
+index 8f64e31..012e97a 100644
+--- a/package.json
++++ b/package.json
+@@ -3,17 +3,29 @@
+   "private": true,
+   "version": "0.0.0",
+   "type": "module",
++  "exports": {
++    ".": {
++      "types": "./dist/main.d.ts",
++      "default": "./dist/main.js"
++    }
++  },
++  "files": [
++    "dist"
++  ],
+   "scripts": {
+     "dev": "vite",
+     "build": "tsc -b ./tsconfig.lib.json && vite build",
+     "lint": "eslint .",
+-    "preview": "vite preview"
++    "preview": "vite preview",
++    "prepublishOnly": "yarn build"
+   },
+-  "dependencies": {
++  "peerDependencies": {
+     "react": "^18.3.1",
+     "react-dom": "^18.3.1"
+   },
+   "devDependencies": {
++    "react": "^18.3.1",
++    "react-dom": "^18.3.1",
+     "@eslint/js": "^9.17.0",
+     "@types/node": "^22.12.0",
+     "@types/react": "^18.3.18",
+```
+
+Install prettier.
+
+```json
+diff --git a/package.json b/package.json
+index 012e97a..f06cbe9 100644
+--- a/package.json
++++ b/package.json
+@@ -17,6 +17,7 @@
+     "build": "tsc -b ./tsconfig.lib.json && vite build",
+     "lint": "eslint .",
+     "preview": "vite preview",
++    "format": "prettier --write --parser typescript '**/*.{ts,tsx}'",
+     "prepublishOnly": "yarn build"
+   },
+   "peerDependencies": {
+@@ -36,6 +35,9 @@
+     "eslint-plugin-react-refresh": "^0.4.16",
+     "glob": "^11.0.1",
+     "globals": "^15.14.0",
++    "prettier": "^3.4.2",
+     "react": "^18.3.1",
+     "react-dom": "^18.3.1",
+     "typescript": "~5.6.2",
+     "typescript-eslint": "^8.18.2",
+     "vite": "^6.0.5",
+```
+
+And create `.prettierrc` and add the following content.
+
+```json
+{
+  "printWidth": 80,
+  "tabWidth": 2
+}
+```
+
+### 2. **Create Components**
+
+Firstly, we install `styled-components`.
+
+```sh
+ yarn add -D styled-components
+```
+
+create a file named `lib/components/Button/Button.tsx`.
+
+```ts
+// lib/components/Button/Button.tsx
+import React, { MouseEventHandler } from "react";
+import styled from "styled-components";
+
+export type ButtonProps = {
+  text?: string;
+  primary?: boolean;
+  disabled?: boolean;
+  size?: "small" | "medium" | "large";
+  onClick?: MouseEventHandler<HTMLButtonElement>;
+};
+
+const StyledButton = styled.button<ButtonProps>`
+  border: 0;
+  line-height: 1;
+  font-size: 15px;
+  cursor: pointer;
+  font-weight: 700;
+  font-weight: bold;
+  border-radius: 10px;
+  display: inline-block;
+  color: ${(props) => (props.primary ? "#fff" : "#000")};
+  background-color: ${(props) => (props.primary ? "#FF5655" : "#f4c4c4")};
+  padding: ${(props) =>
+    props.size === "small"
+      ? "7px 25px 8px"
+      : props.size === "medium"
+      ? "9px 30px 11px"
+      : "14px 30px 16px"};
+`;
+
+const Button: React.FC<ButtonProps> = ({
+  size,
+  primary,
+  disabled,
+  text,
+  onClick,
+  ...props
+}) => {
+  return (
+    <StyledButton
+      type="button"
+      onClick={onClick}
+      primary={primary}
+      disabled={disabled}
+      size={size}
+      {...props}
+    >
+      {text}
+    </StyledButton>
+  );
+};
+
+export default Button;
+```
+
+create a file named `lib/components/Button/Button.tsx`, `lib/components/index.ts`, `lib/index.ts`.
+
+```ts
+// lib/components/Button/index.ts
+export { default as Button } from './Button'
+
+// lib/components/index.ts
+export * from './Button' // Add more exports for other components as needed
+
+// lib/index.ts
+export * from './components'
+```
+
+run the following command to build
+
+```sh
+yarn build
+```
+
+### 3. **Testing with Vitest and React-Testing-Library**
+
+Install required packages.
+
+```sh
+yarn add -D vitest @testing-library/react jsdom @testing-library/jest-dom @testing-library/dom
+```
+
+Update package.json
+
+```json
+"scripts": {
+  "test": "vitest run",
+  "test-watch": "vitest",
+  "test:ui": "vitest --ui"
+}
+```
+
+add the following line to `vite.config.ts`
+
+```ts
+/// <reference types="vitest" />
+```
+
+create a file named `setupTests.ts` under root folder.
+
+```ts
+import { expect } from 'vitest'
+import * as matchers from '@testing-library/jest-dom/matchers'
+import { TestingLibraryMatchers } from '@testing-library/jest-dom/matchers'
+declare module 'vitest' {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  interface Assertion<T = any> extends jest.Matchers<void, T>, TestingLibraryMatchers<T, void> {}
+}
+expect.extend(matchers)
+```
+
+Add the following content to `vite.config.ts`.
+
+```ts
+  test: {
+    globals: true,
+    environment: "jsdom",
+    setupFiles: "./setupTests.ts",
+  },
+```
+
+Create **test** directory under Button folder and add a file named `Button.test.tsx`.
+
+```tsx
+//Button/__test__/Button.test.tsx
+import React from 'react'
+import { describe, expect, it } from 'vitest'
+import { render, screen } from '@testing-library/react'
+import Button from '../Button'
+
+describe('Button component', () => {
+  it('Button should render correctly', () => {
+    render(<Button />)
+    const button = screen.getByRole('button')
+    expect(button).toBeInTheDocument()
+  })
+})
+```
+
+run the following command to run test.
+
+```sh
+yarn test
+```
+
+### 4. **Adding Storybook**
+
+Install Storybook
+
+```sh
+npx storybook@latest init
+```
+
+Each component has its `__docs__` own directory, and to that, we will add our stories.
+update `.storybook/main.ts`
+
+```ts
+stories: ["../lib/**/__docs__/*.stories.tsx", "../lib/**/__docs__/*.mdx"],
+```
+
+Create three files: `Button.stories.tsx`, `Example.tsx`, `Button.mdx` in the `lib/Button/__docs__` directory:
+
+`Button.mdx`
+
+````mdx
+import { Canvas, Meta } from '@storybook/blocks'
+import Example from './Example.tsx'
+import * as Button from './Button.stories.tsx'
+
+<Meta of={Button} title="Button" />
+
+# Button
+
+Button component with different props.
+
+#### Example
+
+<Canvas of={Button.Primary} />
+
+## Usage
+
+```ts
+import {Button} from "sld-ui";
+
+const Example = () => {
+  return (
+      <Button
+        size={"small"}
+        text={"Button"}
+        onClick={()=> console.log("Clicked")}
+        primary
+      />
+  );
+};
+
+export default Example;
+```
+````
+
+#### Arguments
+
+- **text** _`() => void`_ - A string that represents the text content of the button.
+- **primary** - A boolean indicating whether the button should have a primary styling or not. Typically, a primary button stands out as the main action in a user interface.
+- **disabled** - A boolean indicating whether the button should be disabled or not. When disabled, the button cannot be clicked or interacted with.
+- **size** - A string with one of three possible values: "small," "medium," or "large." It defines the size or dimensions of the button.
+- **onClick** - A function that is called when the button is clicked. It receives a MouseEventHandler for handling the click event on the button element.
+
+````
+
+`Example.tsx`
+
+```tsx
+import React, { FC } from "react";
+import Button, { ButtonProps } from "../Button";
+
+const Example: FC<ButtonProps> = ({
+  disabled = false,
+  onClick = () => {},
+  primary = true,
+  size = "small",
+  text = "Button",
+}) => {
+  return (
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        height: "100%",
+      }}
+    >
+      <Button
+        size={size}
+        text={text}
+        disabled={disabled}
+        onClick={onClick}
+        primary={primary}
+      />
+    </div>
+  );
+};
+
+export default Example;
+````
+
+`Button.stories.tsx`
+
+```tsx
+import type { Meta, StoryObj } from '@storybook/react'
+import Example from './Example'
+
+const meta: Meta<typeof Example> = {
+  title: 'Button',
+  component: Example,
+}
+
+export default meta
+type Story = StoryObj<typeof Example>
+
+export const Primary: Story = {
+  args: {
+    text: 'Button',
+    primary: true,
+    disabled: false,
+    size: 'small',
+    onClick: () => console.log('Button'),
+  },
+}
+export const Secondary: Story = {
+  args: {
+    text: 'Button',
+    primary: false,
+    disabled: false,
+    size: 'small',
+    onClick: () => console.log('Button'),
+  },
+}
+```
+
+Add the following to `tsconfig.lib.json` to avoid `yarn build` to process these files.
+
+```json
+    "exclude": [
+        "**/__test__/**",
+        "**/__docs__/**"
+    ]
+```
+
+Add the following to `vite.config.ts` to avoid `yarn build` to process these files.
+
+```json
+    "exclude": [
+        "**/__test__/**",
+        "**/__docs__/**"
+    ]
+```
+
+Run the following command to start the storybook.
+
+```sh
+yarn storybook
+```
+
+### 5. **Adding Husky**
+
+Install husky and lint-staged.
+
+```sh
+yarn add -D husky lint-staged
+npx husky init
+```
+
+Update the `.husky/pre-commit` with the following content:
+
+```sh
+npx lint-staged
+```
+
+Add the following configuration to package.json
+
+```json
+"lint-staged": {
+  "*.{ts,tsx}": [
+    "yarn format",
+    "yarn lint",
+    "yarn test"
+  ]
+}
+```

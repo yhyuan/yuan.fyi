@@ -1,0 +1,274 @@
+---
+title: Mastering Type Checking in JavaScript
+slug: mastering-type-checking-in-javascript
+publishDate: 2024-06-26
+description: Learn about Mastering Type Checking in JavaScript.
+date: 2024-06-26
+tags: ['JavaScript']
+draft: false
+---
+
+### Introduction
+
+JavaScript is a dynamically typed language, which means variables can hold values of any type. This flexibility is powerful, but it can also lead to confusion and errors if not properly managed. We'll explore various methods for checking types in JavaScript, their strengths, and their limitations.
+
+<TOCInline toc={props.toc} exclude="Introduction" />
+
+#### 1. typeof Operator
+
+The `typeof` operator is the most basic and commonly used method for type checking in JavaScript.
+
+```javascript
+console.log(typeof 42) // "number"
+console.log(typeof 'hello') // "string"
+console.log(typeof true) // "boolean"
+console.log(typeof undefined) // "undefined"
+console.log(typeof null) // "object" (this is a known bug)
+console.log(typeof Symbol('6')) // "symbol"
+console.log(typeof BigInt(6)) // "bigint"
+console.log(typeof {}) // "object"
+console.log(typeof []) // "object"
+console.log(typeof function () {}) // "function"
+```
+
+**Pros:**
+
+- Simple and straightforward
+- Works well for primitive types
+
+**Cons:**
+
+- Returns "object" for null (a historical bug)
+- Can't distinguish between different types of objects
+
+#### 2. instanceof Operator
+
+The `instanceof` operator tests whether an object in its prototype chain contains the prototype property of a constructor.
+
+```javascript
+class Car {}
+let myCar = new Car()
+
+console.log(myCar instanceof Car) // true
+console.log(myCar instanceof Object) // true
+console.log([] instanceof Array) // true
+console.log([] instanceof Object) // true
+console.log(function () {} instanceof Function) // true
+```
+
+```javascript
+function isNumber(val) {
+  return typeof val === 'number' || val instanceof Number
+}
+```
+
+**Pros:**
+
+- Useful for checking custom object types
+- Works with inheritance
+
+**Cons:**
+
+- Doesn't work with primitive values
+- Can be unreliable if the prototype chain has been modified
+
+#### 3. Object.prototype.toString.call()
+
+This method returns a string representation of the object type.
+
+```javascript
+let toString = Object.prototype.toString
+
+console.log(toString.call(42)) // "[object Number]"
+console.log(toString.call('hello')) // "[object String]"
+console.log(toString.call(true)) // "[object Boolean]"
+console.log(toString.call(undefined)) // "[object Undefined]"
+console.log(toString.call(null)) // "[object Null]"
+console.log(toString.call({})) // "[object Object]"
+console.log(toString.call([])) // "[object Array]"
+console.log(toString.call(function () {})) // "[object Function]"
+console.log(toString.call(new Date())) // "[object Date]"
+console.log(toString.call(/e/)) // "[object RegExp]"
+```
+
+Most of types provide their own `toString` function.
+
+```javascript
+console.log(new Date().toString())
+console.log(new RegExp(/e/).toString())
+```
+
+**Pros:**
+
+- Works consistently across all types
+- Can distinguish between different object types
+
+**Cons:**
+
+- More verbose than other methods
+- Returns a string that needs further processing
+
+#### 4. Array.isArray()
+
+This method is specifically for checking if a value is an array.
+
+```javascript
+console.log(Array.isArray([])) // true
+console.log(Array.isArray({})) // false
+console.log(Array.isArray(null)) // false
+```
+
+**Pros:**
+
+- Reliably checks for arrays
+- Works across different realms (e.g., iframes)
+
+**Cons:**
+
+- Only works for arrays, not other types
+
+#### 5. isNaN() and isFinite()
+
+These functions check if a value is NaN (Not-a-Number) or is a finite number.
+
+```javascript
+console.log(isNaN(NaN)) // true
+console.log(isNaN('hello')) // true
+console.log(isNaN(42)) // false
+console.log(isNaN(undefined)) // true
+
+isFinite(42) // true
+isFinite('42') // true (coerces to number)
+Number.isFinite(42) // true
+Number.isFinite('42') // false (no coercion)
+```
+
+**Pros:**
+
+- Specifically designed to check for NaN and Infinite
+
+**Cons:**
+
+- Can give unexpected results (e.g., `isNaN("hello")` returns `true`)
+- Use `Number.isNaN()` or `Number.isFinite()` for more accurate results in modern JavaScript
+
+#### 6. `== null` Check
+
+A quick way to check if a value is either null or undefined, since both `null == undefined` evaluates to true.
+
+```javascript
+let value = null
+if (value == null) {
+  console.log('Value is either null or undefined')
+}
+```
+
+**Pros:**
+
+- N/A
+
+**Cons:**
+
+- Needs type coercion and difficult to understand.
+
+#### 7. === for Primitive Types
+
+Using strict equality (`===`), you can directly compare values to primitives like `null`, `undefined`, `true`, `false`, etc.
+
+```javascript
+value === null // true if value is null
+value === undefined // true if value is undefined
+value === true // true if value is exactly true
+```
+
+**Pros:**
+
+- Simple and cover most of simple cases.
+
+**Cons:**
+
+- Edge cases: `NaN === NaN` return `false` and `0 === -0` returns `true`. We can use `Object.is` to cover them.
+
+#### 8. `constructor` Property
+
+Every JavaScript object (except null and undefined) has a constructor property that points to the function that created it.
+
+```javascript
+;[].constructor === Array // true
+;({}).constructor === Object // true
+new Date().constructor === Date // true
+null.constructor // Error (cannot access constructor of null)
+```
+
+**Pros:**
+
+- This can be used to check the type of the object
+
+**Cons:**
+
+- It can be unreliable if the constructor is overridden.
+
+#### 9. Custom Type Checking Functions
+
+For more complex scenarios, you might want to create your own type checking functions.
+
+```javascript
+function isObject(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
+
+function isPrimitive(value) {
+  return value === null || (typeof value !== 'object' && typeof value !== 'function')
+}
+
+console.log(isObject({})) // true
+console.log(isObject([])) // false
+console.log(isPrimitive(42)) // true
+console.log(isPrimitive({})) // false
+```
+
+**Pros:**
+
+- Can be tailored to specific needs
+- Can combine multiple checks for more accurate results
+
+**Cons:**
+
+- Requires careful implementation to cover all edge cases
+
+#### 10. Using Libraries
+
+For comprehensive type checking, you might consider using libraries like `lodash` or `type-check`.
+
+```javascript
+// Using lodash
+const _ = require('lodash')
+
+console.log(_.isString('hello')) // true
+console.log(_.isNumber(42)) // true
+console.log(_.isPlainObject({})) // true
+```
+
+**Pros:**
+
+- Comprehensive and well-tested
+- Consistent across projects
+
+**Cons:**
+
+- Adds a dependency to your project
+- May include more than you need
+
+#### Best Practices
+
+1. Use `typeof` for basic type checks of primitives.
+2. Use `instanceof` for checking custom object types.
+3. Use `Array.isArray()` specifically for arrays.
+4. Use `Object.prototype.toString.call()` for more detailed type information.
+5. Create custom type checking functions for complex scenarios.
+6. Be aware of edge cases, especially with `null` and `NaN`.
+7. Consider using established libraries for comprehensive type checking in large projects.
+
+#### Conclusion
+
+Type checking in JavaScript can be tricky, but understanding these methods will help you write more robust and error-free code. Remember, each method has its strengths and weaknesses, so choose the right tool for your specific needs. Happy type checking!

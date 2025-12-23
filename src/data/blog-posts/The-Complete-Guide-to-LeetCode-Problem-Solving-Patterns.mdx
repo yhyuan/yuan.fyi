@@ -1,0 +1,708 @@
+---
+title: The Complete Guide to LeetCode Problem-Solving Patterns
+slug: the-complete-guide-to-leet-code-problem-solving-patterns
+publishDate: 2025-11-22
+description: Learn about The Complete Guide to LeetCode Problem-Solving Patterns.
+date: 2025-11-22
+tags: ['Interview']
+draft: false
+---
+
+# The Complete Guide to LeetCode Problem-Solving Patterns
+
+## Introduction: Why Patterns Matter
+
+LeetCode problems often seem overwhelming at first, but the secret is that most problems are variations of well-established patterns. Once you internalize these patterns, you can quickly identify which approach to use and adapt it to the specific problem. This guide covers the essential patterns you need to master.
+
+## Core Problem-Solving Patterns
+
+### 1. Two Pointers Pattern
+
+**When to Use:**
+- Working with sorted arrays or linked lists
+- Finding pairs with specific properties
+- Removing duplicates in-place
+- Palindrome problems
+
+**Core Concept:**
+Use two pointers moving through the data structure, often from opposite ends or at different speeds.
+
+**Variations:**
+
+**a) Opposite Direction Two Pointers**
+```python
+def two_sum_sorted(arr, target):
+    left, right = 0, len(arr) - 1
+    while left < right:
+        current_sum = arr[left] + arr[right]
+        if current_sum == target:
+            return [left, right]
+        elif current_sum < target:
+            left += 1
+        else:
+            right -= 1
+    return []
+```
+
+**b) Fast and Slow Pointers (Floyd's Algorithm)**
+```python
+def has_cycle(head):
+    slow = fast = head
+    while fast and fast.next:
+        slow = slow.next
+        fast = fast.next.next
+        if slow == fast:
+            return True
+    return False
+```
+
+**Key Problems:**
+- Container With Most Water
+- 3Sum/4Sum
+- Remove Nth Node From End
+- Linked List Cycle Detection
+- Find the Duplicate Number
+
+### 2. Sliding Window Pattern
+
+**When to Use:**
+- Contiguous subarrays/substrings
+- Finding optimal windows with specific properties
+- String manipulation problems
+
+**Core Concept:**
+Maintain a window that expands and contracts based on conditions.
+
+**Fixed Size Window:**
+```python
+def max_sum_subarray(arr, k):
+    window_sum = sum(arr[:k])
+    max_sum = window_sum
+    
+    for i in range(k, len(arr)):
+        window_sum = window_sum - arr[i-k] + arr[i]
+        max_sum = max(max_sum, window_sum)
+    
+    return max_sum
+```
+
+**Variable Size Window:**
+```python
+def longest_substring_k_distinct(s, k):
+    window_start = 0
+    max_length = 0
+    char_frequency = {}
+    
+    for window_end in range(len(s)):
+        right_char = s[window_end]
+        char_frequency[right_char] = char_frequency.get(right_char, 0) + 1
+        
+        while len(char_frequency) > k:
+            left_char = s[window_start]
+            char_frequency[left_char] -= 1
+            if char_frequency[left_char] == 0:
+                del char_frequency[left_char]
+            window_start += 1
+        
+        max_length = max(max_length, window_end - window_start + 1)
+    
+    return max_length
+```
+
+**Key Problems:**
+- Longest Substring Without Repeating Characters
+- Minimum Window Substring
+- Fruit Into Baskets
+- Permutation in String
+
+### 3. Binary Search Pattern
+
+**When to Use:**
+- Sorted arrays
+- Finding boundaries
+- Optimization problems with monotonic properties
+- Search in rotated arrays
+
+**Core Template:**
+```python
+def binary_search(arr, target):
+    left, right = 0, len(arr) - 1
+    
+    while left <= right:
+        mid = left + (right - left) // 2
+        
+        if arr[mid] == target:
+            return mid
+        elif arr[mid] < target:
+            left = mid + 1
+        else:
+            right = mid - 1
+    
+    return -1
+```
+
+**Advanced: Binary Search on Answer Space**
+```python
+def min_eating_speed(piles, h):
+    def can_eat_all(speed):
+        hours = 0
+        for pile in piles:
+            hours += (pile + speed - 1) // speed
+        return hours <= h
+    
+    left, right = 1, max(piles)
+    
+    while left < right:
+        mid = left + (right - left) // 2
+        if can_eat_all(mid):
+            right = mid
+        else:
+            left = mid + 1
+    
+    return left
+```
+
+**Key Problems:**
+- Search in Rotated Sorted Array
+- Find Peak Element
+- Koko Eating Bananas
+- Capacity to Ship Packages
+
+### 4. Tree Traversal Patterns
+
+**When to Use:**
+- Binary tree problems
+- Path finding
+- Tree construction/validation
+
+**DFS Patterns:**
+
+**a) Preorder (Root → Left → Right)**
+```python
+def preorder(root):
+    if not root:
+        return []
+    
+    result = []
+    stack = [root]
+    
+    while stack:
+        node = stack.pop()
+        result.append(node.val)
+        if node.right:
+            stack.append(node.right)
+        if node.left:
+            stack.append(node.left)
+    
+    return result
+```
+
+**b) Bottom-up DFS (for diameter, height problems)**
+```python
+def tree_diameter(root):
+    def dfs(node):
+        if not node:
+            return 0
+        
+        left_height = dfs(node.left)
+        right_height = dfs(node.right)
+        
+        # Update global diameter
+        self.diameter = max(self.diameter, left_height + right_height)
+        
+        # Return height
+        return 1 + max(left_height, right_height)
+    
+    self.diameter = 0
+    dfs(root)
+    return self.diameter
+```
+
+**BFS Pattern:**
+```python
+def level_order(root):
+    if not root:
+        return []
+    
+    result = []
+    queue = deque([root])
+    
+    while queue:
+        level_size = len(queue)
+        current_level = []
+        
+        for _ in range(level_size):
+            node = queue.popleft()
+            current_level.append(node.val)
+            
+            if node.left:
+                queue.append(node.left)
+            if node.right:
+                queue.append(node.right)
+        
+        result.append(current_level)
+    
+    return result
+```
+
+### 5. Dynamic Programming Patterns
+
+**When to Use:**
+- Optimization problems (min/max)
+- Count distinct ways
+- Decision making problems
+- Problems with overlapping subproblems
+
+**a) Linear DP**
+```python
+def climb_stairs(n):
+    if n <= 2:
+        return n
+    
+    dp = [0] * (n + 1)
+    dp[1] = 1
+    dp[2] = 2
+    
+    for i in range(3, n + 1):
+        dp[i] = dp[i-1] + dp[i-2]
+    
+    return dp[n]
+```
+
+**b) 2D DP (Grid Problems)**
+```python
+def unique_paths(m, n):
+    dp = [[1] * n for _ in range(m)]
+    
+    for i in range(1, m):
+        for j in range(1, n):
+            dp[i][j] = dp[i-1][j] + dp[i][j-1]
+    
+    return dp[m-1][n-1]
+```
+
+**c) DP with State Compression**
+```python
+def rob(nums):
+    if not nums:
+        return 0
+    if len(nums) == 1:
+        return nums[0]
+    
+    prev2 = nums[0]
+    prev1 = max(nums[0], nums[1])
+    
+    for i in range(2, len(nums)):
+        current = max(prev1, prev2 + nums[i])
+        prev2 = prev1
+        prev1 = current
+    
+    return prev1
+```
+
+**d) Knapsack Pattern**
+```python
+def can_partition(nums):
+    total = sum(nums)
+    if total % 2 != 0:
+        return False
+    
+    target = total // 2
+    dp = [False] * (target + 1)
+    dp[0] = True
+    
+    for num in nums:
+        for j in range(target, num - 1, -1):
+            dp[j] = dp[j] or dp[j - num]
+    
+    return dp[target]
+```
+
+### 6. Backtracking Pattern
+
+**When to Use:**
+- Generate all combinations/permutations
+- Find all solutions
+- Constraint satisfaction problems
+
+**Core Template:**
+```python
+def backtrack(path, remaining, result):
+    if is_solution(path):
+        result.append(path[:])  # Make a copy
+        return
+    
+    for choice in get_choices(remaining):
+        if is_valid(choice):
+            # Make choice
+            path.append(choice)
+            
+            # Recurse
+            backtrack(path, update_remaining(remaining, choice), result)
+            
+            # Undo choice
+            path.pop()
+```
+
+**Permutations Example:**
+```python
+def permute(nums):
+    result = []
+    
+    def backtrack(path, remaining):
+        if not remaining:
+            result.append(path[:])
+            return
+        
+        for i in range(len(remaining)):
+            path.append(remaining[i])
+            backtrack(path, remaining[:i] + remaining[i+1:])
+            path.pop()
+    
+    backtrack([], nums)
+    return result
+```
+
+**N-Queens Example:**
+```python
+def solve_n_queens(n):
+    def is_valid(board, row, col):
+        # Check column
+        for i in range(row):
+            if board[i][col] == 'Q':
+                return False
+        
+        # Check upper-left diagonal
+        i, j = row - 1, col - 1
+        while i >= 0 and j >= 0:
+            if board[i][j] == 'Q':
+                return False
+            i -= 1
+            j -= 1
+        
+        # Check upper-right diagonal
+        i, j = row - 1, col + 1
+        while i >= 0 and j < n:
+            if board[i][j] == 'Q':
+                return False
+            i -= 1
+            j += 1
+        
+        return True
+    
+    def backtrack(board, row):
+        if row == n:
+            result.append([''.join(row) for row in board])
+            return
+        
+        for col in range(n):
+            if is_valid(board, row, col):
+                board[row][col] = 'Q'
+                backtrack(board, row + 1)
+                board[row][col] = '.'
+    
+    result = []
+    board = [['.' for _ in range(n)] for _ in range(n)]
+    backtrack(board, 0)
+    return result
+```
+
+### 7. Graph Patterns
+
+**When to Use:**
+- Network problems
+- Connected components
+- Shortest path problems
+- Cycle detection
+
+**BFS for Shortest Path:**
+```python
+def shortest_path(graph, start, end):
+    queue = deque([(start, 0)])
+    visited = {start}
+    
+    while queue:
+        node, distance = queue.popleft()
+        
+        if node == end:
+            return distance
+        
+        for neighbor in graph[node]:
+            if neighbor not in visited:
+                visited.add(neighbor)
+                queue.append((neighbor, distance + 1))
+    
+    return -1
+```
+
+**DFS for Connected Components:**
+```python
+def count_components(n, edges):
+    graph = defaultdict(list)
+    for u, v in edges:
+        graph[u].append(v)
+        graph[v].append(u)
+    
+    def dfs(node):
+        visited.add(node)
+        for neighbor in graph[node]:
+            if neighbor not in visited:
+                dfs(neighbor)
+    
+    visited = set()
+    components = 0
+    
+    for i in range(n):
+        if i not in visited:
+            dfs(i)
+            components += 1
+    
+    return components
+```
+
+**Union-Find Pattern:**
+```python
+class UnionFind:
+    def __init__(self, n):
+        self.parent = list(range(n))
+        self.rank = [0] * n
+    
+    def find(self, x):
+        if self.parent[x] != x:
+            self.parent[x] = self.find(self.parent[x])  # Path compression
+        return self.parent[x]
+    
+    def union(self, x, y):
+        px, py = self.find(x), self.find(y)
+        if px == py:
+            return False
+        
+        # Union by rank
+        if self.rank[px] < self.rank[py]:
+            px, py = py, px
+        self.parent[py] = px
+        if self.rank[px] == self.rank[py]:
+            self.rank[px] += 1
+        
+        return True
+```
+
+### 8. Heap/Priority Queue Pattern
+
+**When to Use:**
+- K-th largest/smallest problems
+- Merge K sorted lists
+- Schedule/interval problems
+- Dijkstra's algorithm
+
+**Top K Elements:**
+```python
+def find_kth_largest(nums, k):
+    # Min heap of size k
+    heap = nums[:k]
+    heapq.heapify(heap)
+    
+    for num in nums[k:]:
+        if num > heap[0]:
+            heapq.heappushpop(heap, num)
+    
+    return heap[0]
+```
+
+**Merge K Sorted Lists:**
+```python
+def merge_k_lists(lists):
+    heap = []
+    
+    # Initialize heap with first element from each list
+    for i, lst in enumerate(lists):
+        if lst:
+            heapq.heappush(heap, (lst.val, i, lst))
+    
+    dummy = ListNode()
+    current = dummy
+    
+    while heap:
+        val, idx, node = heapq.heappop(heap)
+        current.next = node
+        current = current.next
+        
+        if node.next:
+            heapq.heappush(heap, (node.next.val, idx, node.next))
+    
+    return dummy.next
+```
+
+### 9. Monotonic Stack Pattern
+
+**When to Use:**
+- Next greater/smaller element
+- Largest rectangle problems
+- Temperature/stock span problems
+
+**Next Greater Element:**
+```python
+def next_greater_element(nums):
+    result = [-1] * len(nums)
+    stack = []  # Stores indices
+    
+    for i, num in enumerate(nums):
+        while stack and nums[stack[-1]] < num:
+            idx = stack.pop()
+            result[idx] = num
+        stack.append(i)
+    
+    return result
+```
+
+**Largest Rectangle in Histogram:**
+```python
+def largest_rectangle(heights):
+    stack = []
+    max_area = 0
+    
+    for i, h in enumerate(heights):
+        start = i
+        while stack and stack[-1][1] > h:
+            idx, height = stack.pop()
+            max_area = max(max_area, height * (i - idx))
+            start = idx
+        stack.append((start, h))
+    
+    for idx, h in stack:
+        max_area = max(max_area, h * (len(heights) - idx))
+    
+    return max_area
+```
+
+### 10. Bit Manipulation Pattern
+
+**When to Use:**
+- Problems involving powers of 2
+- XOR properties
+- Finding single/missing numbers
+- Subset generation
+
+**Key Operations:**
+```python
+# Check if bit is set
+def is_bit_set(num, pos):
+    return (num & (1 << pos)) != 0
+
+# Set bit
+def set_bit(num, pos):
+    return num | (1 << pos)
+
+# Clear bit
+def clear_bit(num, pos):
+    return num & ~(1 << pos)
+
+# Toggle bit
+def toggle_bit(num, pos):
+    return num ^ (1 << pos)
+
+# Count set bits (Brian Kernighan's algorithm)
+def count_bits(n):
+    count = 0
+    while n:
+        n &= n - 1
+        count += 1
+    return count
+```
+
+**Single Number (XOR Property):**
+```python
+def single_number(nums):
+    result = 0
+    for num in nums:
+        result ^= num
+    return result
+```
+
+## Pattern Recognition Strategy
+
+### Step 1: Identify the Problem Type
+- **Array/String**: Consider two pointers, sliding window, or prefix sum
+- **Tree/Graph**: Think traversal (DFS/BFS) or dynamic programming on trees
+- **Optimization**: Consider DP, greedy, or binary search on answer
+- **Combinations/Permutations**: Use backtracking
+- **Interval/Scheduling**: Think greedy or heap
+
+### Step 2: Look for Keywords
+- "Subarray/Substring" → Sliding Window or Prefix Sum
+- "K-th largest/smallest" → Heap or Quick Select
+- "All possible ways" → Backtracking or DP
+- "Shortest/Longest path" → BFS or DP
+- "Maximum/Minimum" → DP, Greedy, or Binary Search
+- "Sorted array" → Binary Search or Two Pointers
+
+### Step 3: Consider Constraints
+- Small input (n < 20) → Brute force or backtracking possible
+- Medium input (20 < n < 10^4) → O(n²) solutions work
+- Large input (n > 10^5) → Need O(n) or O(n log n) solution
+
+## Advanced Pattern Combinations
+
+### Two Pointers + Sliding Window
+Used in problems like "Longest Substring with At Most K Distinct Characters"
+
+### Binary Search + Greedy
+Common in optimization problems like "Minimum Days to Make M Bouquets"
+
+### DP + Bit Manipulation
+Used in subset problems with special constraints
+
+### BFS + Backtracking
+Path finding with multiple valid solutions
+
+## Practice Strategy
+
+### Phase 1: Pattern Mastery (Weeks 1-4)
+- Focus on one pattern per week
+- Solve 5-10 easy/medium problems per pattern
+- Implement the pattern from scratch each time
+
+### Phase 2: Pattern Recognition (Weeks 5-8)
+- Mixed problem sets
+- Focus on identifying which pattern to use
+- Time yourself on pattern identification (aim for < 5 minutes)
+
+### Phase 3: Advanced Applications (Weeks 9-12)
+- Hard problems combining multiple patterns
+- Contest participation
+- System design problems using these patterns
+
+### Daily Routine
+1. **Warm-up** (15 min): One easy problem from a familiar pattern
+2. **Learning** (45 min): One new medium problem, implement without looking at solution
+3. **Review** (30 min): Understand optimal solution, identify pattern variations
+4. **Reflection** (10 min): Document pattern insights in your notes
+
+## Common Pitfalls and How to Avoid Them
+
+### Pitfall 1: Jumping to Code Too Quickly
+**Solution**: Spend 10-15 minutes understanding the problem and identifying patterns
+
+### Pitfall 2: Not Considering Edge Cases
+**Solution**: Always test with:
+- Empty input
+- Single element
+- All same elements
+- Sorted/reverse sorted input
+
+### Pitfall 3: Overcomplicating Solutions
+**Solution**: Start with brute force, then optimize. Most problems don't need complex data structures.
+
+### Pitfall 4: Not Learning from Failed Attempts
+**Solution**: Keep a mistake journal. Document why your approach failed and what pattern would have worked.
+
+## Conclusion
+
+Mastering these patterns transforms LeetCode from a daunting challenge into a systematic skill. Remember:
+
+1. **Patterns are tools, not rules** - Adapt them to specific problems
+2. **Practice recognition** - The faster you identify patterns, the more time for implementation
+3. **Understand trade-offs** - Know when to use which pattern based on constraints
+4. **Build incrementally** - Start with basic implementations, then add optimizations
+
+With consistent practice using this pattern-based approach, you'll find that even unfamiliar problems become variations of patterns you already know. The key is deliberate practice with a focus on understanding why each pattern works, not just memorizing solutions.

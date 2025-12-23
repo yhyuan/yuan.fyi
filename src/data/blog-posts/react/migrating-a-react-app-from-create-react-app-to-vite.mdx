@@ -1,0 +1,632 @@
+---
+title: Migrating from Create React App (CRA) to Vite
+slug: migrating-a-react-app-from-create-react-app-to-vite
+publishDate: 2024-07-23
+description: Learn about Migrating from Create React App (CRA) to Vite.
+date: 2024-07-23
+tags: ['React']
+draft: false
+---
+
+### Introduction
+
+Migrating from **Create React App (CRA)** to **Vite** offers several advantages, particularly in terms of development experience and build performance. Here’s a detailed comparison:
+
+<TOCInline toc={props.toc} exclude="Introduction" />{' '}
+
+### Comparision
+
+##### 1. **Faster Development Server Start-Up**
+
+- **Vite**: Vite's development server is significantly faster than CRA. It uses **esbuild** to pre-bundle dependencies, making the initial start-up almost instantaneous, even for larger projects.
+- **CRA**: Uses **Webpack** for development, which can result in slower server start-up times, especially as project size increases.
+
+##### 2. **Better Build Performance**
+
+- **Vite**: Vite leverages **Rollup** for production builds and uses **esbuild** for faster JavaScript transpilation, leading to much faster build times.
+- **CRA**: CRA relies on **Webpack** for both development and production, which can be slower, especially for large-scale applications.
+
+##### 3. **On-Demand Hot Module Replacement (HMR)**
+
+- **Vite**: Provides an extremely fast HMR out of the box, updating modules instantly without refreshing the whole page. This speeds up development by reflecting code changes in real-time.
+- **CRA**: Supports HMR, but the performance is generally slower compared to Vite due to the underlying Webpack implementation.
+
+##### 4. **Modern JavaScript Support**
+
+- **Vite**: Uses native **ES modules** in the browser for development, which streamlines the bundling process and makes the development server much more efficient.
+- **CRA**: Uses a bundler (Webpack) to compile code, which adds overhead and can slow down the development process, especially with larger apps.
+
+##### 5. **Simpler Configuration**
+
+- **Vite**: Offers a more straightforward configuration out of the box. The default `vite.config.js` is easy to extend without complex overrides, making it more user-friendly for customization.
+- **CRA**: Customizing Webpack in CRA can be difficult and often requires ejecting the app, which makes the configuration harder to maintain and update.
+
+##### 6. **Support for Modern Features**
+
+- **Vite**: Supports **TypeScript**, **JSX**, and **CSS modules** natively, as well as popular plugins that integrate seamlessly (e.g., PostCSS, Tailwind CSS, etc.). Vite also has better support for advanced features like code-splitting and lazy loading with minimal configuration.
+- **CRA**: Also supports these features but can be more challenging to extend or customize, especially if complex configurations are required.
+
+##### 7. **Better Handling of Static Assets**
+
+- **Vite**: Manages static assets efficiently using native **ES module imports**. This leads to faster loading during development and better optimization during production builds.
+- **CRA**: Uses Webpack's asset management, which is reliable but can be slower and more cumbersome to manage, especially for large asset-heavy projects.
+
+##### 8. **Improved Dependency Pre-Bundling**
+
+- **Vite**: Uses **esbuild** for pre-bundling dependencies, which drastically speeds up page loads and prevents cold-start performance issues.
+- **CRA**: Bundles dependencies using Webpack, which can result in longer start times and more sluggish development performance as the dependency graph grows.
+
+##### 9. **Out-of-the-Box Plugin Ecosystem**
+
+- **Vite**: Has a robust plugin ecosystem with plugins for **React**, **Vue**, **TypeScript**, **PWA support**, and more. These plugins are often easier to integrate and use due to Vite’s modern architecture.
+- **CRA**: Extending CRA usually requires custom configuration or ejecting the app, which can make adding new features more complicated.
+
+##### 10. **Support for Modern Tooling**
+
+- **Vite**: Is designed with modern web development tooling in mind and can seamlessly integrate with tools like **Prettier**, **ESLint**, and **Tailwind CSS** without significant configuration.
+- **CRA**: Integrates with these tools as well but may require more complex setups for advanced configurations.
+
+##### 11. **Production-Ready Performance**
+
+- **Vite**: The production build process using Rollup ensures that the code is tree-shaken and optimized, resulting in smaller, faster-loading bundles.
+- **CRA**: While CRA's production build using Webpack is reliable, it is generally slower to build and may produce slightly larger output compared to Vite’s optimized bundles.
+
+##### 12. **Dynamic Imports and Code Splitting**
+
+- **Vite**: Automatically handles dynamic imports and code-splitting efficiently, which helps with faster load times and reduced initial bundle sizes.
+- **CRA**: Supports code splitting, but it is less optimized and may require more configuration for best results.
+
+##### Summary:
+
+**Vite** outshines **CRA** in terms of speed, ease of configuration, modern features, and overall developer experience. It offers:
+
+- Faster development server start-up and HMR
+- Better build performance
+- Simpler, more flexible configuration
+- More modern tooling support and integration
+
+However, **CRA** can still be a good choice for smaller projects or teams already familiar with Webpack. For developers looking for modern performance and development enhancements, **Vite** is a powerful alternative.
+
+#### Steps
+
+Migrating a React app from **Create React App (CRA)** to **Vite** can significantly improve build speed and development performance due to Vite's modern bundling approach. Here’s a step-by-step guide:
+
+##### 1. Create a Vite Project
+
+First, create a new Vite project in a different directory to understand the default structure.
+
+```bash
+npm create vite@latest my-vite-app --template react
+cd my-vite-app
+npm install
+```
+
+##### 2. Copy Your Existing Project Files
+
+Copy your `src` directory, `public` directory, and any additional assets from your CRA project to the Vite project.
+
+##### 3. Install Necessary Dependencies
+
+Vite uses `vite` as its core dependency. Ensure that you have installed React and ReactDOM if they weren't already installed:
+
+```bash
+npm install react react-dom
+npm install -D vite
+```
+
+##### 4. Update `package.json` Scripts
+
+Replace the CRA scripts in `package.json` with Vite-specific ones:
+
+```json
+"scripts": {
+  "dev": "vite",
+  "build": "vite build",
+  "preview": "vite preview"
+}
+```
+
+##### 5. Configure `vite.config.js`
+
+Create a `vite.config.js` file if it doesn't already exist or modify the existing one to match your project structure:
+
+```js
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+// https://vitejs.dev/config/
+export default defineConfig({
+  plugins: [react()],
+  // Add any custom configuration here if needed
+})
+```
+
+##### 6. Update the Entry Points
+
+Vite expects the entry point to be `index.html` in the root directory. Ensure your `index.html` file has the following:
+
+```html
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>React App</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
+```
+
+Ensure that your `src/main.jsx` (or `main.tsx` if you're using TypeScript) contains the following code:
+
+```jsx
+import React from 'react'
+import ReactDOM from 'react-dom'
+import App from './App'
+import './index.css' // Include your CSS file or adjust as needed
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+)
+```
+
+##### 7. Adjust the Import Paths
+
+Vite uses native ES modules, so ensure that any paths using `process.env.PUBLIC_URL`, `require`, or CRA-specific paths (`@/`) are replaced with standard relative imports.
+
+##### 8. Migrate Environment Variables
+
+Vite uses `VITE_` prefix for environment variables. Rename your `.env` variables from `REACT_APP_` to `VITE_`:
+
+```bash
+REACT_APP_API_URL=https://example.com
+```
+
+Becomes:
+
+```bash
+VITE_API_URL=https://example.com
+```
+
+Update your code to use `import.meta.env` instead of `process.env`:
+
+```js
+console.log(import.meta.env.VITE_API_URL)
+```
+
+##### 9. Review and Replace Other CRA-Specific Features
+
+- **`react-scripts`**: Remove this dependency as Vite replaces it.
+- **`serviceWorker.js`**: If you're using a service worker, refer to the [Vite PWA plugin](https://vite-plugin-pwa.netlify.app/) to configure it.
+- **CSS Modules**: Vite supports CSS modules out of the box, so no additional configuration is needed.
+
+##### 10. Start Your Development Server
+
+Run your new Vite development server to ensure everything works:
+
+```bash
+npm run dev
+```
+
+##### 11. Test Your Build
+
+Build and preview your app to ensure it works as expected:
+
+```bash
+npm run build
+npm run preview
+```
+
+##### 12. Additional Considerations
+
+- **Custom Aliases**: If you used aliases in CRA (e.g., `@` for `src/`), set them up in `vite.config.js`:
+
+  ```js
+  import { defineConfig } from 'vite'
+  import react from '@vitejs/plugin-react'
+  import path from 'path'
+
+  export default defineConfig({
+    plugins: [react()],
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, './src'),
+      },
+    },
+  })
+  ```
+
+- **Linting and Formatting**: Ensure that your ESLint and Prettier configurations work with Vite, adjusting any configurations as needed.
+
+##### Final Thoughts
+
+Migrating from CRA to Vite can streamline your development workflow, resulting in faster build times and a more responsive development server. By following these steps, you should be able to transition smoothly to a Vite-based setup.
+
+# Migrating from Create React App to Vite
+
+This guide will walk you through the process of migrating your Create React App (CRA) project to Vite. Vite offers significantly faster development server startup and hot module replacement (HMR).
+
+## Step 1: Create a New Package.json
+
+First, create a backup of your existing `package.json`, then modify it to remove CRA-specific dependencies and add Vite ones:
+
+```json
+{
+  "name": "your-app-name",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+    // Keep other non-CRA dependencies
+  },
+  "devDependencies": {
+    "@testing-library/react": "^14.0.0",
+    "@types/react": "^18.2.15",
+    "@types/react-dom": "^18.2.7",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "@vitejs/plugin-react": "^4.0.3",
+    "eslint": "^8.45.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.3",
+    "jsdom": "^22.1.0",
+    "typescript": "^5.0.2",
+    "vite": "^4.4.5",
+    "vitest": "^0.34.0"
+  }
+}
+```
+
+## Step 2: Create Vite Configuration
+
+Create a new file `vite.config.ts` in your project root:
+
+```typescript
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import path from 'path'
+
+// https://vitejs.dev/config/
+export default defineConfig({
+  plugins: [react()],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
+  server: {
+    port: 3000, // Match CRA's default port
+    open: true, // Open browser on server start
+  },
+  build: {
+    outDir: 'build', // Match CRA's default build output directory
+    sourcemap: true,
+  },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: './src/setupTests.ts',
+    css: true,
+  },
+})
+```
+
+## Step 3: Update Environment Variables
+
+Rename `.env` files by replacing `REACT_APP_` with `VITE_`:
+
+```bash
+# Before (.env)
+REACT_APP_API_URL=https://api.example.com
+
+# After (.env)
+VITE_API_URL=https://api.example.com
+```
+
+Update environment variable references in your code:
+
+```typescript
+// Before
+console.log(process.env.REACT_APP_API_URL)
+
+// After
+console.log(import.meta.env.VITE_API_URL)
+```
+
+## Step 4: Update TypeScript Configuration
+
+Update or create `tsconfig.json`:
+
+```json
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthrough": true,
+
+    /* Paths */
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
+  },
+  "include": ["src"],
+  "references": [{ "path": "./tsconfig.node.json" }]
+}
+```
+
+Create `tsconfig.node.json`:
+
+```json
+{
+  "compilerOptions": {
+    "composite": true,
+    "skipLibCheck": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowSyntaxusage": true
+  },
+  "include": ["vite.config.ts"]
+}
+```
+
+## Step 5: Update HTML Template
+
+Move `public/index.html` to `index.html` in the root directory and update it:
+
+```html
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Your App Name</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+```
+
+## Step 6: Update Entry Point
+
+Rename `src/index.tsx` to `src/main.tsx`:
+
+```typescript
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App'
+import './index.css'
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+)
+```
+
+## Step 7: Update Testing Setup
+
+If you're using Jest, switch to Vitest. Create `src/setupTests.ts`:
+
+```typescript
+import '@testing-library/jest-dom'
+import { expect, afterEach } from 'vitest'
+import { cleanup } from '@testing-library/react'
+import matchers from '@testing-library/jest-dom/matchers'
+
+// Extend Vitest's expect method with methods from react-testing-library
+expect.extend(matchers)
+
+// Run cleanup after each test case (e.g. clearing jsdom)
+afterEach(() => {
+  cleanup()
+})
+```
+
+Update your test files:
+
+```typescript
+// Before
+import { render, screen } from '@testing-library/react'
+import App from './App'
+
+test('renders learn react link', () => {
+  render(<App />)
+  const linkElement = screen.getByText(/learn react/i)
+  expect(linkElement).toBeInTheDocument()
+})
+
+// After
+import { describe, it, expect } from 'vitest'
+import { render, screen } from '@testing-library/react'
+import App from './App'
+
+describe('App', () => {
+  it('renders learn react link', () => {
+    render(<App />)
+    const linkElement = screen.getByText(/learn react/i)
+    expect(linkElement).toBeInTheDocument()
+  })
+})
+```
+
+## Step 8: Update Static Assets Imports
+
+Update static asset imports to use the new Vite syntax:
+
+```typescript
+// Before
+import logo from './logo.svg'
+
+// After
+import logo from './assets/logo.svg'
+```
+
+## Step 9: Update CSS Modules
+
+If you're using CSS Modules, update the import syntax:
+
+```typescript
+// Before
+import styles from './Button.module.css'
+
+// After (no change needed, Vite supports this syntax)
+import styles from './Button.module.css'
+```
+
+## Step 10: Install Dependencies and Test
+
+Install the new dependencies:
+
+```bash
+npm install
+```
+
+Start the development server:
+
+```bash
+npm run dev
+```
+
+Run the tests:
+
+```bash
+npm test
+```
+
+## Common Issues and Solutions
+
+### 1. Public Path Issues
+
+If you have assets in the public directory, move them to the root public directory and update references:
+
+```typescript
+// Before
+<img src={process.env.PUBLIC_URL + '/logo.png'} />
+
+// After
+<img src="/logo.png" />
+```
+
+### 2. Proxy Configuration
+
+If you're using the proxy feature in CRA, update it in `vite.config.ts`:
+
+```typescript
+export default defineConfig({
+  // ...
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+      },
+    },
+  },
+})
+```
+
+### 3. Absolute Imports
+
+Update your path aliases in both `vite.config.ts` and `tsconfig.json`:
+
+```typescript
+// vite.config.ts
+resolve: {
+  alias: {
+    '@': path.resolve(__dirname, './src'),
+  },
+}
+
+// tsconfig.json
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
+  }
+}
+```
+
+## Performance Improvements
+
+After migrating to Vite, you might notice:
+
+- Faster development server startup
+- Quicker Hot Module Replacement (HMR)
+- Improved build times
+
+To further optimize your Vite setup:
+
+1. Enable build caching:
+
+```typescript
+// vite.config.ts
+export default defineConfig({
+  build: {
+    cache: true,
+    // Minimize only in production
+    minify: process.env.NODE_ENV === 'production',
+  },
+})
+```
+
+2. Configure chunk splitting:
+
+```typescript
+// vite.config.ts
+export default defineConfig({
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          // Add other large dependencies
+        },
+      },
+    },
+  },
+})
+```
+
+## Conclusion
+
+You've successfully migrated from Create React App to Vite! Your application should now have improved development performance and build times. Remember to:
+
+- Update any CI/CD scripts to use the new build commands
+- Test thoroughly in development and production environments
+- Update documentation to reflect the new Vite-based workflow

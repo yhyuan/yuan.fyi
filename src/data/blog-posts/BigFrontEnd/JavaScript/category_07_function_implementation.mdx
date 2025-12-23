@@ -1,0 +1,957 @@
+---
+title: BigFrontEnd Category 7 Function Implementation Questions
+slug: category-07-function-implementation
+publishDate: 2024-06-04
+description: Learn about BigFrontEnd Category 7 Function Implementation Questions.
+date: 2024-06-04
+tags: ['BigFrontEnd', 'category']
+draft: false
+---
+
+### Introduction
+
+This blog post summarizes the function implementation related questions found on BigFrontEnd.Dev.
+
+<TOCInline toc={props.toc} exclude="Introduction" />
+
+### 1. implement `curry()`
+
+#### 1.1 `curry(fn)` Implementation
+
+1 https://bigfrontend.dev/problem/implement-curry
+
+[Currying](https://en.wikipedia.org/wiki/Currying) is a useful technique used in JavaScript applications.
+
+Please implement a `curry()` function, which accepts a function and return a curried one.
+
+Here is an example
+
+```js
+const join = (a, b, c) => {
+  return `${a}_${b}_${c}`
+}
+const curriedJoin = curry(join)
+curriedJoin(1, 2, 3) // '1_2_3'
+curriedJoin(1)(2, 3) // '1_2_3'
+curriedJoin(1, 2)(3) // '1_2_3'
+```
+
+more to read
+
+https://javascript.info/currying-partials
+
+https://lodash.com/docs/4.17.15#curry
+
+**Solution:**
+
+`fn.length` represents the number of arguments of fn.
+
+```js
+// With Arrow function and avoid using apply and this
+function curry(fn) {
+  const curried = (...args) => {
+    // Check the number of args.
+    // If it has more than the required, call fn.
+    // Otherwise, use curried recurisivly call.
+    if (args.length >= fn.length) {
+      return fn(...args)
+    }
+    return (...nextArgs) => curried(...args, ...nextArgs)
+  }
+  return curried
+}
+const join = (a, b, c) => {
+  return `${a}_${b}_${c}`
+}
+const curriedJoin = curry(join)
+curriedJoin(1, 2, 3) // '1_2_3'
+curriedJoin(1)(2, 3) // '1_2_3'
+curriedJoin(1, 2)(3) // '1_2_3'
+```
+
+#### 1.2 `Function.prototype.curry()` Implementation
+
+**Solution:**
+
+```javascript
+// Define the curry method if it doesn't already exist
+if (!Function.prototype.curry) {
+  Function.prototype.curry = function (...args) {
+    // console.log(`args: ${args}`);
+    const fn = this; // 'this' refers to the function on which curry is called
+    // Return a curried version of the function
+    return function curried(...nextArgs) {
+      if (args.length + nextArgs.length >= fn.length) {
+        return fn.apply(this, args.concat(nextArgs));
+      } else {
+        // Otherwise, return a new curried function with accumulated arguments
+        return curried.bind(this, ...nextArgs);
+      }
+    };
+  };
+}
+// Example function to be curried
+function add(a, b, c, d) {
+  return a + b + c + d;
+}
+// Curry the add function
+const curriedAdd = add.curry(2); // Partially apply the first argument
+console.log(curriedAdd(3, 4, 5)); // Output: 9 (2 + 3 + 4)
+console.log(curriedAdd(3)(4)(5)); // Output: 9 (2 + 3 + 4)
+console.log(curriedAdd(3, 4)(5)); // Output: 9 (2 + 3 + 4)
+```
+
+### 2. implement curry() with placeholder support
+
+2 https://bigfrontend.dev/problem/implement-curry-with-placeholder
+
+This is a follow-up on 1. implement curry()
+
+please implement `curry()` which also supports placeholder.
+
+Here is an example
+
+```js
+const join = (a, b, c) => {
+  return `${a}_${b}_${c}`
+}
+const curriedJoin = curry(join)
+const _ = curry.placeholder
+curriedJoin(1, 2, 3) // '1_2_3'
+curriedJoin(_, 2)(1, 3) // '1_2_3'
+curriedJoin(_, _, _)(1)(_, 3)(2) // '1_2_3'
+```
+
+Read more:
+
+https://javascript.info/currying-partials
+https://lodash.com/docs/4.17.15#curry
+https://github.com/planttheidea/curriable
+
+**Solution:**
+
+```js
+/**
+ * @param { Function } func
+ */
+const curry = (fn) => {
+  const curried = (...args) => {
+    // Check if there are any placeholders in the arguments
+    const complete =
+      args.length >= fn.length && args.slice(0, fn.length).every((arg) => arg !== curry.placeholder)
+
+    if (complete) {
+      return fn(...args)
+    }
+
+    return (...nextArgs) => {
+      // Merge the current arguments with the next arguments, respecting placeholders
+      const newArgs = args
+        .map((arg) => (arg === curry.placeholder && nextArgs.length ? nextArgs.shift() : arg))
+        .concat(nextArgs)
+      return curried(...newArgs)
+    }
+  }
+  return curried
+}
+curry.placeholder = Symbol()
+```
+
+### 3.what is Composition? create a pipe()
+
+11 https://bigfrontend.dev/problem/what-is-composition-create-a-pipe
+
+what is Composition? It is actually not that difficult to understand, see @dan_abramov 's explanation.
+
+Here you are asked to create a `pipe()` function, which chains multiple functions together to create a new function.
+
+Suppose we have some simple functions like this
+
+```js
+const times = (y) => (x) => x * y
+const plus = (y) => (x) => x + y
+const subtract = (y) => (x) => x - y
+const divide = (y) => (x) => x / y
+```
+
+Your `pipe()` would be used to generate new functions
+
+```js
+pipe([times(2), times(3)])
+// x * 2 * 3
+pipe([times(2), plus(3), times(4)])
+// (x * 2 + 3) * 4
+pipe([times(2), subtract(3), divide(4)])
+// (x * 2 - 3) / 4
+```
+
+notes
+
+to make things simple, functions passed to `pipe()` will all accept 1 argument
+
+**Solution:**
+
+```js
+/**
+ * @param {Array<(arg: any) => any>} funcs
+ * @return {(arg: any) => any}
+ */
+const pipe = (funcs) => (input) => funcs.reduce((result, func) => func(result), input)
+
+const addTwo = (x) => x + 2
+const multiplyByThree = (x) => x * 3
+const subtractFive = (x) => x - 5
+// Create a pipeline of functions
+const pipeline = pipe(addTwo, multiplyByThree, subtractFive)
+// Call the pipeline function with an input
+const result = pipeline(10) // (10 + 2) * 3 - 5 = 31
+console.log(result) // Output: 31
+```
+
+### 4.Implement a General Memoization Function - `memo()`
+
+#### 4.1 `memo()`
+
+14 https://bigfrontend.dev/problem/implement-general-memoization-function
+
+Memoization is a common technique to boost performance. If you use React, you definitely have used React.memo before.
+
+Memoization is also commonly used in algorithm problem, when you have a recursion solution, in most cases, you can improve it by memoization, and then you might be able to get a Dynamic Programming approach.
+
+So could you implement a general memo() function, which caches the result once called, so when same arguments are passed in, the result will be returned right away.
+
+```js
+const func = (arg1, arg2) => {
+  return arg1 + arg2
+}
+const memoed = memo(func)
+memoed(1, 2)
+// 3, func is called
+memoed(1, 2)
+// 3 is returned right away without calling func
+memoed(1, 3)
+// 4, new arguments, so func is called
+The arguments are arbitrary, so memo should accept an extra resolver parameter, which is used to generate the cache key, like what _.memoize() does.
+
+const memoed = memo(func, () => 'samekey')
+memoed(1, 2)
+// 3, func is called, 3 is cached with key 'samekey'
+memoed(1, 2)
+// 3, since key is the same, 3 is returned without calling func
+memoed(1, 3)
+// 3, since key is the same, 3 is returned without calling func
+```
+
+Default cache key could be just Array.from(arguments).join('\_')
+
+note
+
+It is a trade-off of space for time, so if you use this in an interview, please do analyze how much space it might cost.
+
+**Solution:**
+
+```js
+/**
+ * @param {Function} func
+ * @param {(args:[]) => string }  [resolver] - cache key generator
+ */
+function memo(func, resolver) {
+  const cache = new Map()
+
+  return function (...args) {
+    const key = resolver ? resolver(...args) : JSON.stringify(args)
+
+    if (cache.has(key)) {
+      return cache.get(key)
+    } else {
+      const result = func.apply(this, args)
+      cache.set(key, result)
+      return result
+    }
+  }
+}
+```
+
+#### 4.2 2623. Memoize
+
+```javascript
+function memo(func) {
+  const cache = new Map();
+
+  return function(...args) {
+    const key = JSON.stringify(args);
+
+    if (cache.has(key)) {
+      return cache.get(key);
+    } else {
+      const result = func.apply(this, args);
+      cache.set(key, result);
+      return result;
+    }
+  };
+}
+
+// Example function to be memoized
+function fibonacci(n) {
+  if (n <= 1) {
+    return n;
+  }
+  return fibonacci(n - 1) + fibonacci(n - 2);
+}
+
+// Memoize the fibonacci function
+const memoizedFibonacci = memo(fibonacci);
+// Call the memoized function
+console.log(memoizedFibonacci(10)); // Output: 55 (calculated)
+console.log(memoizedFibonacci(10)); // Output: 55 (cached)
+```
+
+### 5.Function Composition (2629)
+
+```typescript
+type F = (x: number) => number;
+
+function compose(functions: F[]): F {
+    return function(x) {
+        return functions.reduceRight((acc, cur) => cur(acc), x);
+    }
+};
+```
+
+### 6.Allow One Function call (2666)
+
+```typescript
+type JSONValue = null | boolean | number | string | JSONValue[] | { [key: string]: JSONValue };
+type OnceFn = (...args: JSONValue[]) => JSONValue | undefined
+
+function once(fn: Function): OnceFn {
+    let called = false;
+    return function (...args) {
+        if (!called) {
+            called = true;
+            return fn(...args);
+        } else {
+            return undefined;
+        }
+    };
+}
+/**
+ * let fn = (a,b,c) => (a + b + c)
+ * let onceFn = once(fn)
+ *
+ * onceFn(1,2,3); // 6
+ * onceFn(2,3,6); // returns undefined without calling fn
+ */
+```
+
+### 7.create-a-sum.md
+
+23.https://bigfrontend.dev/problem/create-a-sum
+
+Create a `sum()`, which makes following possible
+
+```js
+const sum1 = sum(1)
+sum1(2) == 3 // true
+sum1(3) == 4 // true
+sum(1)(2)(3) == 6 // true
+sum(5)(-1)(2) == 6 // true
+```
+
+```js
+/**
+ * @param {number} num
+ */
+function sum(num) {
+  // Inner function that takes the next argument
+  const innerSum = (b) => sum(num + b)
+
+  // Overriding the toString or valueOf method to return the accumulated sum
+  innerSum.valueOf = () => num
+
+  return innerSum
+}
+```
+
+**Solution:**
+
+```js
+const sum1 = sum(1)
+sum1(2) == 3 // true
+sum1(3) == 4 // true
+sum(1)(2)(3) == 6 // true
+sum(5)(-1)(2) == 6 // true
+```
+
+### 8.implement `range()`
+
+39.https://bigfrontend.dev/problem/implement-range
+
+Can you create a `range(from, to)` which makes following work?
+
+```js
+for (let num of range(1, 4)) {
+  console.log(num)
+}
+// 1
+// 2
+// 3
+// 4
+```
+
+This is a simple one, could you think more fancy approaches other than for-loop?
+
+Notice that you are not required to return an array, but something iterable would be fine.
+
+**Solution:**
+
+```js
+/**
+ * @param {integer} from
+ * @param {integer} to
+ */
+function range(from, to) {
+  // The iterator object that will be returned
+  // when calling the Symbol.iterator method of an object.
+  // The iterator object has a method named next which
+  // generates values for the iteration.
+  const iterator = {
+    from: from,
+    to: to,
+    next() {
+      if (this.from > this.to) {
+        return { done: true }
+      }
+
+      const value = { value: this.from, done: false }
+      this.from++
+      return value
+    },
+  }
+
+  // Return an object that has a method named
+  // Symbol.iterator for the for...of to work.
+  // When for..of starts, it calls that method once.
+  return {
+    [Symbol.iterator]() {
+      return iterator
+    },
+  }
+}
+```
+
+```js
+function range(from, to) {
+  return Array(to - from + 1)
+    .fill(0) // Need to fill with 0. Otherwise, it will be undefined.
+    .map((_, index) => from + index)
+}
+```
+
+```js
+function* range(from, to) {
+  for (let i = from; i <= to; i++) {
+    yield i
+  }
+}
+```
+
+### 9.flatten Thunk
+
+54.https://bigfrontend.dev/problem/flatten-Thunk
+
+Suppose we have a Callback type
+
+```js
+type Callback =
+  (error: Error, result: any | Thunk) => void
+```
+
+A Thunk is a function that take a Callback as parameter
+
+```js
+type Thunk = (callback: Callback) => void
+```
+
+Like following three thunks
+
+```js
+const func1 = (cb) => {
+  setTimeout(() => cb(null, 'ok'), 10)
+}
+const func2 = (cb) => {
+  setTimeout(() => cb(null, func1), 10)
+}
+const func3 = (cb) => {
+  setTimeout(() => cb(null, func2), 10)
+}
+```
+
+in above example, three functions are kind of chained up, func3 → func2 → func1, but it don't work without some glue.
+
+OK, now you are asked to implement a flattenThunk() which glue them up and returns a new thunk.
+
+```js
+flattenThunk(func3)((error, data) => {
+  console.log(data) // 'ok'
+})
+```
+
+note
+
+Once error occurs, the rest uncalled functions should be skipped
+
+**Solution:**
+
+In JavaScript, a _thunk_ is a function that encapsulates a computation or a value. Instead of performing the computation immediately, a thunk delays the computation until its result is needed.
+
+1. **Callback Type**: The `Callback` type is a function that takes an `error` and a `result`. If `result` is a thunk, the process should continue with the new thunk.
+2. **Thunk Type**: The `Thunk` type is a function that takes a `Callback`.
+3. **flattenThunk Function**: This function takes a thunk and returns a new thunk.
+   - It defines an internal `handleThunk` function to handle the result of each thunk.
+   - If an error occurs, `handleThunk` calls the original callback with the error.
+   - If the result is a thunk, `handleThunk` calls the new thunk with `handleThunk` to continue the chain.
+   - If the result is the final result, `handleThunk` calls the original callback with the result.
+   - The initial thunk is called with `handleThunk` to start the chain.
+
+```js
+type Callback = (error: Error | null, result: any) => void;
+type Thunk = (callback: Callback) => void;
+
+function flattenThunk(thunk) {
+  return (finalCallback) => {
+    const handleThunk = (error, result) => {
+      if (error) {
+        finalCallback(error, undefined);
+      } else if (typeof result === 'function') {
+        // If result is a thunk, call it with handleThunk
+        result(handleThunk);
+      } else {
+        // If result is the final result, call the original callback
+        finalCallback(undefined, result);
+      }
+    }
+    // Start the chain with the initial thunk
+    thunk(handleThunk);
+  };
+}
+
+// Example thunks
+const func1 = (cb: Callback) => {
+  setTimeout(() => cb(null, 'ok'), 10);
+};
+
+const func2 = (cb: Callback) => {
+  setTimeout(() => cb(null, func1), 10);
+};
+
+const func3 = (cb: Callback) => {
+  setTimeout(() => cb(null, func2), 10);
+};
+
+// Usage of flattenThunk
+flattenThunk(func3)((error, data) => {
+  if (error) {
+    console.error(error);
+  } else {
+    console.log(data); // 'ok'
+  }
+});
+```
+
+### 10.create your own `Function.prototype.call`
+
+61.https://bigfrontend.dev/problem/create-call-method
+
+[Function.prototype.call](https://tc39.es/ecma262/#sec-function.prototype.call) is very useful when we want to alter the this of a function.
+
+Can you implement your own myCall, which returns the same result as Function.prototype.call?
+
+For the [newest ECMAScript spec](https://tc39.es/ecma262/#sec-function.prototype.call), thisArg are not transformed. And not replaced with window in [Strict Mode](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Strict_mode).
+
+Your implementation should follow above spec and do what non Strict Mode does.
+
+Function.prototype.call/apply/bind and [Reflect.apply](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Reflect/apply) should not be used.
+
+**Solution:**
+
+```js
+Function.prototype.mycall = function (thisArg, ...args) {
+  // Step 1: Handle `thisArg`
+  // If `thisArg` is null or undefined, it should default to the global object (window in browsers, global in Node.js)
+  // Otherwise, it should be coerced to an object
+  if (thisArg === null || thisArg === undefined) {
+    thisArg = (function () {
+      return this
+    })() // non-strict mode global object
+  } else {
+    thisArg = Object(thisArg)
+  }
+
+  // Step 2: Create a unique property on `thisArg` to avoid overwriting existing properties
+  const fnSymbol = Symbol()
+
+  // Step 3: Assign the function (using `this`) to the `thisArg` object
+  thisArg[fnSymbol] = this
+
+  // Step 4: Invoke the function with the provided arguments
+  const result = thisArg[fnSymbol](...args)
+
+  // Step 5: Remove the temporary property
+  delete thisArg[fnSymbol]
+
+  // Step 6: Return the result of the function call
+  return result
+}
+
+// Example usage:
+
+function greet(greeting, punctuation) {
+  return `${greeting}, my name is ${this.name}${punctuation}`
+}
+
+const person = { name: 'John' }
+
+console.log(greet.mycall(person, 'Hello', '!')) // "Hello, my name is John!"
+```
+
+### 11.Generate Fibonacci Number
+
+86.https://bigfrontend.dev/problem/fibonacci-number
+
+```
+0
+1
+1 = 0 + 1
+2 = 1 + 1
+3 = 1 + 2
+5 = 2 + 3
+8 = 3 + 5
+13 = 5 + 8
+....
+[0,1,1,2,3,5,8,13 ...]
+```
+
+Given 2 initial numbers, we can generate a sequence by adding the sum of last two numbers as a new lement.
+
+This is Fibonacci number.
+
+You are asked to create a fib(n) function, which generate the n-th Fibonacci number.
+
+What is the time & space cost of your solution?
+
+**Solution:**
+
+```js
+/**
+ * @param {number} n - non-negative integer
+ * @return {number}
+ */
+function fib(n) {
+  if (n === 0) return 0
+  if (n === 1) return 1
+  let pre_pre = 0
+  let pre = 1
+  let cur = null
+  for (let i = 2; i <= n; i++) {
+    cur = pre + pre_pre
+    pre_pre = pre
+    pre = cur
+  }
+  return cur
+}
+```
+
+```js
+/**
+ * @param {number} n - non-negative integer
+ * @return {number}
+ */
+function fib(n) {
+  // your code here
+  const cache = new Map()
+  const helper = (i) => {
+    if (i === 0) return 0
+    if (i === 1) return 1
+    if (cache.has(i)) {
+      return cache.get(i)
+    }
+    const ans = helper(i - 1) + helper(i - 2)
+    cache.set(i, ans)
+    return ans
+  }
+  return helper(n)
+}
+```
+
+### 12.Generate Fibonacci Number with recursion
+
+93.https://bigfrontend.dev/problem/Generate-Fibonacci-Number-with-recursion
+
+In 86. Generate Fibonacci Number you are asked to create a fib(n).
+
+This could be simply done by a recursion, but it costs so much time that your browser freezes, don't try it with large numbers.
+
+```js
+const fib = (n) => {
+  if (n === 0) return 0
+  if (n === 1) return 1
+  return fib(n - 1) + fib(n - 2)
+}
+fib(10) // 55
+fib(1000) // timeout
+```
+
+Can you improve above implementation to make it work for fib(1000) ? recursion should still be used.
+
+**Solution:**
+
+```js
+// please modify code below to make it work for large number like `fib(1000)`
+// recursion should still be used
+// const memo = new Map();
+function fib(n, memo = new Map()) {
+  if (n === 0) return 0
+  if (n === 1) return 1
+  if (memo.has(n)) {
+    return memo.get(n)
+  }
+  const ans = fib(n - 1, memo) + fib(n - 2, memo)
+  memo.set(n, ans)
+  return ans
+}
+```
+
+### 13.implement memoizeOne()
+
+122.https://bigfrontend.dev/problem/implement-memoizeOne
+
+In problem [14. Implement a general memoization function](https://bigfrontend.dev/problem/implement-general-memoization-function), you are asked to implement a memo function without space concern.
+
+But in reality, it could be a problem if cache bloats.
+
+You might need to restrict the cache capacity, just like [memoize-one](https://github.com/alexreardon/memoize-one) , it only remembers the latest arguments and result.
+
+Please implement your own `memoizeOne()`, it takes 2 arguments
+
+1. target function
+2. (optional) a equality check function to compare current and last arguments
+
+Default equality check function should be a shallow comparison on array items with strict equal ===.
+
+**Solution:**
+
+```js
+function shallowEqual(arr1, arr2) {
+  if (arr1.length !== arr2.length) return false
+  for (let i = 0; i < arr1.length; i++) {
+    if (arr1[i] !== arr2[i]) return false
+  }
+  return true
+}
+
+/**
+ * @param {Function} func
+ * @param {(args: any[], newArgs: any[]) => boolean} [isEqual]
+ * @returns {any}
+ */
+function memoizeOne(func, isEqual = shallowEqual) {
+  let lastArgs = null
+  let lastResult = null
+  let lastThis = null
+  let hasCache = false
+
+  return function (...args) {
+    if (hasCache && isEqual(args, lastArgs) && lastThis === this) {
+      return lastResult
+    }
+    lastResult = func.apply(this, args)
+    lastArgs = args
+    lastThis = this
+    hasCache = true
+    return lastResult
+  }
+}
+
+let callCount = 0
+function funcThis(b) {
+  callCount += 1
+  return `${this.a}_${b}`
+}
+const memoed = memoizeOne(funcThis)
+const a = {
+  a: 1,
+  memoed,
+}
+
+const b = {
+  a: 2,
+  memoed,
+}
+console.log(a.memoed(2)) //.toBe('1_2')
+console.log(callCount) //.toBe(1)
+console.log(a.memoed(2)) //.toBe('1_2')
+console.log(callCount) //.toBe(1)
+console.log(a.memoed(3)) //.toBe('1_3')
+console.log(callCount) //.toBe(2)
+console.log(a.memoed(3)) //.toBe('1_3')
+console.log(callCount) //.toBe(2)
+console.log(`test: `)
+console.log(b.memoed(3)) //.toBe('2_3')
+console.log(`test1: `)
+console.log(callCount) //.toBe(3)
+console.log(a.memoed(3)) //.toBe('1_3')
+console.log(callCount) //.toBe(4)
+```
+
+### 14.merge identical API calls
+
+101.https://bigfrontend.dev/problem/merge-identical-API-calls
+
+Suppose we have a utility function getAPI() which fetches data.
+
+```js
+const getAPI = (path, config) => { ... }
+const list1 = await getAPI('/list', { keyword: 'bfe'})
+const list2 = await getAPI('/list', { keyword: 'dev'})
+```
+
+It works great. Util the UI become so complicated that same API might be called for multiple time within a relatively short period of time.
+
+You want to avoid the unnecessary API calls, based on following assumption:
+
+GET API call response hardly changes within 1000ms.
+
+So identical GET API calls should return the same response within 1000ms. By identical, it means path and config are deeply equal.
+
+You create createGetAPIWithMerging(getAPI), which works like following.
+
+```js
+const getAPIWithMerging = createGetAPIWithMerging(getAPI)
+getAPIWithMerging('/list', { keyword: 'bfe'}).then(...)
+// 1st call,  this will call getAPI
+getAPIWithMerging('/list', { keyword: 'bfe'}).then(...)
+// 2nd call is identical to 1st call,
+// so getAPI is not called,
+// it resolves when 1st call resolves
+getAPIWithMerging('/list', { keyword: 'dev'}).then(...)
+// 3rd call is not identical, so getAPI is called
+// after 1000ms
+getAPIWithMerging('/list', {keyword: 'bfe'}).then(...)
+// 4th call is identical to 1st call,
+// but since after 1000ms, getAPI is called.
+```
+
+Attention for memory leak!
+Your cache system should not bloat. For this problem, you should have 5 cache entries at maximum, which means:
+
+```js
+getAPIWithMerging('/list1', { keyword: 'bfe'}).then(...)
+// 1st call, call callAPI(), add a cache entry
+getAPIWithMerging('/list2', { keyword: 'bfe'}).then(...)
+// 2nd call, call callAPI(), add a cache entry
+getAPIWithMerging('/list3', { keyword: 'bfe'}).then(...)
+// 3rd call, call callAPI(), add a cache entry
+getAPIWithMerging('/list4', { keyword: 'bfe'}).then(...)
+// 4th call, call callAPI(), add a cache entry
+getAPIWithMerging('/list5', { keyword: 'bfe'}).then(...)
+// 5th call, call callAPI(), add a cache entry
+getAPIWithMerging('/list6', { keyword: 'bfe'}).then(...)
+// 6th call, call callAPI(), add a cache entry
+// cache of 1st call is removed
+getAPIWithMerging('/list1', { keyword: 'bfe'}).then(...)
+// identical with 1st call, but cache of 1st call is removed
+// new cache of entry is added
+clear()
+```
+
+For test purpose, please provide a clear method to clear all cache.
+
+```js
+getAPIWithMerging.clearCache()
+```
+
+**Solution:**
+
+Here's an implementation of `createGetAPIWithMerging` that meets the requirements:
+
+```javascript
+function createGetAPIWithMerging(getAPI) {
+  const cache = new Map()
+  const cacheOrder = []
+
+  function hash(path, config) {
+    //Sort the keys to avoid "property order in config object should not matter"
+    const keys = Object.keys(config).sort()
+    const configure = keys.map((key) => `${key}:${JSON.stringify(config[key])}`).join(',')
+    return JSON.stringify({ path, configure })
+  }
+
+  function addToCache(key, promise) {
+    if (cacheOrder.length >= 5) {
+      const oldestKey = cacheOrder.shift()
+      cache.delete(oldestKey)
+    }
+    cache.set(key, { promise, timestamp: Date.now() })
+    cacheOrder.push(key)
+  }
+
+  function getAPIWithMerging(path, config) {
+    const key = hash(path, config)
+    const cachedData = cache.get(key)
+
+    if (cachedData && Date.now() - cachedData.timestamp < 1000) {
+      return cachedData.promise
+    }
+
+    const promise = getAPI(path, config)
+    addToCache(key, promise)
+    return promise
+  }
+
+  getAPIWithMerging.clearCache = () => {
+    cache.clear()
+    cacheOrder.length = 0
+  }
+
+  return getAPIWithMerging
+}
+```
+
+Let's break down this implementation:
+
+1. We use a `Map` called `cache` to store the API call promises and their timestamps.
+
+2. We also maintain a `cacheOrder` array to keep track of the order of cache entries for the LRU (Least Recently Used) eviction policy.
+
+3. The `hash` function creates a unique key for each API call based on its path and config.
+
+4. The `addToCache` function adds a new entry to the cache. If the cache size reaches 5, it removes the oldest entry before adding the new one.
+
+5. In the `getAPIWithMerging` function:
+
+   - We first check if an identical call exists in the cache and is less than 1000ms old.
+   - If it exists and is recent, we return the cached promise.
+   - If not, we make a new API call, cache the promise, and return it.
+
+6. The `clearCache` method is added to `getAPIWithMerging` to clear all cache entries.
+
+This implementation ensures that:
+
+- Identical API calls within 1000ms return the same promise.
+- The cache size is limited to 5 entries, evicting the least recently used entry when necessary.
+- A `clearCache` method is provided to clear all cache entries.
+
+You can use it like this:
+
+```javascript
+const getAPIWithMerging = createGetAPIWithMerging(getAPI);
+
+// Use getAPIWithMerging as shown in your examples
+getAPIWithMerging('/list', { keyword: 'bfe' }).then(...)
+
+// To clear the cache
+getAPIWithMerging.clearCache();
+```
+
+This implementation should handle all the cases you described, including the memory leak prevention by limiting the cache to 5 entries.
