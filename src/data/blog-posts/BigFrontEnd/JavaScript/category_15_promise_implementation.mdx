@@ -1,0 +1,1076 @@
+---
+title: BigFrontEnd Category 15 Promise Implementation Questions
+slug: category-15-promise-implementation
+publishDate: 2024-06-12
+description: Learn about BigFrontEnd Category 15 Promise Implementation Questions.
+date: 2024-06-12
+tags: ['BigFrontEnd', 'category']
+draft: false
+---
+
+### Introduction
+
+This blog post summarizes the Promise implementation related questions found on BigFrontEnd.Dev.
+
+<TOCInline toc={props.toc} exclude="Introduction" />
+
+### 1.Implement `Promise.all()`
+
+If any promise fails (i.e., rejects), the entire `Promise.all()` operation fails immediately, and the returned promise is rejected with the reason of the first rejected promise.
+
+#### 1.1.Implement `Promise.all()`
+
+32 https://bigfrontend.dev/problem/implement-Promise-all
+
+The `Promise.all()` method takes an iterable of promises as an input, and returns a single Promise that resolves to an array of the results of the input promises
+
+Could you write your own all() ? which should works the same as Promise.all()
+
+note
+
+Do not use `Promise.all()` directly, it is not helping
+
+**Solution:**
+Find all resolved promises or reject with the first error.
+
+- It takes an array of promises as the input.
+- It must retrun a Promise (`return new Promise((resolve, reject) => {})`)
+- Create a results to store the results from promise.
+- Use `forEach` to iterate through each promise with `then` and `catch`.
+- In `then` callback, it assign the result and increment the count. If the count reach the size of promises, return the results.
+- In `catch` callback, reject the promise with the same error.
+
+```js
+/**
+ * @param {Array<any>} promises - notice input might have non-Promises
+ * @return {Promise<any[]>}
+ */
+function all(promises) {
+  const n = promises.length
+  const convertToPromise = (promise) =>
+    promise instanceof Promise ? promise : new Promise((resolve) => resolve(promise))
+  promises = promises.map(convertToPromise)
+  const results = Array(n)
+  let numOfResults = 0
+
+  return new Promise((resolve, reject) => {
+    // edge cases
+    if (n === 0) {
+      resolve([])
+    }
+    promises.forEach((promise, index) => {
+      promise
+        .then((data) => {
+          results[index] = data
+          numOfResults += 1
+          if (numOfResults === n) {
+            resolve(results)
+          }
+        })
+        .catch(reject)
+    })
+  })
+}
+```
+
+#### 1.2.Implement `Promise.all()`
+
+```typescript
+// 2721. Execute Asynchronous Functions in Parallel
+type Fn<T> = () => Promise<T>
+function promiseAll<T>(functions: Fn<T>[]): Promise<T[]> {
+    return new Promise<T[]>((resolve, reject) => {
+        const result: T[] = Array(functions.length);
+        let count = 0;
+        functions.forEach((func, i) => {
+            func().then(val => {
+                result[i] = val;
+                count += 1;
+                if (count === functions.length) {
+                    resolve(result);
+                }
+            }).catch(e => {
+                reject(e);
+            });
+        });
+    });
+};
+
+const promises = [
+  Promise.resolve('fulfilled value 1'),
+  Promise.resolve('fulfilled value 2'),
+  new Promise(resolve => setTimeout(() => resolve('fulfilled value 3'), 1000))
+];
+
+all(promises)
+  .then(results => {
+    console.log(results);
+    // Output: ['fulfilled value 1', 'fulfilled value 2', 'fulfilled value 3']
+  })
+  .catch(error => {
+    console.error(error);
+  });
+```
+
+### 2.Implement `Promise.allSettled()`
+
+33 https://bigfrontend.dev/problem/implement-Promise-allSettled
+
+Use `Promise.allSettled()` when you want to wait for all promises to complete, regardless of whether they fulfill or reject, and you need to know the outcome of each individual promise.
+
+**Solution:**
+Find the first resolved promise.
+
+- It takes an array of promises as the input.
+- It must retrun a Promise (`return new Promise((resolve, reject) => {})`)
+- Create an array to store the results from promise.
+- Use `forEach` to iterate through each promise with `then` and `catch`.
+- In `then` callback, fills the results with the result.
+- In `catch` callback, fills the results with the error.
+- If the count reach the size of promises, resolve it with the results..
+
+```javascript
+/**
+ * @param {Array<any>} promises - notice that input might contains non-promises
+ * @return {Promise<Array<{status: 'fulfilled', value: any} | {status: 'rejected', reason: any}>>}
+ */
+function allSettled(promises) {
+  const n = promises.length;
+  const convertToPromise = promise => (promise instanceof Promise) ? promise : new Promise((resolve) => resolve(promise));
+  promises = promises.map(convertToPromise);
+  const results = Array(n);
+  let numOfResults = 0;
+
+  return new Promise((resolve, reject) => {
+    const checkCompleted = () => {
+      numOfResults += 1;
+      if (numOfResults === n) {
+        resolve(results);
+      }
+    };
+    // edge cases
+    if (n === 0) {
+      resolve([]);
+    }
+    promises.forEach((promise, index) => {
+      promise
+        .then((data) => {
+          results[index] = { status: "fulfilled", value: data };
+          checkCompleted();
+        })
+        .catch(error => {
+          results[index] = { status: "rejected", reason: error };
+          checkCompleted();
+        });
+    });
+  });
+}
+```
+
+### 3.Implement `Promise.any()`
+
+34 https://bigfrontend.dev/problem/implement-Promise-any
+
+Waits for any of the promises in the iterable to be fulfilled. Returns a single Promise that resolves with the value of the first fulfilled promise, or rejects with an `AggregateError` if all input promises are rejected.
+
+**Solution:**
+Find the first resolved promise.
+
+- It takes an array of promises as the input.
+- It must retrun a Promise (`return new Promise((resolve, reject) => {})`)
+- Create an array to store the errors from promise.
+- Use `forEach` to iterate through each promise with `then` and `catch`.
+- In `then` callback, it tests whether the promise is fullfilled. If it is not, resolve it.
+- In `catch` callback, it assign the error and increment the error count. If the count reach the size of promises, reject with the errors.
+
+```js
+/**
+ * @param {Array<Promise>} promises
+ * @return {Promise}
+ */
+function any(promises) {
+  const convertToPromise = (promise) =>
+    promise instanceof Promise ? promise : new Promise((resolve) => resolve(promise))
+  promises = promises.map(convertToPromise)
+  const n = promises.length
+  const errors = Array(n)
+  let numOfErrors = 0
+  return new Promise((resolve, reject) => {
+    if (n === 0) {
+      resolve()
+    }
+    promises.forEach((promise, index) =>
+      promise.then(resolve).catch((error) => {
+        errors[index] = error
+        numOfErrors += 1
+        if (numOfErrors === n) {
+          reject(new AggregateError('No Promise in Promise.any was resolved', errors))
+        }
+      })
+    )
+  })
+}
+```
+
+### 4.Implement `Promise.race()`
+
+35 https://bigfrontend.dev/problem/implement-Promise-race
+
+Waits for the first promise in the iterable to be settled (fulfilled or rejected).
+
+**Solution:**
+Find the first resolved/rejected promise.
+
+- It takes an array of promises as the input.
+- It must retrun a Promise (`return new Promise((resolve, reject) => {})`)
+- Use `forEach` to iterate through each promise with `then` and `catch`.
+- In `then` callback, If it is fullfilled, resolve it.
+- In `catch` callback, if it is rejected, reject it.
+
+```js
+/**
+ * @param {Array<Promise>} promises
+ * @return {Promise}
+ */
+function race(promises) {
+  const convertToPromise = (promise) =>
+    promise instanceof Promise ? promise : new Promise((resolve) => resolve(promise))
+  promises = promises.map(convertToPromise)
+  return new Promise((resolve, reject) => {
+    promises.forEach((promise) => promise.then(resolve, reject))
+  })
+}
+```
+
+### 5.auto-retry Promise on rejection
+
+64.https://bigfrontend.dev/problem/retry-promise-on-rejection
+
+For a web application, fetching API data is a common task.
+
+But the API calls might fail because of Network problems. Usually we could show a screen for Network Error and ask users to retry.
+
+One approach to handle this is **auto retry when network error occurs.**
+
+You are asked to create a `fetchWithAutoRetry(fetcher, count)`, which automatically fetch again when error happens, until the maximum count is met.
+
+For the problem here, there is no need to detect network error, you can just retry on all promise rejections.
+
+**Solution:**
+
+The call of a async function returns a promise.
+
+```js
+/**
+ * @param {() => Promise<any>} fetcher
+ * @param {number} maximumRetryCount
+ * @return {Promise<any>}
+ */
+function fetchWithAutoRetry(fetcher, maximumRetryCount) {
+  const helper = async () => {
+    try {
+      const result = await fetcher()
+      return result
+    } catch (error) {
+      if (maximumRetryCount === 0) {
+        return Promise.reject('error')
+      } else {
+        return await fetchWithAutoRetry(fetcher, maximumRetryCount - 1)
+      }
+    }
+  }
+  return helper()
+}
+```
+
+### 6.create your own Promise
+
+67.https://bigfrontend.dev/problem/create-your-own-Promise
+
+[Promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise) is widely used nowadays, hard to think how we handled [Callback Hell](http://callbackhell.com/) in the old times.
+
+Can you implement a `MyPromise` Class by yourself?
+
+At least it should match following requirements
+
+1. new promise: `new MyPromise((resolve, reject) => {})`
+2. chaining : `MyPromise.prototype.then()` [then handlers](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/then) should be called asynchronously
+3. rejection handler: `MyPromise.prototype.catch()`
+4. static methods: `MyPromise.resolve()`, `MyPromise.reject()`.
+   This is a challenging problem. Recommend you read about Promise thoroughly first.
+
+**Solution:**
+
+Here's a breakdown of the implementation:
+
+1. **Constructor**: Initializes the promise with pending state and sets up resolve and reject functions.
+
+2. **then method**: Implements chaining and ensures handlers are called asynchronously using `queueMicrotask`.
+
+3. **catch method**: Implements error handling by calling `then` with null as the success handler.
+
+4. **resolvePromise method**: Handles the resolution of promises, including thenable objects and potential chaining cycles.
+
+5. **Static resolve and reject methods**: Implement the static methods for creating pre-resolved or pre-rejected promises.
+
+Key points about this implementation:
+
+- It uses a state machine (PENDING, FULFILLED, REJECTED) to manage the promise's state.
+- The `then` method returns a new promise, allowing for chaining.
+- Handlers are executed asynchronously using `queueMicrotask` to match the behavior of native Promises.
+- It handles thenables and potential chaining issues in the `resolvePromise` method.
+- The implementation follows the Promise/A+ specification in many aspects, though a full spec-compliant implementation would require more extensive error checking and edge case handling.
+
+This implementation covers the basic functionality of Promises and demonstrates the core concepts. However, it doesn't include more advanced features like `Promise.all`, `Promise.race`, or cancellation, which could be added as extensions to this base implementation.
+
+```javascript
+// Define the possible states of a promise
+const STATE = {
+  PENDING: 'pending',
+  FULFILLED: 'fulfilled',
+  REJECTED: 'rejected'
+};
+
+class MyPromise {
+  constructor(executor) {
+    this.state = STATE.PENDING;
+    this.value = undefined;
+    this.reason = undefined;
+    this.onFulfilledCallbacks = [];
+    this.onRejectedCallbacks = [];
+
+    const resolve = (value) => {
+      if (this.state === STATE.PENDING) {
+        this.state = STATE.FULFILLED;
+        this.value = value;
+        this.onFulfilledCallbacks.forEach(callback => callback());
+      }
+    };
+
+    const reject = (reason) => {
+      if (this.state === STATE.PENDING) {
+        this.state = STATE.REJECTED;
+        this.reason = reason;
+        this.onRejectedCallbacks.forEach(callback => callback());
+      }
+    };
+
+    try {
+      executor(resolve, reject);
+    } catch (error) {
+      reject(error);
+    }
+  }
+
+  then(onFulfilled, onRejected) {
+    onFulfilled = typeof onFulfilled === 'function' ? onFulfilled : value => value;
+    onRejected = typeof onRejected === 'function' ? onRejected : reason => { throw reason; };
+
+    const promise2 = new MyPromise((resolve, reject) => {
+      const fulfilledMicrotask = () => {
+        queueMicrotask(() => {
+          try {
+            const x = onFulfilled(this.value);
+            this.resolvePromise(promise2, x, resolve, reject);
+          } catch (e) {
+            reject(e);
+          }
+        });
+      };
+
+      const rejectedMicrotask = () => {
+        queueMicrotask(() => {
+          try {
+            const x = onRejected(this.reason);
+            this.resolvePromise(promise2, x, resolve, reject);
+          } catch (e) {
+            reject(e);
+          }
+        });
+      };
+
+      if (this.state === STATE.FULFILLED) {
+        fulfilledMicrotask();
+      } else if (this.state === STATE.REJECTED) {
+        rejectedMicrotask();
+      } else if (this.state === STATE.PENDING) {
+        this.onFulfilledCallbacks.push(fulfilledMicrotask);
+        this.onRejectedCallbacks.push(rejectedMicrotask);
+      }
+    });
+
+    return promise2;
+  }
+
+  catch(onRejected) {
+    return this.then(null, onRejected);
+  }
+
+  resolvePromise(promise2, x, resolve, reject) {
+    if (promise2 === x) {
+      reject(new TypeError('Chaining cycle detected for promise'));
+      return;
+    }
+
+    let called = false;
+
+    if (x !== null && (typeof x === 'object' || typeof x === 'function')) {
+      try {
+        let then = x.then;
+        if (typeof then === 'function') {
+          then.call(
+            x,
+            y => {
+              if (called) return;
+              called = true;
+              this.resolvePromise(promise2, y, resolve, reject);
+            },
+            r => {
+              if (called) return;
+              called = true;
+              reject(r);
+            }
+          );
+        } else {
+          resolve(x);
+        }
+      } catch (e) {
+        if (called) return;
+        called = true;
+        reject(e);
+      }
+    } else {
+      resolve(x);
+    }
+  }
+
+  static resolve(value) {
+    return new MyPromise((resolve) => {
+      resolve(value);
+    });
+  }
+
+  static reject(reason) {
+    return new MyPromise((resolve, reject) => {
+      reject(reason);
+    });
+  }
+}
+```
+
+### 7.throttle Promises
+
+92.https://bigfrontend.dev/problem/throttle-Promises
+
+Say you need to fetch some data through 100 APIs, and as soon as possible.
+
+If you use `Promise.all()`, 100 requests go to your server at the same time, which is a burden to low spec servers.
+
+Can you **throttle your API calls so that always maximum 5 API calls at the same time?**
+
+You are asked to create a general throttlePromises() which takes an array of functions returning promises, and a number indicating the maximum concurrent pending promises.
+
+```js
+throttleAsync(callApis, 5)
+  .then((data) => {
+    // the data is the same as `Promise.all`
+  })
+  .catch((err) => {
+    // any error occurs in the callApis would be relayed here
+  })
+```
+
+By running above code, at any time, no more than 5 APIs are requested, so low spec servers are saved.
+
+**Solution:**
+
+```js
+/**
+ * @param {() => Promise<any>} func
+ * @param {number} max
+ * @return {Promise}
+ */
+function throttlePromises(tasks, maxConcurrent) {
+  return new Promise((resolve, reject) => {
+    const results = []
+    let runningCount = 0
+    let index = 0
+
+    function runNext() {
+      // If all tasks are completed, resolve the final results
+      if (index === tasks.length && runningCount === 0) {
+        resolve(results)
+        return
+      }
+
+      // If the number of currently running tasks is less than maxConcurrent
+      while (runningCount < maxConcurrent && index < tasks.length) {
+        const currentIndex = index++
+        const task = tasks[currentIndex]
+
+        runningCount++
+        task()
+          .then((result) => {
+            results[currentIndex] = result
+          })
+          .catch((err) => {
+            reject(err)
+          })
+          .finally(() => {
+            runningCount--
+            runNext() // Run the next task when the current one completes
+          })
+      }
+    }
+
+    runNext()
+  })
+}
+```
+
+### 8.implement Promise.prototype.finally()
+
+123.https://bigfrontend.dev/problem/implement-Promise-prototype-finally
+
+[Promise.prototype.finally()](https://bigfrontend.dev/problem/implement-Promise-prototype-finally) could be used to run a callback when a promise is settled(either fulfilled or rejected).
+
+Notice that the callback passed finally() doesn't receive any argument, meaning it doesn't modify the value in the promise chain (care for rejection).
+
+**Solution:**
+Find the first resolved/rejected promise.
+
+- It takes a promise and a onFinally function as the input.
+- It must retrun a Promise (`return new Promise((resolve, reject) => {})`)
+- Attach the `then` and `catch` to the promise.
+- In `then` async callback, call onFinally and resolve it if it succeedsand reject it if it fails.
+- In `catch` async callback, call onFinally and reject it.
+
+```js
+/**
+ * @param {Promise<any>} promise
+ * @param {() => void} onFinally
+ * @returns {Promise<any>}
+ */
+function myFinally(promise, onFinally) {
+  return new Promise((resolve, reject) => {
+    promise
+      .then(async (result) => {
+        // Add async to support the case that onFinally() return a promise.
+        try {
+          await onFinally()
+          resolve(result)
+        } catch (err) {
+          reject(err)
+        }
+      })
+      .catch(async (error) => {
+        try {
+          await onFinally()
+          reject(error)
+        } catch (err) {
+          reject(err)
+        }
+      })
+  })
+}
+```
+
+### 9.Add Two Promises (2723)
+
+```typescript
+type P = Promise<number>
+
+async function addTwoPromises(promise1: P, promise2: P): P {
+    try {
+        const [val1, val2] = await Promise.all([promise1, promise2]);
+        return val1 + val2;
+    } catch {
+        throw new Error("promise error");
+    }
+};
+```
+
+### 10.Sleep (2621)
+
+```typescript
+async function sleep(millis: number): Promise<void> {
+    return new Promise((resolve, reject) => {
+        setTimeout(() => resolve(), millis);
+    });
+}
+```
+
+### 11.Promise Time Limit (2637)
+
+```typescript
+type Fn = (...params: any[]) => Promise<any>;
+
+function timeLimit(fn: Fn, t: number): Fn {
+    return async function(...args) {
+        return Promise.race([
+            fn(...args),
+            new Promise<any>((resolve, reject) => {
+                setTimeout(() => {
+                    reject("Time Limit Exceeded");
+                }, t);
+            }),
+        ]);
+    }
+};
+```
+
+### 12.Implement `promisify()`
+
+159.https://bigfrontend.dev/problem/promisify
+
+Let's take a look at following error-first callback.
+
+```js
+const callback = (error, data) => {
+  if (error) {
+    // handle the error
+  } else {
+    // handle the data
+  }
+}
+```
+
+Now think about async functions that takes above error-first callback as last argument.
+
+```js
+const func = (arg1, arg2, callback) => {
+  // some async logic
+  if (hasError) {
+    callback(someError)
+  } else {
+    callback(null, someData)
+  }
+}
+```
+
+You see what needs to be done now. Please implement promisify() to make the code better.
+
+```js
+const promisedFunc = promisify(func)
+promisedFunc()
+  .then((data) => {
+    // handles data
+  })
+  .catch((error) => {
+    // handles error
+  })
+```
+
+**Solution:**
+
+```javascript
+function promisify(func) {
+  return function (...args) {
+    return new Promise((resolve, reject) => {
+      // Invoke the original function with the provided arguments
+      func(...args, (err, result) => {
+        if (err) {
+          reject(err); // If an error occurs, reject the Promise with the error
+        } else {
+          resolve(result); // If successful, resolve the Promise with the result
+        }
+      });
+    });
+  };
+}
+const fs = require('fs');
+// Example: promisify the fs.readFile function
+const readFilePromise = promisify(fs.readFile);
+readFilePromise('example.txt', 'utf8')
+  .then(data => {
+    console.log(data);
+  })
+  .catch(error => {
+    console.error(error);
+  });
+```
+
+### 13.Promise Pool (2636)
+
+```typescript
+// https://dev.to/endeavourmonk/promise-pool-javascript-leetcode-2636-598k
+type F = () => Promise<any>;
+
+function promisePool(functions: F[], n: number): Promise<any> {
+    return new Promise<any>((resolve) => {
+        let inProgress = 0, index = 0;
+        const results: any[] = [];
+        function helper() {
+            // base case
+            if (index >= functions.length) {
+                if (inProgress === 0) resolve(results);
+                return;
+            }
+
+            while (inProgress < n && index < functions.length) {
+                inProgress++;
+                functions[index]().then((val) => {
+                    results[index] = val;
+                    inProgress--;
+                    helper();
+                });
+                index += 1;
+            }
+        }
+        helper();
+  });
+}
+```
+
+### 14.call APIs with pagination
+
+56.https://bigfrontend.dev/problem/call-APIs-with-pagination
+
+Have you ever met some APIs with pagination, and needed to recursively fetch them based on response of previous request ?
+
+Suppose we have a `/list` API, which returns an array `items`.
+
+```js
+// fetchList is provided for you
+const fetchList = (since?: number) =>
+  Promise<{items: Array<{id: number}>}>
+```
+
+1. for initial request, we just fetch fetchList. and get the last item id from response.
+2. for next page, we need to call fetchList(lastItemId).
+3. repeat above process.
+
+The `/list` API only gives us 5 items at a time, with server-side filtering, it might be less than 5. But if none returned, it means nothing to fetch any more and we should stop.
+
+You are asked to create a function that could return arbitrary amount of items.
+
+```js
+const fetchListWithAmount = (amount: number = 5) { }
+```
+
+note
+
+You can achieve this by regular loop, even fancier solutions with [async iterators or async generators](https://javascript.info/async-iterators-generator). You should try them all.
+
+**Solution:**
+
+#### 14.1
+
+```js
+// fetchList is provided for you
+// const fetchList = (since?: number) =>
+//   Promise<{items: Array<{id: number}>}>
+
+// you can change this to generator function if you want
+const fetchListWithAmount = async (amount = 5) => {
+  const allItems = []
+  let lastItemId = undefined
+  while (allItems.length < amount) {
+    const response = await fetchList(lastItemId)
+    const items = response.items
+    if (items.length === 0) {
+      break
+    }
+    allItems.push(...items)
+    lastItemId = items[items.length - 1].id
+    if (allItems.length >= amount) {
+      break
+    }
+  }
+  return allItems.slice(0, amount)
+}
+```
+
+#### 14.2 Solution with async iterators
+
+```js
+// fetchList is provided for you
+// const fetchList = (since?: number) =>
+//   Promise<{items: Array<{id: number}>}>
+
+// you can change this to generator function if you want
+const fetchListWithAmount = async (amount = 5) => {
+  const items = []
+
+  for await (const newItems of fetchPaginated(amount)) {
+    items.push(...newItems)
+  }
+
+  return items.slice(0, amount)
+}
+
+function fetchPaginated(amount) {
+  const iterator = {
+    amount,
+    itemsAmount: 0,
+    lastItemId: null,
+    async next() {
+      if (this.itemsAmount > this.amount) {
+        return { done: true }
+      }
+
+      const response = this.lastItemId ? await fetchList(this.lastItemId) : await fetchList()
+      if (!response || !response.items.length) {
+        return { done: true }
+      }
+
+      const result = response.items
+      this.itemsAmount += result.length
+      this.lastItemId = result[result.length - 1].id
+
+      return {
+        done: false,
+        value: result,
+      }
+    },
+  }
+
+  return {
+    [Symbol.asyncIterator]() {
+      return iterator
+    },
+  }
+}
+```
+
+#### 14.3 Solution with async generators
+
+```js
+// fetchList is provided for you
+// const fetchList = (since?: number) =>
+//   Promise<{items: Array<{id: number}>}>
+
+// you can change this to generator function if you want
+const fetchListAsyncGenerator = async function* () {
+  let lastItemId = undefined
+
+  while (true) {
+    const response = await fetchList(lastItemId)
+    const items = response.items
+
+    if (items.length === 0) {
+      break
+    }
+
+    yield* items
+
+    lastItemId = items[items.length - 1].id
+  }
+}
+
+const fetchListWithAmount = async (amount = 5) => {
+  const allItems = []
+  const generator = fetchListAsyncGenerator()
+
+  for await (const item of generator) {
+    allItems.push(item)
+    if (allItems.length >= amount) {
+      break
+    }
+  }
+
+  return allItems.slice(0, amount)
+}
+
+// Usage
+fetchListWithAmount(12).then(console.log)
+```
+
+### 15.implement async helper - `sequence()`
+
+29.https://bigfrontend.dev/problem/implement-async-helper-sequence
+
+This problem is similar to 11. what is Composition? create a pipe().
+
+You are asked to implement an async function helper, sequence() which chains up async functions, like what pipe() does.
+
+All async functions have following interface
+
+```ts
+type Callback = (error: Error, data: any) => void
+type AsyncFunc = (callback: Callback, data: any) => void
+```
+
+Your `sequence()` should accept AsyncFunc array, and chain them up by passing new data to the next AsyncFunc through data in Callback.
+
+Suppose we have an async func which just multiple a number by 2
+
+```ts
+const asyncTimes2 = (callback, num) => {
+  setTimeout(() => callback(null, num * 2), 100)
+}
+```
+
+Your `sequence()` should be able to accomplish this
+
+```ts
+const asyncTimes4 = sequence([asyncTimes2, asyncTimes2])
+asyncTimes4((error, data) => {
+  console.log(data) // 4
+}, 1)
+```
+
+Once an error occurs, it should trigger the last callback without triggering the uncalled functions.
+
+Follow up
+
+Can you solve it with and without Promise?
+
+**Solution:**
+
+`sequence` takes an array of async function as input and returns a function which takes a callback and initial data as input and returns void.
+
+We can convert the async functions to promises and use async and await to achieve the goal.
+
+```js
+const promisify = (asyncFunc, currentData) =>
+  new Promise((resolve, reject) => {
+    asyncFunc((error, result) => {
+      if (error) {
+        return reject(error)
+      }
+      resolve(result)
+    }, currentData)
+  })
+
+/**
+ * @param {AsyncFunc[]} funcs
+ * @return {(finalCallback: Callback, initialData) => void}
+ */
+function sequence(asyncFuncs) {
+  return async (finalCallback, initialData) => {
+    let currentData = initialData
+
+    try {
+      for (const asyncFunc of asyncFuncs) {
+        currentData = await promisify(asyncFunc, currentData)
+      }
+      finalCallback(undefined, currentData)
+    } catch (error) {
+      finalCallback(error, undefined)
+    }
+  }
+}
+```
+
+### 16.implement async helper - `parallel()`
+
+30.https://bigfrontend.dev/problem/implement-async-helper-parallel
+
+This problem is related to 29. implement async helper - sequence().
+
+You are asked to implement an async function helper, parallel() which works like Promise.all(). Different from sequence(), the async function doesn't wait for each other, rather they are all triggered together.
+
+All async functions have following interface
+
+```ts
+type Callback = (error: Error, data: any) => void
+type AsyncFunc = (callback: Callback, data: any) => void
+```
+
+Your `parallel()` should accept AsyncFunc array, and return a new function which triggers its own callback when all async functions are done or an error occurs.
+
+Suppose we have an 3 async functions
+
+```ts
+const async1 = (callback) => {
+  callback(undefined, 1)
+}
+const async2 = (callback) => {
+  callback(undefined, 2)
+}
+const async3 = (callback) => {
+  callback(undefined, 3)
+}
+```
+
+Your `parallel()` should be able to accomplish this
+
+```ts
+const all = parallel([async1, async2, async3])
+all((error, data) => {
+  console.log(data) // [1, 2, 3]
+}, 1)
+```
+
+When error occurs, only first error is passed down to the last. Later errors or data are ignored.
+
+**Solution:**
+
+We can convert the async functions to promoises and use `Promise.all` to achieve the goal.
+
+```js
+/**
+ * @param {AsyncFunc[]} funcs
+ * @return {(callback: Callback) => void}
+ */
+function parallel(funcs) {
+  return (finalCallback, initialData) => {
+    const promises = funcs.map((func) => promisify(func, initialData))
+    Promise.all(promises)
+      .then((result) => finalCallback(undefined, result))
+      .catch((error) => finalCallback(error, undefined))
+  }
+}
+```
+
+### 17.implement async helper - `race()`
+
+31.https://bigfrontend.dev/problem/implement-async-helper-race
+
+This problem is related to 30. implement async helper - parallel().
+
+You are asked to implement an async function helper, `race()` which works like `Promise.race()`. Different from parallel() that waits for all functions to finish, race() will finish when any function is done or run into error.
+
+All async functions have following interface
+
+```ts
+type Callback = (error: Error, data: any) => void
+type AsyncFunc = (callback: Callback, data: any) => void
+```
+
+Your `race()` should accept AsyncFunc array, and return a new function which triggers its own callback when any async function is done or an error occurs.
+
+Suppose we have an 3 async functions
+
+```ts
+const async1 = (callback) => {
+  setTimeout(() => callback(undefined, 1), 300)
+}
+const async2 = (callback) => {
+  setTimeout(() => callback(undefined, 2), 100)
+}
+const async3 = (callback) => {
+  setTimeout(() => callback(undefined, 3), 200)
+}
+```
+
+Your `race()` should be able to accomplish this
+
+```ts
+const first = race([async1, async2, async3])
+first((error, data) => {
+  console.log(data) // 2, since 2 is the first to be given
+}, 1)
+```
+
+When error occurs, only first error is passed down to the last. Later errors or data are ignored.
+
+**Solution:**
+
+We can convert the async functions to promoises and use `Promise.race` to achieve the goal.
+
+```js
+/**
+ * @param {AsyncFunc[]} funcs
+ * @return {(callback: Callback) => void}
+ */
+function race(funcs) {
+  return (finalCallback, initialData) => {
+    const promises = funcs.map((func) => promisify(func, initialData))
+    Promise.race(promises)
+      .then((result) => finalCallback(undefined, result))
+      .catch((error) => finalCallback(error, undefined))
+  }
+}
+```

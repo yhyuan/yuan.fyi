@@ -1,0 +1,1079 @@
+---
+title: BigFrontEnd Category 18 Time Implementation Questions
+slug: category-18-time-implementation
+publishDate: 2024-06-15
+description: Learn about BigFrontEnd Category 18 Time Implementation Questions.
+date: 2024-06-15
+tags: ['BigFrontEnd', 'category']
+draft: false
+---
+
+### Introduction
+
+This blog post summarizes the time implementation related questions found on BigFrontEnd.Dev.
+
+<TOCInline toc={props.toc} exclude="Introduction" />
+
+### 1.implement basic throttle()
+
+#### 1.1 implement basic throttle()
+
+4.https://bigfrontend.dev/problem/implement-basic-throttle
+
+Throttling is a common technique used in Web apps, in most cases using [lodash solution](https://lodash.com/docs/4.17.15#throttle) would be a good choice.
+
+In case you forgot, `throttle(func, delay)` returns a throttled function, which invokes `func` at a max frequency no matter how throttled one is called.
+
+Here is an example.
+
+Before throttling we have following series of calls.
+
+```
+─ A ─ B ─ C ─ ─ D ─ ─ ─ ─ ─ ─ E ─ ─ F ─ G
+```
+
+After throttling at wait time of 3 dashes, it becomes like this.
+
+```
+─ A ─ ─ ─ C ─ ─ ─ D ─ ─ ─ ─ E ─ ─ ─ G
+```
+
+A is triggered right way because not in waiting time. B is swallowed because B, C are in the cooling time from A, and C is called after B.
+
+Could you implement your own version of basic `throttle()`?
+
+notes
+
+Please follow above spec, the behavior is not exactly the same as `lodash.throttle()`.
+
+Since `window.setTimeout` and `window.clearTimeout` are not accurate in browser environment, they are replaced with other implementation when judging your code. They still have the same interfaces, and internally keep track of the timing for testing purpose.
+
+Some code like below is used to test your implementation.
+
+```js
+let currentTime = 0
+const run = (input) => {
+  currentTime = 0
+  const calls = []
+  const func = (arg) => {
+    calls.push(`${arg}@${currentTime}`)
+  }
+  const throttled = throttle(func, 3)
+  input.forEach((call) => {
+    const [arg, time] = call.split('@')
+    setTimeout(() => throttled(arg), time)
+  })
+  return calls
+}
+expect(run(['A@0', 'B@2', 'C@3'])).toEqual(['A@0', 'C@3'])
+```
+
+**Solution:**
+
+- We needs to run a function which takes the parameters which will be finally called by fn.
+- We needs to keep whether we should wait (`isWaiting`) and latest call args (`lastCallArgs`).
+- If it is during the waiting period, we simply update the latest call args.
+- Otherwise, the fn will be called and schedule the change of `isWaiting`.
+
+```js
+/**
+ * @param {Function} func
+ * @param {number} wait
+ */
+function throttle(func, wait) {
+  // Track if we are waiting. Initially, we are not.
+  let isWaiting = false
+  // Track arguments of last call
+  let lastCallArgs = null
+  let timeId = null
+
+  return function throttled(...args) {
+    // If we are waiting,
+    if (isWaiting) {
+      // ...store arguments of last call
+      lastCallArgs = args
+      return
+    }
+    // If we are not waiting, execute 'func' with passed arguments
+    func(...args)
+    // Prevent future execution of 'func'
+    isWaiting = true
+    if (timeId) {
+      clearTimeout(timeId)
+      timeId = null
+    }
+    // After wait time,
+    timeId = setTimeout(() => {
+      // ...allow execution of 'func'
+      isWaiting = false
+      // If arguments of last call exists,
+      if (lastCallArgs) {
+        // ...execute function throttled and pass last call's arguments
+        // to it. Since now we are not waiting, 'func' will be executed
+        // and isWaiting will be reset to true.
+        throttled(...lastCallArgs)
+        // ...reset arguments of last call to null.
+        lastCallArgs = null
+      }
+    }, wait)
+  }
+}
+```
+
+#### 1.2 Throttle (2676)
+
+https://leetcode.com/problems/throttle/description/
+
+Given a function fn and a time in milliseconds t, return a throttled version of that function.
+
+A throttled function is first called without delay and then, for a time interval of t milliseconds, can't be executed but should store the latest function arguments provided to call fn with them after the end of the delay.
+
+For instance, t = 50ms, and the function was called at 30ms, 40ms, and 60ms.
+
+At 30ms, without delay, the throttled function fn should be called with the arguments, and calling the throttled function fn should be blocked for the following t milliseconds.
+
+At 40ms, the function should just save arguments.
+
+At 60ms, arguments should overwrite currently stored arguments from the second call because the second and third calls are made before 80ms. Once the delay has passed, the throttled function fn should be called with the latest arguments provided during the delay period, and it should also create another delay period of 80ms + t.
+
+Throttle DiagramThe above diagram shows how throttle will transform events. Each rectangle represents 100ms and the throttle time is 400ms. Each color represents a different set of inputs.
+
+Example 1:
+
+```
+Input:
+t = 100,
+calls = [
+  {"t":20,"inputs":[1]}
+]
+Output: [{"t":20,"inputs":[1]}]
+```
+
+Explanation: The 1st call is always called without delay
+Example 2:
+
+```
+Input:
+t = 50,
+calls = [
+  {"t":50,"inputs":[1]},
+  {"t":75,"inputs":[2]}
+]
+Output: [{"t":50,"inputs":[1]},{"t":100,"inputs":[2]}]
+```
+
+Explanation:
+The 1st is called a function with arguments (1) without delay.
+The 2nd is called at 75ms, within the delay period because 50ms + 50ms = 100ms, so the next call can be reached at 100ms. Therefore, we save arguments from the 2nd call to use them at the callback of the 1st call.
+Example 3:
+
+```
+Input:
+t = 70,
+calls = [
+  {"t":50,"inputs":[1]},
+  {"t":75,"inputs":[2]},
+  {"t":90,"inputs":[8]},
+  {"t": 140, "inputs":[5,7]},
+  {"t": 300, "inputs": [9,4]}
+]
+Output: [{"t":50,"inputs":[1]},{"t":120,"inputs":[8]},{"t":190,"inputs":[5,7]},{"t":300,"inputs":[9,4]}]
+```
+
+Explanation:
+The 1st is called a function with arguments (1) without delay.
+The 2nd is called at 75ms within the delay period because 50ms + 70ms = 120ms, so it should only save arguments.
+The 3rd is also called within the delay period, and because we need just the latest function arguments, we overwrite previous ones. After the delay period, we do a callback at 120ms with saved arguments. That callback makes another delay period of 120ms + 70ms = 190ms so that the next function can be called at 190ms.
+The 4th is called at 140ms in the delay period, so it should be called as a callback at 190ms. That will create another delay period of 190ms + 70ms = 260ms.
+The 5th is called at 300ms, but it is after 260ms, so it should be called immediately and should create another delay period of 300ms + 70ms = 370ms.
+
+Constraints:
+
+```
+0 <= t <= 1000
+1 <= calls.length <= 10
+0 <= calls[i].t <= 1000
+0 <= calls[i].inputs[j], calls[i].inputs.length <= 10
+```
+
+**Solution:**
+
+- We needs to run a function which takes the parameters which will be finally called by fn.
+- We needs to keep the last execution time (`lastExecuted`).
+- If the current time minus the last execution time is greater than delay, the fn will be called immediately.
+- Otherwise, the fn will be schedule at (delay - (current - lastExecuted))
+
+```typescript
+type F = (...args: number[]) => void
+
+function throttle(fn: F, delay: number): F {
+    let lastExecuted = 0;
+    let timeId = null;
+    return (...args) => {
+        const now = Date.now();
+        const timeSinceLastExecuted = now - lastExecuted;
+        if (timeSinceLastExecuted >= delay) {
+            fn(...args); // fn.apply(this, args);
+            lastExecuted = now;
+        } else {
+            if (timeId) {
+                clearTimeout(timeId);
+                timeId = null;
+            }
+            timeId = setTimeout(() => {
+                fn(...args); // fn.apply(this, args);
+                lastExecuted = Date.now();
+            }, delay - timeSinceLastExecuted);
+        }
+    };
+};
+```
+
+### 2.implement throttle() with leading & trailing option
+
+5.https://bigfrontend.dev/problem/implement-throttle-with-leading-and-trailing-option
+
+This is a follow up on [4. implement basic throttle()](https://bigfrontend.dev/problem/implement-basic-throttle), please refer to it for detailed explanation.
+
+In this problem, you are asked to implement a enhanced `throttle()` which accepts third parameter, `option: {leading: boolean, trailing: boolean}`
+
+leading: whether to invoke right away
+trailing: whether to invoke after the delay.
+[4. implement basic throttle()](https://bigfrontend.dev/problem/implement-basic-throttle) is the default case with `{leading: true, trailing: true}`.
+
+Explanation
+
+for the previous example of throttling by 3 dashes
+
+```
+─ A ─ B ─ C ─ ─ D ─ ─ ─ ─ ─ ─ E ─ ─ F ─ G
+```
+
+with `{leading: true, trailing: true}`, we get as below
+
+```
+─ A ─ ─ ─ C ─ ─ ─ D ─ ─ ─ ─ E ─ ─ ─ G
+```
+
+with `{leading: false, trailing: true}`, A and E are swallowed.
+
+```
+─ ─ ─ ─ C ─ ─ ─ D ─ ─ ─ ─ ─ ─ ─ G
+```
+
+with `{leading: true, trailing: false}`, only A D E are kept
+
+```
+─ A ─ ─ ─ ─ D ─ ─ ─ ─ ─ ─ E
+```
+
+with `{leading: false, trailing: false}`, of course, nothing happens.
+
+notes
+
+1. please follow above spec. the behavior is not exactly the same as `lodash.throttle()`
+
+2. because `window.setTimeout` and `window.clearTimeout` are not accurate in browser environment, they are replaced to other implementation when judging your code. They still have the same interface, and internally keep track of the timing for testing purpose.
+
+Something like below will be used to do the test.
+
+```js
+let currentTime = 0
+const run = (input) => {
+  currentTime = 0
+  const calls = []
+  const func = (arg) => {
+    calls.push(`${arg}@${currentTime}`)
+  }
+  const throttled = throttle(func, 3)
+  input.forEach((call) => {
+    const [arg, time] = call.split('@')
+    setTimeout(() => throttled(arg), time)
+  })
+  return calls
+}
+expect(run(['A@0', 'B@2', 'C@3'])).toEqual(['A@0', 'C@3'])
+```
+
+**Solution:**
+
+```js
+/**
+ * @param {Function} func
+ * @param {number} wait
+ * @param {boolean} option.leading
+ * @param {boolean} option.trailing
+ */
+function throttle(func, wait, option = { leading: true, trailing: true }) {
+  let timeout = null
+  let lastCallContext = null
+  let lastCallArgs = null
+
+  const later = () => {
+    if (option.trailing && lastCallArgs) {
+      func.apply(lastCallContext, lastCallArgs)
+      lastCallContext = null
+      lastCallArgs = null
+      // Set the timeout for trailing.
+      // The func will execute only if the event was triggered again after
+      // this execution, in other words, only if arguments of last function call
+      // is stored.
+      timeout = setTimeout(later, wait)
+    } else {
+      timeout = null
+    }
+  }
+
+  return function (...args) {
+    if (timeout) {
+      lastCallContext = this
+      lastCallArgs = args
+      return
+    }
+    if (option.leading) {
+      func.apply(this, args)
+    } else {
+      lastCallContext = this
+      lastCallArgs = args
+    }
+
+    timeout = setTimeout(later, wait)
+  }
+}
+```
+
+### 3.implement basic debounce()
+
+6.https://bigfrontend.dev/problem/implement-basic-debounce
+
+Debounce is a common technique used in Web Application, in most cases using [lodash solution](https://lodash.com/docs/4.17.15#debounce) would be a good choice.
+
+could you implement your own version of basic `debounce()`?
+
+In case you forgot, `debounce(func, delay)` will returned a debounced function, which delays the invoke.
+
+Here is an example.
+
+Before debouncing we have a series of calling like
+
+```
+─ A ─ B ─ C ─ ─ D ─ ─ ─ ─ ─ ─ E ─ ─ F ─ G
+```
+
+After debouncing at wait time of 3 dashes
+
+```
+─ ─ ─ ─ ─ ─ ─ ─ D ─ ─ ─ ─ ─ ─ ─ ─ ─ G
+```
+
+notes
+
+1. please follow above spec. the behavior might not be exactly the same as `lodash.debounce()`
+
+2. because `window.setTimeout` and `window.clearTimeout` are not accurate in browser environment, they are replaced to other implementation when judging your code. They still have the same interface, and internally keep track of the timing for testing purpose.
+
+Something like below will be used to do the test.
+
+```js
+let currentTime = 0
+const run = (input) => {
+  currentTime = 0
+  const calls = []
+  const func = (arg) => {
+    calls.push(`${arg}@${currentTime}`)
+  }
+  const debounced = debounce(func, 3)
+  input.forEach((call) => {
+    const [arg, time] = call.split('@')
+    setTimeout(() => debounced(arg), time)
+  })
+  return calls
+}
+expect(run(['A@0', 'B@2', 'C@3'])).toEqual(['C@5'])
+```
+
+**Solution:**
+
+```js
+/**
+ * @param {Function} func
+ * @param {number} wait
+ */
+function debounce(func, wait) {
+  let timer
+  return function debounced(...args) {
+    if (timer) {
+      clearTimeout(timer)
+    }
+    timer = setTimeout(() => {
+      func.apply(null, args)
+    }, wait)
+  }
+}
+```
+
+```typescript
+type F = (...args: number[]) => void
+
+function debounce(fn: F, t: number): F {
+  let timeoutId: NodeJS.Timeout | null = null
+  return (...args) => {
+    if (timeoutId !== null) {
+      clearTimeout(timeoutId)
+      timeoutId = null
+    }
+    timeoutId = setTimeout(() => {
+      fn(...args)
+      timeoutId = null
+    }, t)
+  }
+}
+```
+
+### 4.implement debounce() with leading & trailing option
+
+7.https://bigfrontend.dev/problem/implement-debounce-with-leading-and-trailing-option
+
+This is a follow up on [6. implement basic debounce()](https://bigfrontend.dev/problem/implement-basic-debounce), please refer to it for detailed explanation.
+
+In this problem, you are asked to implement an enhanced `debounce()` which accepts third parameter, `option: {leading: boolean, trailing: boolean}`
+
+1. leading: whether to invoke right away
+2. trailing: whether to invoke after the delay.
+
+[6. implement basic debounce()](https://bigfrontend.dev/problem/implement-basic-debounce) is the default case with `{leading: false, trailing: true}`.
+
+for the previous example of debouncing by 3 dashes
+
+```
+─ A ─ B ─ C ─ ─ D ─ ─ ─ ─ ─ ─ E ─ ─ F ─ G
+```
+
+with `{leading: false, trailing: true}`, we get as below
+
+```
+─ ─ ─ ─ ─ ─ ─ ─ D ─ ─ ─ ─ ─ ─ ─ ─ ─ G
+```
+
+with `{leading: true, trailing: true}`:
+
+```
+─ A ─ ─ ─ ─ ─ ─ ─ D ─ ─ ─ E ─ ─ ─ ─ ─ ─ G
+```
+
+with `{leading: true, trailing: false}`
+
+```
+─ A ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ E
+```
+
+with `{leading: false, trailing: false}`, of course, nothing happens.
+
+notes
+
+1. please follow above spec. the behavior might not be exactly the same as `lodash.debounce()`
+
+2. because `window.setTimeout` and `window.clearTimeout` are not accurate in browser environment, they are replaced to other implementation when judging your code. They still have the same interface, and internally keep track of the timing for testing purpose.
+
+Something like below will be used to do the test.
+
+```js
+let currentTime = 0
+const run = (input) => {
+  currentTime = 0
+  const calls = []
+  const func = (arg) => {
+    calls.push(`${arg}@${currentTime}`)
+  }
+  const debounced = debounce(func, 3)
+  input.forEach((call) => {
+    const [arg, time] = call.split('@')
+    setTimeout(() => debounced(arg), time)
+  })
+  return calls
+}
+expect(run(['A@0', 'B@2', 'C@3'])).toEqual(['C@6'])
+```
+
+**Solution:**
+
+```js
+/**
+ * @param {Function} func
+ * @param {number} wait
+ * @param {boolean} option.leading
+ * @param {boolean} option.trailing
+ */
+function debounce(func, wait, option = { leading: false, trailing: true }) {
+  let timeout = null
+  // Flag to skip the trailing if leading is true
+  // and the debounced function isn't called again after the initial execution.
+  let isCalledForLeading = false
+
+  return (...args) => {
+    if (timeout) {
+      clearTimeout(timeout)
+    }
+
+    if (option.leading && timeout === null) {
+      func.apply(null, args)
+      isCalledForLeading = true
+    } else {
+      isCalledForLeading = false
+    }
+
+    timeout = setTimeout(() => {
+      if (option.trailing && !isCalledForLeading) {
+        func.apply(null, args)
+      }
+      timeout = null
+    }, wait)
+  }
+}
+```
+
+### 5.implement clearAllTimeout()
+
+28.https://bigfrontend.dev/problem/implement-clearAllTimeout
+
+`window.setTimeout()` could be used to schedule some task in the future.
+
+Could you implement `clearAllTimeout()` to clear all the timers ? This might be useful when we want to clear things up before page transition.
+
+For example
+
+```js
+setTimeout(func1, 10000)
+setTimeout(func2, 10000)
+setTimeout(func3, 10000)
+// all 3 functions are scheduled 10 seconds later
+clearAllTimeout()
+// all scheduled tasks are cancelled.
+```
+
+note
+
+You need to keep the interface of window.setTimeout and window.clearTimeout the same, but you could replace them with new logic
+
+**Solution:**
+
+- We need to back up the original `window.setTimeout` and store the timeId in a Set.
+- We use a for loop to `clearTimeout`.
+
+```js
+// Store timeID
+const timerCache = new Set()
+const originalSetTimeout = window.setTimeout
+
+window.setTimeout = (cb, delay) => {
+  const timeId = originalSetTimeout(cb, delay)
+  timerCache.add(timeId)
+  return timeId
+}
+
+/**
+ * cancel all timer from window.setTimeout
+ */
+function clearAllTimeout() {
+  for (const timeId of timerCache) {
+    clearTimeout(timeId)
+  }
+}
+```
+
+### 6.create a fake timer(setTimeout)
+
+36.https://bigfrontend.dev/problem/create-a-fake-timer
+
+setTimeout adds task in to a task queue to be handled later, the time actually is no accurate. ([Event Loop](https://javascript.info/event-loop)).
+
+This is OK in general web application, but might be problematic in test.
+
+For example, at [5. implement throttle() with leading & trailing option](https://bigfrontend.dev/problem/implement-throttle-with-leading-and-trailing-option) we need to test the timer with more accurate approach.
+
+Could you implement your own `setTimeout()` and `clearTimeout()` to be sync? so that they have accurate timing for test. This is what [FakeTimes](https://github.com/sinonjs/fake-timers) are for.
+
+By "accurate", it means **suppose all functions cost no time**, we start our function at time 0, then `setTimeout(func1, 100)` would schedule `func1` exactly at 100.
+
+You need to replace `Date.now()` as well to provide the time.
+
+```js
+class FakeTimer {
+  install() {
+    // setTimeout(), clearTimeout(), and Date.now()
+    // are replaced
+  }
+  uninstall() {
+    // restore the original APIs
+    // setTimeout(), clearTimeout() and Date.now()
+  }
+  tick() {
+    // run all the schedule functions in order
+  }
+}
+```
+
+Your code is tested like this
+
+```js
+const fakeTimer = new FakeTimer()
+fakeTimer.install()
+const logs = []
+const log = (arg) => {
+  logs.push([Date.now(), arg])
+}
+setTimeout(() => log('A'), 100)
+// log 'A' at 100
+const b = setTimeout(() => log('B'), 110)
+clearTimeout(b)
+// b is set but cleared
+setTimeout(() => log('C'), 200)
+expect(logs).toEqual([
+  [100, 'A'],
+  [200, 'C'],
+])
+fakeTimer.uninstall()
+```
+
+Note
+
+Only Date.now() is used when judging your code, you can ignore other time related apis.
+
+**Solution:**
+
+- We need to back up the `window.setTimeout`, `window.clearTimeout`, and `Date.now`.
+- We maintain an array: `this.timers`
+
+```js
+class FakeTimer {
+  constructor() {
+    this.currentTime = 0
+    this.originalSetTimeout = null
+    this.originalClearTimeout = null
+    this.originalDateNow = null
+    this.timers = []
+    this.nextId = 1
+  }
+
+  install() {
+    // Save the original implementations
+    this.originalSetTimeout = window.setTimeout
+    this.originalClearTimeout = window.clearTimeout
+    this.originalDateNow = Date.now
+
+    // Override setTimeout
+    window.setTimeout = (callback, delay) => {
+      const id = this.nextId++
+      this.timers.push({ id, callback, time: this.currentTime + delay })
+      this.timers.sort((a, b) => a.time - b.time) // Ensure timers are sorted by time
+      return id
+    }
+
+    // Override clearTimeout
+    window.clearTimeout = (id) => {
+      this.timers = this.timers.filter((timer) => timer.id !== id)
+    }
+
+    // Override Date.now
+    Date.now = () => this.currentTime
+  }
+
+  uninstall() {
+    // Restore the original implementations
+    window.setTimeout = this.originalSetTimeout
+    window.clearTimeout = this.originalClearTimeout
+    Date.now = this.originalDateNow
+
+    // Reset internal state
+    this.currentTime = 0
+    this.timers = []
+    this.nextId = 1
+  }
+
+  tick() {
+    while (this.timers.length > 0) {
+      const nextTimer = this.timers.shift()
+      this.currentTime = nextTimer.time
+      nextTimer.callback()
+    }
+  }
+}
+```
+
+### 7.create an interval
+
+83.https://bigfrontend.dev/problem/create-an-interval
+
+You are asked to create a new `mySetInterval(a, b)` which has a different behavior from `window.setInterval`, the time between calls is a linear function, growing larger and larger `period = a + b * count`.
+
+```js
+let prev = Date.now()
+const func = () => {
+  const now = Date.now()
+  console.log('roughly ', Date.now() - prev)
+  prev = now
+}
+const id = mySetInterval(func, 100, 200)
+// roughly 100, 100 + 200 * 0
+// roughly 400,  100 + 200 * 1
+// roughly 900,  100 + 200 * 2
+// roughly 1600,  100 + 200 * 3
+myClearInterval(id) // stop the interval
+```
+
+1. Interface is `mySetInterval(delay, period)`, the first `delay` is used for the first call, and then `period` is used.
+
+2. because `window.setTimeout` and `window.setInterval` are not accurate in browser environment, they are replaced to other implementation when judging your code. They still have the same interface, and internally keep track of the timing for testing purpose.
+
+Something like below will be used to do the test. (You don't need to read following code to accomplish this task)
+
+```js
+let currentTime = 0
+const run = (delay, period, clearAt) => {
+  currentTime = 0
+  pipeline.length = 0
+
+  const logs = []
+  const func = () => {
+    logs.push(currentTime)
+  }
+  mySetInterval(func, delay, period)
+  if (clearAt !== undefined) {
+    setTimeout(() => {
+      myClearInterval(id)
+    }, clearAt)
+  }
+  while (pipeline.length > 0 && calls.length < 5) {
+    const [time, callback] = pipeline.shift()
+    currentTime = time
+    callback()
+  }
+  return calls
+}
+expect(run(100, 200)).toEqual([100, 400, 900, 1600, 2500])
+expect(run(100, 200, 450)).toEqual([100, 400])
+expect(run(100, 200, 50)).toEqual([])
+```
+
+**Solution:**
+
+```js
+/**
+ * @param {Function} func
+ * @param {number} delay
+ * @param {number} period
+ * @return {number}
+ */
+const intervals = new Map()
+let idCounter = 0
+
+function mySetInterval(func, delay, period) {
+  let count = 0
+  const id = idCounter++
+
+  function scheduleNext() {
+    const nextDelay = delay + period * count
+    const timeoutId = setTimeout(() => {
+      func()
+      count++
+      scheduleNext()
+    }, nextDelay)
+    intervals.set(id, timeoutId)
+  }
+
+  scheduleNext()
+  return id
+}
+
+/**
+ * @param { number } id
+ */
+function myClearInterval(id) {
+  const timeoutId = intervals.get(id)
+  if (timeoutId !== undefined) {
+    clearTimeout(timeoutId)
+    intervals.delete(id)
+  }
+}
+```
+
+### 8.create a fake timer (setInterval)
+
+84.https://bigfrontend.dev/problem/create-a-fake-timer-setInterval
+
+This is a follow-up on [36. create a fake timer(setTimeout)](https://bigfrontend.dev/problem/create-a-fake-timer)
+
+Like `setTimeout`, `setInterval` also is not accurate. (please refer Event Loop for detail).
+
+This is OK in general web application, but might be problematic in test.
+
+Could you implement your own `setInterval()` and `clearInterval()` to be sync? so that they have accurate timing for test. This is what [FakeTimes](https://github.com/sinonjs/fake-timers) are for.
+
+By "accurate", it means suppose **all functions cost no time**, we start our function at time 0, then `setInterval(func1, 100)` would schedule `func1` exactly at 100, 200, 300 .etc.
+
+You need to replace `Date.now()`as well to provide the time.
+
+```js
+class FakeTimer {
+  install() {
+    // replace window.setInterval, window.clearInterval, Date.now
+    // with your implementation
+  }
+
+  uninstall() {
+    // restore the original implementation of
+    // window.setInterval, window.clearInterval, Date.now
+  }
+
+  tick() {
+    // run the scheduled functions without waiting
+  }
+}
+```
+
+** Be careful about the infinite loops **. Your code is tested like this:
+
+```js
+const fakeTimer = new FakeTimer()
+fakeTimer.install()
+const logs = []
+const log = () => {
+  logs.push(Date.now())
+}
+let count = 0
+const id = setInterval(() => {
+  if (count > 1) {
+    clearInterval(id)
+  } else {
+    log()
+  }
+  count += 1
+}, 100)
+// log 'A' at every 100, stop at 200
+fakeTimer.tick()
+fakeTimer.uninstall()
+
+expect(logs).toEqual([100, 200])
+```
+
+Note
+
+Only `Date.now()` is used when judging your code, you can ignore other time related apis.
+
+**Solution:**
+
+Here's an implementation of `FakeTimer` that provides accurate timing for `setInterval`, `clearInterval`, and `Date.now()`:
+
+```javascript
+class FakeTimer {
+  constructor() {
+    this.currentTime = 0
+    this.intervals = new Map()
+    this.nextIntervalId = 1
+    this.originalSetInterval = null
+    this.originalClearInterval = null
+    this.originalDateNow = null
+  }
+
+  install() {
+    this.originalSetInterval = window.setInterval
+    this.originalClearInterval = window.clearInterval
+    this.originalDateNow = Date.now
+
+    window.setInterval = (callback, delay) => {
+      const id = this.nextIntervalId++
+      this.intervals.set(id, { callback, delay, nextCall: this.currentTime + delay })
+      return id
+    }
+
+    window.clearInterval = (id) => {
+      this.intervals.delete(id)
+    }
+
+    Date.now = () => this.currentTime
+  }
+
+  uninstall() {
+    window.setInterval = this.originalSetInterval
+    window.clearInterval = this.originalClearInterval
+    Date.now = this.originalDateNow
+
+    this.intervals.clear()
+    this.currentTime = 0
+    this.nextIntervalId = 1
+  }
+
+  tick() {
+    const sortedIntervals = [...this.intervals.entries()].sort(
+      (a, b) => a[1].nextCall - b[1].nextCall
+    )
+
+    while (sortedIntervals.length > 0) {
+      const [id, interval] = sortedIntervals.shift()
+
+      this.currentTime = interval.nextCall
+      interval.callback()
+
+      if (this.intervals.has(id)) {
+        interval.nextCall += interval.delay
+        const insertIndex = sortedIntervals.findIndex(([, i]) => i.nextCall > interval.nextCall)
+        if (insertIndex === -1) {
+          sortedIntervals.push([id, interval])
+        } else {
+          sortedIntervals.splice(insertIndex, 0, [id, interval])
+        }
+      }
+    }
+  }
+}
+```
+
+Let's break down this implementation:
+
+1. The `constructor` initializes the necessary properties:
+
+   - `currentTime`: Tracks the current fake time.
+   - `intervals`: A Map to store all active intervals.
+   - `nextIntervalId`: A counter for generating unique interval IDs.
+   - Original function references to restore later.
+
+2. The `install` method:
+
+   - Stores the original `setInterval`, `clearInterval`, and `Date.now` functions.
+   - Replaces `setInterval` with a custom implementation that adds intervals to our `intervals` Map.
+   - Replaces `clearInterval` with a function that removes intervals from our Map.
+   - Replaces `Date.now` to return our `currentTime`.
+
+3. The `uninstall` method:
+
+   - Restores the original functions.
+   - Clears all intervals and resets the timer state.
+
+4. The `tick` method:
+   - Sorts all intervals by their next call time.
+   - Processes intervals in order:
+     - Updates `currentTime` to the interval's next call time.
+     - Calls the interval's callback.
+     - If the interval still exists (wasn't cleared in the callback), updates its next call time and re-inserts it into the sorted list.
+
+This implementation ensures accurate timing because:
+
+- It doesn't actually wait for time to pass; it immediately jumps to the next scheduled callback.
+- It processes intervals in the exact order they should be called.
+- The `currentTime` is always set to the exact time an interval should be called.
+
+The `tick` method will run all scheduled functions without waiting, effectively simulating the passage of time instantly. It avoids infinite loops by processing each interval only once per tick, even if new intervals are added during execution.
+
+This implementation should pass the test case you provided, accurately logging at 100ms and 200ms before stopping.
+
+### 9.create LazyMan()
+
+130.https://bigfrontend.dev/problem/create-lazyman
+
+`LazyMan` is very lazy, he only eats and sleeps.
+
+`LazyMan(name: string, logFn: (log: string) => void)` would output a message, the passed `logFn` is used.
+
+```js
+LazyMan('Jack', console.log)
+// Hi, I'm Jack.
+```
+
+He can eat(food: string)
+
+```js
+LazyMan('Jack', console.log).eat('banana').eat('apple')
+// Hi, I'm Jack.
+// Eat banana.
+// Eat Apple.
+```
+
+He also sleep(time: number), time is based on seconds.
+
+```js
+LazyMan('Jack', console.log).eat('banana').sleep(10).eat('apple').sleep(1)
+// Hi, I'm Jack.
+// Eat banana.
+// Wake up after 10 seconds.
+// Eat Apple.
+// Wake up after 1 second.
+```
+
+He can sleepFirst(time: number), which has the highest priority among all tasks, no matter what the order is.
+
+```js
+LazyMan('Jack', console.log).eat('banana').sleepFirst(10).eat('apple').sleep(1)
+// Wake up after 10 seconds.
+// Hi, I'm Jack.
+// Eat banana
+// Eat apple
+// Wake up after 1 second.
+```
+
+Please create such `LazyMan()`
+
+**Solution: **
+
+- Maintain a task list: `tasks` and use `createLaziness` which contains three methods: `sleep`, `sleepFirst`, `eat`.
+- Use SetTimeout to exectue the task list.
+
+```js
+// interface Laziness {
+//   sleep: (time: number) => Laziness
+//   sleepFirst: (time: number) => Laziness
+//   eat: (food: string) => Laziness
+// }
+
+/**
+ * @param {string} name
+ * @param {(log: string) => void} logFn
+ * @returns {Laziness}
+ */
+function LazyMan(name, logFn) {
+  const tasks = [{ type: 'hi', name }]
+  const createLaziness = () => {
+    return {
+      sleep: (time) => {
+        tasks.push({ type: 'sleep', time })
+        // console.log(tasks)
+        return createLaziness()
+      },
+      sleepFirst: (time) => {
+        tasks.unshift({ type: 'sleep', time })
+        return createLaziness()
+      },
+      eat: (food) => {
+        tasks.push({ type: 'eat', food })
+        // console.log(tasks)
+        return createLaziness()
+      },
+    }
+  }
+  const delay = (delayInSeconds) =>
+    new Promise((resolve, reject) => {
+      setTimeout(() => {
+        resolve()
+      }, delayInSeconds * 1000)
+    })
+
+  setTimeout(async () => {
+    for (let i = 0; i < tasks.length; i++) {
+      const task = tasks[i]
+      if (task.type === 'hi') {
+        logFn(`Hi, I'm ${task.name}.`)
+      } else if (task.type === 'sleep') {
+        await delay(task.time)
+        logFn(`Wake up after ${task.time === 1 ? `1 second` : `${task.time} seconds`}.`)
+      } else if (task.type === 'eat') {
+        logFn(`Eat ${task.food}.`)
+      } else {
+        throw new Error(`unexisted task type: ${task.type}`)
+      }
+    }
+  })
+
+  return createLaziness()
+}
+
+// LazyMan('Jack', console.log).eat('banana').sleepFirst(10).eat('apple').sleep(1)
+```

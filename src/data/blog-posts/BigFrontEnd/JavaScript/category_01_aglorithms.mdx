@@ -1,0 +1,1290 @@
+---
+title: BigFrontEnd Category 1 Algorithms
+slug: category-01-aglorithms
+publishDate: 2024-05-24
+description: Learn about BigFrontEnd Category 1 Algorithms.
+date: 2024-05-24
+tags: ['BigFrontEnd', 'category']
+draft: false
+---
+
+### Introduction
+
+This blog post summarizes the algorithm implementation questions found on BigFrontEnd.Dev.
+
+<TOCInline toc={props.toc} exclude="Introduction" />
+
+### 1. Binary Search Questions
+
+#### 1.implement Binary Search (unique)
+
+37.https://bigfrontend.dev/problem/implement-Binary-Search-Unique
+
+Even in Front-End review, basic algorithm technique like Binary Search are likely to be asked.
+
+You are given an unique & ascending array of integers, please search for its index with Binary Search.
+
+If not found, return -1
+
+note
+
+Please don't use `Array.prototype.indexOf()`, it is not our goal.
+
+**Solution:**
+
+We can follow the pattern from Leetcode problem 10 and divide the search range from 0 to n (the length of the array) into two parts: less than the target, or greater than or equal to the target.Then, we can use the pattern code to solve it.
+
+```js
+/**
+ * @param {number[]} arr - ascending unique array
+ * @param {number} target
+ * @return {number}
+ */
+function binarySearch(arr, target) {
+  let [lo, hi] = [0, arr.length]
+  const condition = (mid) => arr[mid] >= target
+  while (lo < hi) {
+    const mid = Math.floor((lo + hi) / 2)
+    if (condition(mid)) {
+      hi = mid
+    } else {
+      lo = mid + 1
+    }
+  }
+  return arr[lo] === target ? lo : -1
+}
+```
+
+#### 2.search first index with Binary Search(possible duplicate array)
+
+48.https://bigfrontend.dev/problem/search-first-index-with-Binary-Search-duplicate-array
+
+Your are given a sorted ascending array of number, but might have duplicates, you are asked to return the first index of a target number.
+
+If not found return -1.
+
+note
+
+Please don't use `Array.prototype.indexOf()`, it is not our goal.
+
+**Solution:**
+
+We can use the same approach as in problem 1, which involves implementing Binary Search for unique elements.
+
+```js
+/**
+ * @param {number[]} arr - ascending array with duplicates
+ * @param {number} target
+ * @return {number}
+ */
+// Find the lefest insertion position to maintain the order.
+function firstIndex(arr, target) {
+  let [lo, hi] = [0, arr.length]
+  const condition = (mid) => arr[mid] >= target
+  while (lo < hi) {
+    const mid = Math.floor((lo + hi) / 2)
+    if (condition(mid)) {
+      hi = mid
+    } else {
+      lo = mid + 1
+    }
+  }
+  return arr[lo] === target ? lo : -1
+}
+```
+
+#### 3.search last index with Binary Search(possible duplicate array)
+
+49.https://bigfrontend.dev/problem/search-last-index-with-Binary-Search-possible-duplicate-array
+
+Your are given a sorted ascending array of number, but might have duplicates, you are asked to return the last index of a target number.
+
+If not found return -1.
+
+note
+
+Please don't use `Array.prototype.lastIndexOf()`, it is not our goal.
+
+**Solution:**
+
+We can follow the pattern from Leetcode problem 10 and divide the search range from 0 to n (the length of the array) into two parts: less than or equal to the target, or greater than the target.Then, we can use the pattern code to solve it.
+
+```js
+/**
+ * @param {number[]} arr - ascending array with duplicates
+ * @param {number} target
+ * @return {number}
+ */
+function lastIndex(arr, target) {
+  let [lo, hi] = [0, arr.length]
+  const condition = (mid) => arr[mid] > target
+  while (lo < hi) {
+    const mid = Math.floor((lo + hi) / 2)
+    if (condition(mid)) {
+      hi = mid
+    } else {
+      lo = mid + 1
+    }
+  }
+  if (lo === 0) return -1
+  return lo - 1
+}
+```
+
+#### 4.search element right before target with Binary Search(possible duplicate array)
+
+50.https://bigfrontend.dev/problem/search-element-right-before-target-with-Binary-Search-possible-duplicate-array
+
+Your are given a sorted ascending array of number, but might have duplicates, you are asked to return the element right before first appearance of a target number.
+
+If not found return `undefined`.
+
+note
+
+Please don't use `Array.prototype.indexOf()`, it is not our goal.
+
+**Solution:**
+
+We can use the same approach as in problem 1, which involves implementing Binary Search for unique elements.
+
+```javascript
+/**
+ * @param {number[]} arr - ascending array with duplicates
+ * @param {number} target
+ * @return {number}
+ */
+function elementBefore(arr, target) {
+  let [lo, hi] = [0, arr.length]
+  const condition = (mid) => arr[mid] >= target
+  while (lo < hi) {
+    const mid = Math.floor((lo + hi) / 2)
+    if (condition(mid)) {
+      hi = mid
+    } else {
+      lo = mid + 1
+    }
+  }
+  // if (lo === 0) return undefined;
+  return arr[lo] === target ? arr[lo - 1] : undefined
+}
+```
+
+#### 5.search element right after target with Binary Search(possible duplicate array)
+
+51.https://bigfrontend.dev/problem/search-element-right-after-target-with-Binary-Search-possible-duplicate-array
+
+Your are given a sorted ascending array of number, but might have duplicates, you are asked to return the element right after last appearance of a target number.
+
+If not found return `undefined`.
+
+note
+
+Please don't use `Array.prototype.lastIndexOf()`, it is not our goal.
+
+**Solution:**
+
+Similar to problem 3, which involves searching for the last index with Binary Search in a possible duplicate array, we divide the search range from 0 to n (the length of the array) into two parts: less than or equal to the target, and greater than the target.
+
+```js
+/**
+ * @param {number[]} arr - ascending array with duplicates
+ * @param {number} target
+ * @return {number}
+ */
+function elementAfter(arr, target) {
+  let [lo, hi] = [0, arr.length]
+  const condition = (mid) => arr[mid] > target
+  while (lo < hi) {
+    const mid = Math.floor((lo + hi) / 2)
+    if (condition(mid)) {
+      hi = mid
+    } else {
+      lo = mid + 1
+    }
+  }
+  return arr[lo - 1] === target ? arr[lo] : undefined
+}
+```
+
+#### 6.first bad version
+
+10.https://bigfrontend.dev/problem/first-bad-version
+
+Say you have multiple versions of a program, write a program that will find and return the first bad revision given a `isBad(version)` function.
+
+Versions after first bad version are supposed to be all bad versions.
+
+notes
+
+Inputs are all non-negative integers
+if none found, return -1
+
+```js
+/**
+ * @param {IsBad} isBad
+ */
+function firstBadVersion(isBad) {
+  // firstBadVersion receive a check function isBad
+  // and should return a closure which accepts a version number(integer)
+  return (version) => {
+    // write your code to return the first bad version
+    // if none found, return -1
+    let left = 0
+    let right = version
+
+    while (left < right) {
+      const mid = left + Math.floor((right - left) / 2)
+
+      if (isBad(mid)) {
+        right = mid
+      } else {
+        left = mid + 1
+      }
+    }
+
+    return isBad(left) ? left : -1
+  }
+}
+```
+
+#### 7.implement Math.sqrt()
+
+103.https://bigfrontend.dev/problem/implement-Math-sqrt
+
+`Math.sqrt()` helps us getting the square root of a number.
+
+Can your write your own mySqrt() ? You should return the integer part only, truncating the fraction part.
+
+```javascript
+mySqrt(0)
+// 1
+mySqrt(1)
+// 1
+mySqrt(2)
+// 1
+mySqrt(4)
+// 2
+mySqrt(NaN)
+// NaN
+```
+
+Attention for the special case listed up in the spec.
+
+Follow-up
+
+What is time & space complexity of your solution ? Can you do better?
+
+```js
+/**
+ * @param {any} x
+ * @return {number}
+ */
+function mySqrt(x) {
+  if (isNaN(x)) return NaN
+  if (x < 0) return NaN
+  if (!isFinite(x)) return Infinity
+
+  let lo = 0
+  let hi = x
+  while (hi - lo > 0.5) {
+    const mid = (hi + lo) / 2
+    if (mid * mid > x) {
+      hi = mid
+    } else {
+      lo = mid
+    }
+  }
+  return Math.floor(hi)
+}
+```
+
+### 2. Sorting Questions
+
+#### 1.implement Bubble Sort
+
+40.https://bigfrontend.dev/problem/implement-Bubble-Sort
+
+Now you are asked to implement Bubble Sort, which sorts an integer array in ascending order.
+
+Do it in-place, no need to return anything.
+
+Follow-up
+
+What is time cost for average / worst case ? Is it stable?
+
+**Solution:**
+
+```js
+function bubbleSort(arr) {
+  const n = arr.length
+  for (let i = 0; i < n; i++) {
+    // [0, n - 1 - i] is not sorted.
+    // [n - i, n - 1] is sorted.
+    for (let j = 0; j < n - i - 1; j++) {
+      if (arr[j] > arr[j + 1]) {
+        // swap
+        ;[arr[j], arr[j + 1]] = [arr[j + 1], arr[j]]
+      }
+    }
+  }
+  return arr
+}
+```
+
+#### 2.implement Merge Sort
+
+41.https://bigfrontend.dev/problem/implement-Merge-Sort
+
+Now you are asked to implement Merge Sort, which sorts an integer array in ascending order.
+
+Do it in-place, no need to return anything.
+
+Follow-up
+
+What is time cost for average / worst case ? Is it stable?
+
+```js
+function mergeSort(arr) {
+  if (arr.length <= 1) {
+    return
+  }
+  const mergeInPlace = (arr, left, mid, right) => {
+    let start2 = mid + 1
+    // No need to merge
+    if (arr[mid] <= arr[start2]) {
+      return
+    }
+    while (left <= mid && start2 <= right) {
+      if (arr[left] <= arr[start2]) {
+        left++
+      } else {
+        // find arr[left] > arr[start2]
+        // shift all element in [left, start2 - 1] to right one step
+        let value = arr[start2]
+        let index = start2
+        while (index !== left) {
+          arr[index] = arr[index - 1]
+          index--
+        }
+        // Move the original value in starts to left.
+        arr[left] = value
+        left++
+        mid++
+        start2++
+      }
+    }
+  }
+  const mergeSortInPlace = (arr, start, end) => {
+    if (start === end) {
+      return
+    }
+    if (start + 1 === end) {
+      if (arr[start] > arr[end]) {
+        // swap
+        ;[arr[start], arr[end]] = [arr[end], arr[start]]
+      }
+      return
+    }
+    const mid = Math.floor((start + end) / 2)
+    mergeSortInPlace(arr, start, mid)
+    mergeSortInPlace(arr, mid + 1, end)
+    mergeInPlace(arr, start, mid, end)
+  }
+  mergeSortInPlace(arr, 0, arr.length - 1)
+}
+```
+
+#### 3.implement Insertion Sort
+
+42.https://bigfrontend.dev/problem/implement-Insertion-Sort
+
+Now you are asked to implement Insertion Sort, which sorts an integer array in ascending order.
+
+Do it in-place, no need to return anything.
+
+Follow-up
+
+What is time cost for average / worst case ? Is it stable?
+
+The subarray [0, i - 1] is sorted. Then, insert `arr[i]` or `key` to the left subarray [0, i - 1].
+
+```js
+/**
+ * @param {number[]} arr
+ */
+function insertionSort(arr) {
+  for (let i = 1; i < arr.length; i++) {
+    let key = arr[i]
+    let j = i - 1
+
+    // Move elements of arr[0..i-1] that are greater than key
+    // to one position ahead of their current position
+    while (j >= 0 && arr[j] > key) {
+      arr[j + 1] = arr[j]
+      j = j - 1
+    }
+    // break when arr[j] <= key and arr[j + 1] has been backuped.
+    arr[j + 1] = key
+  }
+}
+```
+
+#### 4.implement Quick Sort
+
+43.https://bigfrontend.dev/problem/implement-Quick-Sort
+
+Now you are asked to implement Quick Sort, which sorts an integer array in ascending order.
+
+Do it in-place, no need to return anything.
+
+Follow-up
+
+What is time cost for average / worst case ? Is it stable?
+
+```js
+function quickSort(arr, low = 0, high = arr.length - 1) {
+  if (low < high) {
+    // Partition the array and get the pivot index
+    let pi = partition(arr, low, high)
+
+    // Recursively sort elements before partition and after partition
+    quickSort(arr, low, pi - 1)
+    quickSort(arr, pi + 1, high)
+  }
+}
+
+function partition(arr, low, high) {
+  // Choose the rightmost element as pivot
+  let pivot = arr[high]
+  let i = low - 1
+
+  for (let j = low; j < high; j++) {
+    // If the current element is smaller than or equal to the pivot
+    if (arr[j] <= pivot) {
+      i++
+      // Swap arr[i] and arr[j]
+      ;[arr[i], arr[j]] = [arr[j], arr[i]]
+    }
+  }
+  // [low, i] are less or equal than pivot
+  // [i + 1, high] are larger than pivot.
+  // Swap arr[i + 1] and arr[high] (or pivot)
+  ;[arr[i + 1], arr[high]] = [arr[high], arr[i + 1]]
+  return i + 1
+}
+
+// Example usage:
+let array = [10, 7, 8, 9, 1, 5]
+quickSort(array)
+console.log('Sorted array:', array)
+```
+
+#### 5.implement Selection Sort
+
+44.https://bigfrontend.dev/problem/implement-Selection-Sort
+
+Now you are asked to implement Selection sort, which sorts an integer array in ascending order.
+
+Do it in-place, no need to return anything.
+
+Follow-up
+
+What is time cost for average / worst case ? Is it stable?
+
+```js
+/**
+ * @param {number[]} arr
+ */
+function selectionSort(arr) {
+  for (let i = 0; i < arr.length; i++) {
+    // find the index of element with minimal value betwee i and n - 1
+    let smallestIndex = i
+    for (let j = i + 1; j < arr.length; j++) {
+      if (arr[j] < arr[smallestIndex]) {
+        smallestIndex = j
+      }
+    }
+    if (i !== smallestIndex) {
+      // swap i and smallestIndex
+      ;[arr[i], arr[smallestIndex]] = [arr[smallestIndex], arr[i]]
+    }
+  }
+}
+```
+
+### 3. Linked List Questions
+
+#### 1.reverse a linked list
+
+47.https://bigfrontend.dev/problem/Reverse-a-linked-list
+
+Another basic algorithm even for Front End developers.
+
+You are asked to reverse a linked list.
+
+Suppose we have Node interface like this
+
+```javascript
+class Node {
+   new(val: number, next: Node);
+   val: number
+   next: Node
+}
+```
+
+We can then chain nodes together to create a linked list.
+
+```javascript
+const Three = new Node(3, null)
+const Two = new Node(2, Three)
+const One = new Node(1, Two)
+//now we have  a linked list
+// 1 → 2 → 3
+```
+
+Now how can you reverse it to 3 → 2 → 1 ? you can modify the next property of each node, but not the val.
+
+Follow up
+
+Could you solve it with and without recursion?
+
+```js
+function reverseLinkedListRecursive(head) {
+  // Base case: If head is empty or has reached the list end
+  if (head === null || head.next === null) {
+    return head
+  }
+
+  // Reverse the rest of the list
+  const newHead = reverseLinkedListRecursive(head.next)
+
+  // Modify the pointers
+  head.next.next = head
+  head.next = null
+
+  return newHead
+}
+
+function reverseLinkedList(head) {
+  let prev = null
+  let current = head
+  let next = null
+
+  while (current !== null) {
+    next = current.next // Store the next node
+    current.next = prev // Reverse the current node's pointer
+    prev = current // Move the prev and current pointers one step forward
+    current = next
+  }
+
+  return prev // New head of the reversed list
+}
+```
+
+#### 2.detect circle in linked list
+
+100.https://bigfrontend.dev/problem/detect-circle-in-linked-list
+
+A [Singly Linked List](https://en.wikipedia.org/wiki/Linked_list#Singly_linked_list) is a bunch of nodes linked in one direction.
+
+```javascript
+class Node {
+  val: any
+  next: Node
+  constructor(val: any, next:Node) {
+    this.val = val
+    this.next = next
+  }
+}
+const node2 = new Node(2)
+const node1 = new Node(1, node2) // connect 1 -> 2
+```
+
+A Node might link to a node before it, thus creating a circle.
+
+Can you write a function to detect it?
+
+Follow-up
+
+What is the space cost for your approach? Can you solve it without extra space?
+
+```js
+/**
+ * @param {string} str
+ * @return {string}
+ */
+function hasCircle(head) {
+  if (!head) return false
+
+  let slow = head
+  let fast = head
+
+  while (fast !== null && fast.next !== null) {
+    slow = slow.next
+    fast = fast.next.next
+
+    if (slow === fast) {
+      return true // There is a cycle
+    }
+  }
+
+  return false // No cycle
+}
+```
+
+### 4. Tree Questions
+
+#### 1.invert a binary tree
+
+91.https://bigfrontend.dev/problem/invert-a-binary-tree
+
+Inverting a node means swapping its left child and right child. You need to apply this to all nodes. As following figure illustrates.
+
+```js
+// This is the type for the node
+// type Node = null | {
+//   value: number
+//   left: Node
+//   right: Node
+// }
+/**
+ * @param {Node} node
+ * @returns {Node}
+ */
+function invert(node) {
+  if (node === null) {
+    return null
+  }
+  ;[node.left, node.right] = [node.right, node.left]
+  invert(node.left)
+  invert(node.right)
+  return node
+}
+```
+
+### 5. Calculator Questions
+
+#### 1.create a tokenizer
+
+119.https://bigfrontend.dev/problem/create-a-tokenizer
+
+For tasks of string processing, in many cases we are given a string, and are asked to understand this string in specific logic and then return the result.
+
+For example, if we are to calculate the result of following expression:
+
+```js
+1 * (20 - 300)
+```
+
+before we implement the logic, first we need to get the "keywords"(tokens) and ignore the spaces, like following:
+
+```js
+'1', '*', '(', '20', '-', '300', ')'
+```
+
+Then we can process above tokens and get the result easier.
+
+You are asked to implement a tokenize() for arithmetic expression , which works as below:
+
+```js
+const tokens = tokenize(' 1 * (20 -   300      ) ')
+while (true) {
+  let token = tokens.next()
+  if (token.done) {
+    break
+  }
+  console.log(token.value)
+}
+```
+
+or you can use for ... of
+
+```js
+for (let token of tokens) {
+  console.log(token)
+}
+```
+
+Because it is trivial, in a real interview you talk to interviewer and implement tokenizer later, this could save yourself some time for more important tasks.
+
+Input
+
+input only contains valid non-negative integers with +, -, \*, /, (, ) and spaces, space should be ignored.
+
+your method should return an Generator object.
+
+```js
+/**
+ * @param {string} str
+ * @return {Generator}
+ */
+function* tokenize(expression) {
+  const tokenPattern = /\d+|[+*/()-]/g
+  const tokens = expression.match(tokenPattern)
+  if (tokens) {
+    for (const token of tokens) {
+      yield token
+    }
+  }
+}
+```
+
+#### 2.calculate arithmetic expression
+
+124.https://bigfrontend.dev/problem/calculate-arithmetic-expression
+
+In 119. create a tokenizer, you are able to extract the tokens from a string with invalid spaces.
+
+Now please calculate() the result of the string. You can use the tokenizer you wrote before.
+
+```js
+calculate('1 * (20 -   300      ) ')
+// -280
+calculate('     1/0 ')
+// Infinity
+```
+
+the input expression is syntactically valid, containing non-negative integers, +, -, \*, /, (, ) and spaces
+Don't use eval()
+
+```js
+function* tokenizer(str) {
+  const tokens = str.match(/\d+|[+*/()-]/g)
+  if (tokens) {
+    for (const token of tokens) {
+      yield token
+    }
+  }
+}
+
+function infixToPostfix(str) {
+  const precede = { '(': 1, '+': 2, '-': 2, '*': 3, '/': 3 }
+  const op_stack = []
+  const postfix = []
+  for (const token of tokenizer(str)) {
+    if (token === '(') {
+      op_stack.push(token)
+    } else if (['+', '-', '*', '/'].includes(token)) {
+      // pop to postfix until the top of stack is less than the current operator.
+      while (op_stack.length > 0 && precede[op_stack[op_stack.length - 1]] >= precede[token]) {
+        const op = op_stack.pop()
+        postfix.push(op)
+      }
+      // precede[op_stack.peek()] < precede[token]
+      op_stack.push(token)
+    } else if (token === ')') {
+      // pop to the postfix until the top of stack is (.
+      while (op_stack.length > 0 && op_stack[op_stack.length - 1] !== '(') {
+        const op = op_stack.pop()
+        postfix.push(op)
+      }
+      // op_stack.peek() is (
+      op_stack.pop() // Remove the ( from the stack
+    } else {
+      postfix.push(Number(token))
+    }
+  }
+  while (op_stack.length > 0) {
+    postfix.push(op_stack.pop())
+  }
+  return postfix
+}
+
+function calculatePostfix(postfix) {
+  const stack = []
+  postfix.forEach((token) => {
+    if (['+', '-', '*', '/'].includes(token)) {
+      const v2 = stack.pop()
+      const v1 = stack.pop()
+      let v
+      if (token === '+') {
+        v = v1 + v2
+      } else if (token === '-') {
+        v = v1 - v2
+      } else if (token === '*') {
+        v = v1 * v2
+      } else if (token === '/') {
+        if (v2 === 0) {
+          v = v1 > 0 ? Infinity : v1 === 0 ? NaN : -Infinity
+        } else {
+          v = v1 / v2
+        }
+      }
+      stack.push(v)
+    } else {
+      stack.push(token)
+    }
+  })
+  return stack.pop()
+}
+/**
+ * @param {string} str
+ * @returns {Number}
+ */
+function calculate(str) {
+  // your code here
+  const postfix = infixToPostfix(str)
+  return calculatePostfix(postfix)
+}
+```
+
+### 6. Backtracking Questions
+
+#### 1.All Combinations Of Size K
+
+```ts
+/**
+ * This generates an array of unique sub"sets" (represented by ascendingly sorted subarrays)
+ * of size k out of n+1 numbers from 1 to n.
+ *
+ * By using a backtracking algorithm we can incrementally build sub"sets" while dropping candidates
+ * that cannot contribute anymore to a valid solution.
+ * Steps:
+ * - From the starting number (i.e. "1") generate all combinations of k numbers.
+ * - Once we got all combinations for the given number we can discard it (“backtracks”)
+ *   and repeat the same process for the next number.
+ */
+export function generateCombinations(n: number, k: number): number[][] {
+  const combinationsAcc: number[][] = []
+  const currentCombination: number[] = []
+
+  function generateAllCombos(n: number, k: number, startCursor: number): number[][] {
+    if (k === 0) {
+      if (currentCombination.length > 0) {
+        combinationsAcc.push(currentCombination.slice())
+      }
+      return combinationsAcc
+    }
+
+    const endCursor = n - k + 2
+    for (let i = startCursor; i < endCursor; i++) {
+      currentCombination.push(i)
+      generateAllCombos(n, k - 1, i + 1)
+      currentCombination.pop()
+    }
+    return combinationsAcc
+  }
+
+  return generateAllCombos(n, k, 1)
+}
+```
+
+#### 2.Backtracking Generate Parentheses
+
+```ts
+/**
+ * Given a number n pairs of parentheses, generate all combinations of valid parentheses
+ * @param {number} n: Number of given parentheses
+ * @return {string[]} result: Array that contains all valid parentheses
+ * @see https://leetcode.com/problems/generate-parentheses/
+ */
+
+const generateParentheses = (n: number): string[] => {
+  const result: string[] = []
+
+  const solve = (chars: string, openParentheses: number, closedParentheses: number) => {
+    if (openParentheses === n && closedParentheses === n) {
+      result.push(chars)
+      return
+    }
+
+    if (openParentheses <= n) {
+      solve(chars + '(', openParentheses + 1, closedParentheses)
+    }
+
+    if (closedParentheses < openParentheses) {
+      solve(chars + ')', openParentheses, closedParentheses + 1)
+    }
+  }
+
+  solve('', 0, 0)
+
+  return result
+}
+
+export { generateParentheses }
+```
+
+### 7. Other Questions
+
+#### 1.Find two numbers that sum up to 0
+
+106.https://bigfrontend.dev/problem/Find-two-numbers-that-sum-up-to-0
+
+Given an array of integers, find two number that sums up to 0, return their indices.
+
+There might be multiple pairs, any of them would do. If not found, return null
+
+```js
+findTwo([1, 2, 3, -1])
+findTwo([1, 2, 3, -1, -2, 0])
+findTwo([1, 2, 3, 4])
+// null
+```
+
+```js
+/**
+ * @param {number[]} arr
+ * @return {number[]}
+ */
+function findTwo(arr) {
+  const memo = new Map()
+  const n = arr.length
+  for (let i = 0; i < n; i++) {
+    if (memo.has(arr[i])) {
+      return [memo.get(arr[i]), i]
+    } else {
+      memo.set(-arr[i], i)
+    }
+  }
+  return null
+}
+```
+
+#### 2.Find the largest difference
+
+107.https://bigfrontend.dev/problem/Find-the-largest-difference
+
+Given an array of numbers, pick any two numbers a and b, we could get the difference by `Math.abs(a - b)`.
+
+Can you write a function to get the largest difference?
+
+```js
+largestDiff([-1, 2, 3, 10, 9])
+// 11,  obviously Math.abs(-1 - 10) is the largest
+largestDiff([])
+// 0
+largestDiff([1])
+// 0
+```
+
+```js
+/**
+ * @param {number[]} arr
+ * @return {number}
+ */
+function largestDiff(arr) {
+  // your code here
+  if (arr.length === 0) return 0
+  const minVal = Math.min(...arr)
+  const maxVal = Math.max(...arr)
+  return maxVal - minVal
+}
+```
+
+#### 3.create `isPrime()`
+
+120.https://bigfrontend.dev/problem/isPrime
+
+A Prime number is a natural number greater than 1 that is divisible only by itself and 1, such as 2,3,5....
+
+You are asked to implement isPrime() to check if a number is prime.
+
+Follow-up
+
+What is the time cost of your implementation ? can you improve your approach to have the fewest comparisons?
+
+```js
+/**
+ * @param {number} num - positive integer
+ */
+function isPrime(num) {
+  if (num <= 1) return false // 0 and 1 are not prime numbers
+  if (num <= 3) return true // 2 and 3 are prime numbers
+
+  // Eliminate multiples of 2 and 3 early
+  if (num % 2 === 0 || num % 3 === 0) return false
+
+  // Check for factors from 5 to sqrt(num), skipping even numbers
+  for (let i = 5; i * i <= num; i += 6) {
+    if (num % i === 0 || num % (i + 2) === 0) {
+      return false
+    }
+  }
+
+  return true
+}
+```
+
+#### 4.A number sequence
+
+121.https://bigfrontend.dev/problem/A-number-sequence
+
+Here is a sequence:
+
+'1', first number is 1
+'11', since previous number has One(1) 1
+'21', since previous number has Two(2) 1s
+'1211', since previous number has One(1) 2 and One(1) 1
+'111221', since previous number has One(1) 1, One(1) 2, Two(2) 1s
+'312211', since previous number has Three(3) 1s, Two(2) 2s, One(1) 1
+....
+As explained above, the sequence is generated by counting the digits of previous number.
+
+Please create getNthNum(n) to return the n-th number string in the sequence, n starts from 1.
+
+```js
+/**
+ * @param {number} n - integer
+ * @returns {string}
+ */
+function getNthNum(n) {
+  let ans = '1'
+  for (let i = 2; i <= n; i++) {
+    let i = 0
+    let j = 0
+    let temp = ''
+    while (i < ans.length) {
+      while (i < ans.length && ans[i] === ans[j]) {
+        i += 1
+      }
+      // [j, i - 1] is all same.
+      temp += `${i - 1 - j + 1}${ans[j]}`
+      j = i
+    }
+    ans = temp
+  }
+  return ans
+}
+```
+
+#### 5.find median of two sorted array
+
+136.https://bigfrontend.dev/problem/find-median-of-2-sorted-array
+
+Given two sorted array of integers, please return the median.
+
+```js
+median([1, 2], [3, 4, 5])
+// 3
+```
+
+If there are even numbers, return the average.
+
+```js
+median([1, 2], [3, 4])
+// 2.5
+```
+
+follow-up
+
+What is the time & space cost of your approach? Could you do better?
+
+```javascript
+function findMedianSortedArrays(nums1, nums2) {
+  if (nums1.length > nums2.length) {
+    ;[nums1, nums2] = [nums2, nums1] // Ensure nums1 is the smaller array
+  }
+
+  const m = nums1.length
+  const n = nums2.length
+  let low = 0
+  let high = m
+
+  while (low <= high) {
+    const partition1 = Math.floor((low + high) / 2)
+    const partition2 = Math.floor((m + n + 1) / 2) - partition1
+
+    const maxLeft1 = partition1 === 0 ? -Infinity : nums1[partition1 - 1]
+    const minRight1 = partition1 === m ? Infinity : nums1[partition1]
+
+    const maxLeft2 = partition2 === 0 ? -Infinity : nums2[partition2 - 1]
+    const minRight2 = partition2 === n ? Infinity : nums2[partition2]
+
+    if (maxLeft1 <= minRight2 && maxLeft2 <= minRight1) {
+      if ((m + n) % 2 === 0) {
+        return (Math.max(maxLeft1, maxLeft2) + Math.min(minRight1, minRight2)) / 2
+      } else {
+        return Math.max(maxLeft1, maxLeft2)
+      }
+    } else if (maxLeft1 > minRight2) {
+      high = partition1 - 1
+    } else {
+      low = partition1 + 1
+    }
+  }
+
+  throw new Error('Input arrays are not sorted')
+}
+
+// Example usage
+console.log(findMedianSortedArrays([1, 2], [3, 4, 5])) // 3
+console.log(findMedianSortedArrays([1, 2], [3, 4])) // 2.5
+```
+
+#### 6.Intersection of two sorted arrays
+
+138.https://bigfrontend.dev/problem/intersection-of-two0-sorted-Arrays
+
+Given 2 sorted array of integers, find the elements that exist in both arrays.
+
+```js
+intersect([1, 2, 2, 3, 4, 4], [2, 2, 4, 5, 5, 6, 2000])
+```
+
+The arrays might have duplicate numbers.
+The order of returning result doesn't matter.
+What is the time & space cost of your approach? Could you improve it?
+
+```js
+/**
+ * @param {number[]} arr1 - integers
+ * @param {number[]} arr2 - integers
+ * @returns {number[]}
+ */
+function intersect(arr1, arr2) {
+  const n1 = arr1.length
+  const n2 = arr2.length
+  let i1 = 0
+  let i2 = 0
+  if (n1 === 0 || n2 === 0) return []
+  const ans = []
+  while (i1 < n1 && i2 < n2) {
+    if (arr1[i1] === arr2[i2]) {
+      ans.push(arr1[i1])
+      i1 += 1
+      i2 += 1
+    } else if (arr1[i1] < arr2[i2]) {
+      // Increase i1 until arr1[i1] >= arr2[i2]
+      while (i1 < n1 && arr1[i1] < arr2[i2]) {
+        i1 += 1
+      }
+    } else {
+      // arr1[i1] > arr2[i2]
+      // Increase i2 until arr1[i1] <= arr2[i2]
+      while (i2 < n2 && arr1[i1] > arr2[i2]) {
+        i2 += 1
+      }
+    }
+  }
+  return ans
+}
+```
+
+#### 7.Pick up stones
+
+147.https://bigfrontend.dev/problem/pickup-the-stones
+
+There is a pile of n (n > 0) stones.
+
+Player A and Player B take turns to pick 1 or 2 stones from the pile. A starts first.
+
+Who picks the last stone loses the game.
+
+Now here is the question, **is there a winning strategy for A or B** ? If so, returns the player name. If there is none, return null.
+
+```js
+winningStonePicking(1)
+// 'B'
+winningStonePicking(2)
+// 'A'
+winningStonePicking(3)
+// 'A'
+winningStonePicking(4)
+// 'B'
+```
+
+```js
+/**
+ * @param {number} n
+ * @return {'A' | 'B' | null}
+ */
+function canWinStonePicking(n) {
+  const cache = new Map()
+  const helper = (i, picker) => {
+    if (i === 1) return picker === 'A' ? 'B' : 'A'
+    if (i === 2) return picker === 'A' ? 'A' : 'B'
+    if (cache.has(`${picker}_${i}`)) {
+      return cache.get(`${picker}_${i}`)
+    }
+    const winer1 = helper(i - 1, picker === 'A' ? 'B' : 'A')
+    const winer2 = helper(i - 2, picker === 'A' ? 'B' : 'A')
+    let winer = ''
+    if (picker === winer1 || picker === winer2) {
+      winer = picker
+    } else {
+      winer = picker === 'A' ? 'B' : 'A'
+    }
+    cache.set(`${picker}_${i}`, winer)
+    return winer
+  }
+  return helper(n, 'A')
+}
+console.log(canWinStonePicking(3))
+```
+
+#### 8.Intersection of unsorted arrays
+
+167.https://bigfrontend.dev/problem/array-intersect
+
+Given two arrays, find the intersection(items occur in both arrays)
+
+arrays are not sorted, and might have duplicates.
+you can modify the arrays
+you can return the items in any order, but without duplicates.
+This is an easy problem, What is the time & space complexity of your approach?
+
+```js
+/**
+ * @param {any[]} arr1
+ * @param {any[]} arr2
+ * @returns {any[]}
+ */
+function getIntersection(arr1, arr2) {
+  const set1 = new Set(arr1)
+  const set2 = new Set(arr2)
+  const intersection = []
+  set1.forEach((item) => {
+    if (set2.has(item)) {
+      intersection.push(item)
+    }
+  })
+  return intersection
+}
+```
+
+#### 26.move zeros
+
+168.https://bigfrontend.dev/problem/move-zeros
+
+Given an array of integers, move zeros to the end while keeping the order of the rest.
+
+You should make the in-place change.
+
+```js
+const list = [1, 0, 0, 2, 3]
+moveZeros(list)
+console.log(list) // [1,2,3,0,0]
+```
+
+What is the time & space complexity of your approach?
+
+```js
+/**
+ * @param {Array<any>} list
+ * @returns {void}
+ */
+function moveZeros(list) {
+  const n = list.length
+  let i = 0
+  let j = 0
+  while (i < n) {
+    while (j < n && list[j] !== 0) {
+      j++
+    }
+    // j point at the first 0.
+    i = j
+    while (i < n && list[i] === 0) {
+      i++
+    }
+    // i point at the first non-zero after j.
+    if (i === n) {
+      break
+    }
+    ;[list[i], list[j]] = [list[j], list[i]]
+  }
+}
+const list = [1, 0, 0, 2, 3]
+moveZeros(list)
+console.log(list)
+```

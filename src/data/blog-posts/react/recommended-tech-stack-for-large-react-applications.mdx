@@ -1,0 +1,368 @@
+---
+title: Recommended Tech Stack for Large React Applications (2024)
+slug: recommended-tech-stack-for-large-react-applications
+publishDate: 2024-07-20
+description: Learn about Recommended Tech Stack for Large React Applications (2024).
+date: 2024-07-20
+tags: ['React']
+draft: false
+---
+
+##### Introduction
+
+For developing a large-scale React application, a modern tech stack that prioritizes scalability, performance, and maintainability is crucial. Here’s a recommended tech stack and tools commonly used in recent React projects:
+
+<TOCInline toc={props.toc} exclude="Introduction" />{' '}
+
+##### 1. **Frontend Framework and Library**
+
+- **React**: The core of your frontend, with functional components and hooks to manage component state and lifecycle efficiently.
+
+##### 2. **TypeScript**
+
+- **TypeScript**: Adds static typing to JavaScript, which enhances code reliability, reduces runtime errors, and makes the codebase easier to understand, especially as the project grows.
+
+##### 3. **State Management**
+
+- **Redux Toolkit**: The official, modern Redux approach that simplifies and optimizes state management for large applications. It provides easy-to-use APIs, reduces boilerplate, and is highly scalable.
+- **React Query (TanStack Query)**: For server state management, React Query efficiently handles caching, background syncing, and fetching states, especially useful when dealing with complex data interactions and real-time updates.
+
+##### 4. **Component Library / Styling**
+
+- **Material-UI (MUI)**: A robust and customizable component library that speeds up development by providing ready-to-use, themeable components.
+- **Tailwind CSS**: A utility-first CSS framework that enables rapid styling with inline classes. It’s efficient for large applications as it eliminates the need for writing custom CSS and optimizes for a responsive design.
+- **Styled Components**: For more custom styling needs, Styled Components allows you to create encapsulated styles at the component level, which is great for reusable and maintainable UI components.
+
+##### 5. **Routing**
+
+- **React Router**: The go-to solution for managing navigation in React. React Router v6+ brings features like nested routes and hooks that work well with complex navigation needs in larger applications.
+
+##### 6. **Backend API**
+
+- **GraphQL with Apollo Client**: Allows you to fetch only the required data and aggregate complex queries in a single request, making it ideal for large applications. Apollo Client works seamlessly with React and offers caching, query batching, and error handling.
+- **REST with Axios or Fetch**: For simpler applications or legacy integrations, RESTful APIs are also viable. Use **Axios** for a more powerful alternative to Fetch, with built-in support for interceptors and request configuration.
+
+##### 7. **Build Tools and Module Bundling**
+
+- **Vite**: An increasingly popular alternative to Webpack for its fast development server and improved hot module replacement (HMR). It’s highly optimized for modern frontend frameworks like React.
+- **Webpack**: For projects that require more customization or have a specific setup, Webpack can still be a good option, especially if the team is already experienced with it.
+
+##### 8. **Form Handling and Validation**
+
+- **React Hook Form**: A lightweight library that provides efficient form management with minimal re-renders, validation, and integration with schema-based validation libraries like Yup or Zod.
+- **Yup/Zod**: Schema validation libraries that integrate well with React Hook Form, providing powerful, reusable validation schemas.
+
+##### 9. **Testing**
+
+- **Jest**: The most widely used testing framework for unit and integration tests. It’s optimized for React and works well with TypeScript.
+- **React Testing Library**: Provides utilities to test React components with a focus on how the user would interact with them, rather than testing implementation details.
+- **Cypress**: For end-to-end testing, Cypress offers a fast and efficient way to test the entire application in a real browser environment.
+
+##### 10. **CI/CD and DevOps**
+
+- **GitHub Actions**: Automate tasks like testing, building, and deploying your application. GitHub Actions provides a flexible CI/CD setup integrated within GitHub’s ecosystem.
+- **Docker**: Containerize your application for consistent development, testing, and production environments.
+- **Kubernetes**: For larger applications that require microservices, Kubernetes orchestrates containerized applications across clusters.
+
+##### 11. **Monitoring and Analytics**
+
+- **Sentry**: For error monitoring, Sentry offers real-time alerts, stack traces, and detailed reporting.
+- **LogRocket or Datadog**: Useful for user session replay and tracking, LogRocket captures how users interact with the app, while Datadog provides a more extensive infrastructure and application monitoring.
+
+##### 12. **Documentation**
+
+- **Storybook**: An open-source tool for building UI components and pages in isolation, which is great for visualizing the component library in large applications.
+- **Docz or Docusaurus**: For documentation, these tools make it easy to create well-organized and searchable docs, especially useful for onboarding new developers.
+
+This stack provides a solid foundation for developing, scaling, and maintaining a large React application, ensuring high performance and maintainability as the project grows.
+
+Let’s create a large-scale React application using the recommended tech stack. We’ll go step-by-step, covering setup, core libraries, state management, styling, and testing.
+
+##### Prerequisites
+
+- **Node.js** (v14+), **npm** or **yarn**
+- Familiarity with JavaScript/TypeScript and React
+
+---
+
+##### Step 1: **Project Setup with Vite**
+
+1. **Initialize Vite Project**:
+
+   ```bash
+   npm create vite@latest my-large-app -- --template react-ts
+   cd my-large-app
+   ```
+
+   - The `react-ts` template configures Vite with React and TypeScript.
+
+2. **Install Additional Dependencies**:
+   - Core Libraries:
+     ```bash
+     npm install react-router-dom @reduxjs/toolkit react-redux @tanstack/react-query
+     ```
+   - Styling:
+     ```bash
+     npm install @mui/material @emotion/react @emotion/styled tailwindcss postcss autoprefixer styled-components
+     ```
+   - Form and Validation:
+     ```bash
+     npm install react-hook-form yup @hookform/resolvers
+     ```
+   - Testing:
+     ```bash
+     npm install --save-dev jest @testing-library/react @testing-library/jest-dom
+     ```
+   - (Optional) Add Storybook:
+     ```bash
+     npx storybook@latest init
+     ```
+
+---
+
+##### Step 2: **Configure Tailwind CSS**
+
+1. **Initialize Tailwind**:
+
+   ```bash
+   npx tailwindcss init -p
+   ```
+
+2. **Configure `tailwind.config.js`**:
+
+   ```javascript
+   // tailwind.config.js
+   module.exports = {
+     content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
+     theme: {
+       extend: {},
+     },
+     plugins: [],
+   }
+   ```
+
+3. **Add Tailwind CSS to `src/index.css`**:
+   ```css
+   @tailwind base;
+   @tailwind components;
+   @tailwind utilities;
+   ```
+
+---
+
+##### Step 3: **Set Up Routing with React Router**
+
+1. **Create Routes in `src/routes.tsx`**:
+
+   ```tsx
+   import React from 'react'
+   import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+   import Home from './pages/Home'
+   import About from './pages/About'
+
+   const AppRoutes = () => (
+     <Router>
+       <Routes>
+         <Route path="/" element={<Home />} />
+         <Route path="/about" element={<About />} />
+       </Routes>
+     </Router>
+   )
+
+   export default AppRoutes
+   ```
+
+2. **Create Pages (`src/pages/Home.tsx` and `src/pages/About.tsx`)**:
+
+   ```tsx
+   // Home.tsx
+   import React from 'react'
+
+   const Home = () => <div>Welcome to Home Page</div>
+
+   export default Home
+   ```
+
+---
+
+##### Step 4: **Configure Redux with Redux Toolkit**
+
+1. **Create Store (`src/store/index.ts`)**:
+
+   ```tsx
+   import { configureStore } from '@reduxjs/toolkit'
+   import rootReducer from './rootReducer'
+
+   const store = configureStore({
+     reducer: rootReducer,
+   })
+
+   export type RootState = ReturnType<typeof store.getState>
+   export type AppDispatch = typeof store.dispatch
+
+   export default store
+   ```
+
+2. **Set Up a Sample Slice (`src/store/slices/counterSlice.ts`)**:
+
+   ```tsx
+   import { createSlice } from '@reduxjs/toolkit'
+
+   const counterSlice = createSlice({
+     name: 'counter',
+     initialState: { value: 0 },
+     reducers: {
+       increment: (state) => {
+         state.value += 1
+       },
+       decrement: (state) => {
+         state.value -= 1
+       },
+     },
+   })
+
+   export const { increment, decrement } = counterSlice.actions
+   export default counterSlice.reducer
+   ```
+
+3. **Combine Reducers (`src/store/rootReducer.ts`)**:
+
+   ```tsx
+   import { combineReducers } from '@reduxjs/toolkit'
+   import counterReducer from './slices/counterSlice'
+
+   const rootReducer = combineReducers({
+     counter: counterReducer,
+   })
+
+   export default rootReducer
+   ```
+
+4. **Provide Store to Application**:
+
+   ```tsx
+   // src/main.tsx
+   import React from 'react'
+   import ReactDOM from 'react-dom'
+   import { Provider } from 'react-redux'
+   import store from './store'
+   import AppRoutes from './routes'
+   import './index.css'
+
+   ReactDOM.createRoot(document.getElementById('root')).render(
+     <Provider store={store}>
+       <AppRoutes />
+     </Provider>
+   )
+   ```
+
+---
+
+##### Step 5: **Integrate React Query**
+
+1. **Create a QueryClient in `src/queryClient.ts`**:
+
+   ```tsx
+   import { QueryClient } from '@tanstack/react-query'
+
+   const queryClient = new QueryClient()
+   export default queryClient
+   ```
+
+2. **Wrap App in QueryClientProvider**:
+
+   ```tsx
+   // src/main.tsx
+   import { QueryClientProvider } from '@tanstack/react-query'
+   import queryClient from './queryClient'
+
+   ReactDOM.createRoot(document.getElementById('root')).render(
+     <Provider store={store}>
+       <QueryClientProvider client={queryClient}>
+         <AppRoutes />
+       </QueryClientProvider>
+     </Provider>
+   )
+   ```
+
+---
+
+##### Step 6: **Form Handling and Validation**
+
+1. **Create a Form Component (`src/components/ContactForm.tsx`)**:
+
+   ```tsx
+   import React from 'react'
+   import { useForm, SubmitHandler } from 'react-hook-form'
+   import { yupResolver } from '@hookform/resolvers/yup'
+   import * as yup from 'yup'
+
+   const schema = yup.object({
+     name: yup.string().required(),
+     email: yup.string().email().required(),
+   })
+
+   type FormData = { name: string; email: string }
+
+   const ContactForm = () => {
+     const {
+       register,
+       handleSubmit,
+       formState: { errors },
+     } = useForm<FormData>({
+       resolver: yupResolver(schema),
+     })
+
+     const onSubmit: SubmitHandler<FormData> = (data) => console.log(data)
+
+     return (
+       <form onSubmit={handleSubmit(onSubmit)}>
+         <input {...register('name')} placeholder="Name" />
+         <p>{errors.name?.message}</p>
+         <input {...register('email')} placeholder="Email" />
+         <p>{errors.email?.message}</p>
+         <button type="submit">Submit</button>
+       </form>
+     )
+   }
+
+   export default ContactForm
+   ```
+
+---
+
+##### Step 7: **Testing with Jest and React Testing Library**
+
+1. **Create a Test for the Counter Slice**:
+
+   ```tsx
+   // src/store/slices/counterSlice.test.ts
+   import counterReducer, { increment, decrement } from './counterSlice'
+
+   test('should increment counter', () => {
+     const initialState = { value: 0 }
+     const state = counterReducer(initialState, increment())
+     expect(state.value).toBe(1)
+   })
+
+   test('should decrement counter', () => {
+     const initialState = { value: 1 }
+     const state = counterReducer(initialState, decrement())
+     expect(state.value).toBe(0)
+   })
+   ```
+
+---
+
+##### Step 8: **Run and Test Your Application**
+
+- Start the development server:
+  ```bash
+  npm run dev
+  ```
+- Run tests:
+  ```bash
+  npm test
+  ```
+
+This stack provides the core features you need for a large React app. You can further expand the app by adding more complex components, managing data with GraphQL/Axios, and creating optimized build and CI/CD pipelines for deployment.

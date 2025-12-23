@@ -1,0 +1,328 @@
+---
+title: Leetcode Pattern 7 Backtracking
+slug: pattern-07-backtracking
+publishDate: 2024-05-08
+description: Learn about Leetcode Pattern 7 Backtracking.
+date: 2024-05-08
+tags: ["leetcode", "pattern"]
+draft: false
+---
+
+### Introduction
+
+Backtracking is a problem-solving technique that incrementally builds candidates for solutions and abandons a candidate as soon as it is determined that it cannot be extended to a valid solution. It is often visualized as a depth-first search of the solution space.
+
+Backtracking includes the following steps:
+
+1. **Choose:** Select a possible option or move.
+2. **Explore:** Recursively proceed with the chosen option to further the exploration.
+3. **Check:** Verify if the current option leads to a solution or if it violates any constraints.
+4. **Unchoose:** If the option does not lead to a solution, backtrack by undoing the previous choice and try another option.
+
+Backtracking has the following key characteristics:
+
+- **Recursive Nature:** Backtracking algorithms are often implemented using recursion, allowing the exploration of multiple paths through the solution space.
+- **Pruning:** The technique involves pruning, where paths that cannot lead to a solution are cut off early to reduce the search space.
+- **Systematic Exploration:** It ensures that all possible solutions are considered, making it suitable for problems where solutions need to be exhaustive.
+
+<TOCInline toc={props.toc} exclude="Introduction" />
+
+### Backtracking Problems
+
+#### 78.Subsets[Medium]
+
+Given an integer array nums of unique elements, return all possible subsets (the power set).
+
+The solution set must not contain duplicate subsets. Return the solution in any order.
+
+**Solution:** We can solve this problem using a backtracking approach. We start with an empty array called `current`. At the beginning of the search, we add the `current` array to the final result. Then, we add elements to this array and continue the search recursively. After exploring each path, we backtrack by removing the last added element.
+
+```typescript
+function subsets(nums: number[]): number[][] {
+    const n = nums.length;
+    const backtrack = (start: number, current: number[]): void => {
+        // Check
+        result.push([...current]);
+        for(let i = start; i < n; i++) {
+            // Choose
+            current.push(nums[i]);
+            // Explore
+            backtrack(i + 1, current);
+            // Unchoose
+            current.pop();
+        }
+    };
+    const result: number[][] = [];
+    backtrack(0, []);
+    return result;
+};
+```
+
+```typescript
+// F(n) = F(n - 1) + F(n - 1) with new last element nums[n - 1]
+function subsets(nums: number[]): number[][] {
+    const n = nums.length;
+    if (n === 0) return [[]];
+    const results: number[][] = subsets(nums.slice(0, n - 1));
+    return [...results, ...results.map(result => [...result, ...[nums[n - 1]]])];
+};
+```
+
+#### 90.Subsets II[Medium]
+
+Given an integer array nums that may contain duplicates, return all possible subsets (the power set).
+
+The solution set must not contain duplicate subsets. Return the solution in any order.
+
+**Solution:** Similar to problem 78, *Subsets*, we use backtracking to solve this problem. However, before starting the backtracking process, we sort the array. During the search, we skip any duplicate values by checking if the current value is the same as the previous one.
+
+```typescript
+function subsetsWithDup(nums: number[]): number[][] {
+    const n = nums.length;
+    const backtrack = (start: number, current: number[]): void => {
+        results.push([...current]);
+        for (let i = start; i < n; i++) {
+            // Ignore the duplicate values
+            if (i > start && nums[i] === nums[i - 1]) continue;
+            current.push(nums[i]);
+            backtrack(i + 1, current);
+            current.pop();
+        }
+    };
+    // Sort nums to make sure the same values are putting together
+    nums.sort((a, b) => a - b);
+    const results: number[][] = [];
+    backtrack(0, []);
+    return results;
+};
+```
+
+#### 46.Permutations[Medium]
+
+Given an array nums of distinct integers, return all the possible permutations. You can return the answer in any order.
+
+**Solution:** We can solve this problem using a backtracking approach. We start at position 0 and swap it with each subsequent position. After exploring each possibility, we revert the swap to restore the original state before moving to the next option.
+
+```python
+def permute(nums):
+    def backtrack(start):
+        # If we've reached the end of the array, add the permutation to the result
+        if start == len(nums):
+            result.append(nums[:])
+            return
+
+        for i in range(start, len(nums)):
+            # Swap the current element with the start element
+            nums[start], nums[i] = nums[i], nums[start]
+            # Recursively generate permutations with the next element fixed
+            backtrack(start + 1)
+            # Swap back to restore the original array
+            nums[start], nums[i] = nums[i], nums[start]
+
+    result = []
+    backtrack(0)
+    return result
+```
+
+#### 784.Letter Case Permutation[Medium]
+
+Given a string s, you can transform every letter individually to be lowercase or uppercase to create another string.
+
+Return a list of all possible strings we could create. Return the output in any order.
+
+```python
+class Solution:
+    def letterCasePermutation(self, s: str) -> List[str]:
+        def backtrack(subset, index):
+            # If we've reached the end of the string, add the permutation to the result
+            if index == len(s):
+                result.append(''.join(subset))
+                return
+
+            # Include the current character as lowercase
+            subset.append(s[index].lower())
+            backtrack(subset, index + 1)
+            subset.pop()
+
+            # Include the current character as uppercase if it's a letter
+            if s[index].isalpha():
+                subset.append(s[index].upper())
+                backtrack(subset, index + 1)
+                subset.pop()
+
+        result = []
+        backtrack([], 0)
+        return result
+```
+
+#### 22.Generate Parentheses[Medium]
+
+Given n pairs of parentheses, write a function to generate all combinations of well-formed parentheses.
+
+```python
+class Solution:
+    def generateParenthesis(self, n: int) -> List[str]:
+        def backtrack(current, open_count, close_count):
+            # If the current string is a well-formed parentheses combination
+            if open_count == n and close_count == n:
+                result.append("".join(current))
+                return
+
+            # Add an open parenthesis if it can be added
+            if open_count < n:
+                current.append("(")
+                backtrack(current, open_count + 1, close_count)
+                current.pop()  # Backtrack
+
+            # Add a close parenthesis if it can be added
+            if close_count < open_count:
+                current.append(")")
+                backtrack(current, open_count, close_count + 1)
+                current.pop()  # Backtrack
+
+        result = []
+        backtrack([], 0, 0)
+        return result
+```
+
+#### 320.Generalized Abbreviation[Medium]
+
+A word's generalized abbreviation can be constructed by taking any number of non-overlapping and non-adjacent
+substrings
+and replacing them with their respective lengths.
+
+For example, "abcde" can be abbreviated into:
+"a3e" ("bcd" turned into "3")
+"1bcd1" ("a" and "e" both turned into "1")
+"5" ("abcde" turned into "5")
+"abcde" (no substrings replaced)
+However, these abbreviations are invalid:
+"23" ("ab" turned into "2" and "cde" turned into "3") is invalid as the substrings chosen are adjacent.
+"22de" ("ab" turned into "2" and "bc" turned into "2") is invalid as the substring chosen overlap.
+Given a string word, return a list of all the possible generalized abbreviations of word. Return the answer in any order.
+
+```python
+class Solution:
+    def generateAbbreviations(self, word: str) -> List[str]:
+        def backtrack(index, abbr, count):
+            if index == len(word):
+                result.append(abbr + str(count) if count > 0 else abbr)
+                return
+
+            # Abbreviate the current character
+            backtrack(index + 1, abbr, count + 1)
+
+            # Keep the current character unabbreviated
+            backtrack(index + 1, abbr + (str(count) if count > 0 else "") + word[index], 0)
+
+        result = []
+        backtrack(0, "", 0)
+        return result
+```
+
+#### 241.Different Ways to Add Parentheses[Medium]
+
+Given a string expression of numbers and operators, return all possible results from computing all the different possible ways to group numbers and operators. You may return the answer in any order.
+
+The test cases are generated such that the output values fit in a 32-bit integer and the number of different results does not exceed 104.
+
+```python
+# Here's how we can implement this approach:
+# 1. Use a recursive function to partition the expression into substrings at each operator.
+# 2. For each partition, recursively compute the results for the left and right substrings.
+# 3. Combine the results of the left and right substrings using the operator from the current partition.
+# 4. Add each computed result to the result list.
+
+class Solution:
+    def diffWaysToCompute(self, expression: str) -> List[int]:
+        def compute(left, right, operator):
+            if operator == '+':
+                return left + right
+            elif operator == '-':
+                return left - right
+            else:
+                return left * right
+
+        def evaluate(expression):
+            if expression.isdigit():
+                return [int(expression)]
+
+            results = []
+            for i in range(len(expression)):
+                if expression[i] in "+-*":
+                    left_results = evaluate(expression[:i])
+                    right_results = evaluate(expression[i+1:])
+                    for left in left_results:
+                        for right in right_results:
+                            results.append(compute(left, right, expression[i]))
+            return results
+
+        return evaluate(expression)
+```
+
+#### 95.Unique Binary Search Trees II[Medium]
+
+Given an integer n, return all the structurally unique BST's (binary search trees), which has exactly n nodes of unique values from 1 to n. Return the answer in any order.
+
+```python
+class Solution:
+    def generateTrees(self, n: int) -> List[Optional[TreeNode]]:
+        def generate_trees_helper(start, end):
+            if start > end:
+                return [None]
+
+            result = []
+            for root_val in range(start, end + 1):
+                left_trees = generate_trees_helper(start, root_val - 1)
+                right_trees = generate_trees_helper(root_val + 1, end)
+
+                for left_tree in left_trees:
+                    for right_tree in right_trees:
+                        root = TreeNode(root_val)
+                        root.left = left_tree
+                        root.right = right_tree
+                        result.append(root)
+
+            return result
+
+        if n == 0:
+            return []
+        else:
+            return generate_trees_helper(1, n)
+```
+
+#### 52. N-Queens II[Hard]
+
+The n-queens puzzle is the problem of placing n queens on an n x n chessboard such that no two queens attack each other.
+
+Given an integer n, return the number of distinct solutions to the n-queens puzzle.
+
+**Solution:** We use an array, `board`, to represent the position of queens in each row, where `board[row]` indicates the column position of the queen in that row. If `row` reaches the last row, we add the current configuration to the final result. If it's not the last row, we try every possible position in that row. If the position is valid, we place the queen and proceed to the next row. After exploring all possibilities, we backtrack by removing the queen from the current position.
+
+We also create a helper function named `is_valid` to check whether the current placement is valid.
+
+```python
+class Solution:
+    def totalNQueens(self, n: int) -> int:
+        def is_valid(board, row, col):
+            for i in range(row):
+                if board[i] == col or \ # Same column
+                board[i] - i == col - row or \ # Cross
+                board[i] + i == col + row: # cross
+                    return False
+            return True
+
+        def solve(board, row):
+            if row == n:
+                solutions.append(board[:])
+                return
+            for col in range(n):
+                if is_valid(board, row, col):
+                    board[row] = col
+                    solve(board, row + 1)
+                    board[row] = -1
+
+        solutions = []
+        solve([-1] * n, 0)
+        return len(solutions)
+```

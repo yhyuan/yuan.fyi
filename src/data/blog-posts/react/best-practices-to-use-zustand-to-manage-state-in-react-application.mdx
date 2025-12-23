@@ -1,0 +1,428 @@
+---
+title: Best practices to use Zustand to manage state in React application
+slug: best-practices-to-use-zustand-to-manage-state-in-react-application
+publishDate: 2024-07-25
+description: Learn about Best practices to use Zustand to manage state in React application.
+date: 2024-07-25
+tags: ['React']
+draft: false
+---
+
+### Introduction
+
+When using Zustand for state management in a React application, following best practices helps ensure scalability, maintainability, and optimal performance. Here are some key best practices:
+
+<TOCInline toc={props.toc} exclude="Introduction" />{' '}
+
+### 1. **Organize Your Store Structure**
+
+- **Modularize State**: Split your Zustand store into separate files or modules for better organization and maintainability, especially for large applications.
+- **Use Multiple Stores**: Consider using multiple smaller stores for distinct features or domains to avoid a single, monolithic store.
+
+### 2. **Type Safety (TypeScript)**
+
+- **Type Your Store State**: If using TypeScript, make sure to define types for your store's state and actions to prevent runtime errors and improve developer experience.
+- **Typed Hooks**: Create typed hooks for selecting and interacting with the store to ensure type safety across the application.
+
+### 3. **Minimal Re-renders**
+
+- **Select Only What You Need**: Use Zustand's `useStore(selector)` feature to subscribe only to the parts of the state you need. This helps reduce unnecessary component re-renders.
+- **Shallow Comparison**: Use `shallow` from Zustand to prevent re-renders when selecting nested objects or arrays.
+
+### 4. **Keep Store Logic Simple**
+
+- **Avoid Complex Logic**: Keep your store logic simple and offload complex calculations or operations to utility functions.
+- **Single Responsibility**: Your store should focus on state management and actions, not on heavy logic or API calls.
+
+### 5. **Persist State When Necessary**
+
+- **Use Zustand Middleware**: For persisting state, use Zustand middleware like `persist` to store parts of the state in local storage or session storage.
+- **Selective Persistence**: Only persist state slices that need to be stored, such as user preferences or authentication tokens, to avoid excessive data storage.
+
+### 6. **Middleware for State Management**
+
+- **Devtools Integration**: Use the `devtools` middleware for debugging and tracking state changes during development.
+- **Logging Middleware**: Implement a simple logging middleware for tracing state changes during development and testing.
+- **Immer for Immutable State**: Use the `immer` middleware to simplify immutable state updates without modifying your existing state directly.
+
+### 7. **Composable Actions**
+
+- **Separate Actions from State**: Define actions that modify the state separately to keep your store organized and easy to read.
+- **Custom Hook Encapsulation**: Wrap complex state logic or repeated actions in custom hooks for reusability.
+
+### 8. **Avoid Overusing Global State**
+
+- **Component-Level State**: Use Zustand for global or shared state, but manage component-specific state with React's `useState` or `useReducer`.
+- **Don’t Store Derived State**: Calculate derived state in selectors or within components to keep the store minimal and straightforward.
+
+### 9. **Memoize Selectors**
+
+- **Use `useCallback()`**: Memoize selectors in components to optimize performance and avoid unnecessary recalculations.
+- **Avoid Inline Selectors**: Define selectors outside the component to ensure stable references and avoid re-subscription on each render.
+
+### 10. **Testing the Store**
+
+- **Unit Test Actions**: Write unit tests for your store's actions and state changes to ensure they behave as expected.
+- **Mock Zustand Store**: Use libraries like `@testing-library/react` with custom Zustand mock implementations to test React components.
+
+### 11. **Use Devtools Wisely**
+
+- **Toggle in Production**: Disable Zustand `devtools` in production builds to avoid unnecessary performance overhead.
+- **Name Your Store**: Name your stores when using the `devtools` middleware to make it easier to track state changes in complex applications.
+
+### 12. **Performance Optimizations**
+
+- **Avoid Large State Trees**: Split large state objects into smaller slices to keep reactivity efficient and performance high.
+- **Batch Updates**: When updating multiple parts of the state at once, batch updates to minimize re-renders and improve performance.
+
+### 13. **Best Practices for Store Initialization**
+
+- **Initial State Loading**: Ensure initial state loading logic (e.g., from local storage or server-side) is properly handled before rendering UI components that depend on it.
+- **Lazy Store Creation**: If applicable, use lazy initialization for Zustand stores to avoid loading unused state slices.
+
+### 14. **Documentation and Code Clarity**
+
+- **Comment Complex Logic**: Document your store's state shape and describe the purpose of complex state slices or actions.
+- **Consistent Naming**: Use consistent and descriptive naming conventions for state variables and actions to make your store more readable.
+
+### Example Code Snippet:
+
+```javascript
+import create from 'zustand'
+import { devtools, persist } from 'zustand/middleware'
+
+const useStore = create(
+  devtools(
+    persist(
+      (set) => ({
+        count: 0,
+        increase: () => set((state) => ({ count: state.count + 1 })),
+        reset: () => set({ count: 0 }),
+      }),
+      {
+        name: 'app-storage', // name for localStorage key
+      }
+    )
+  )
+)
+
+export default useStore
+```
+
+By following these best practices, you can create well-structured, scalable, and performant React applications with Zustand as your state management solution.
+
+# Zustand Best Practices in React
+
+## 1. Store Organization
+
+### Create Separate Stores for Different Domains
+
+```typescript
+// userStore.ts
+import create from 'zustand'
+
+interface UserState {
+  user: User | null
+  setUser: (user: User | null) => void
+  isAuthenticated: boolean
+}
+
+const useUserStore = create<UserState>((set) => ({
+  user: null,
+  isAuthenticated: false,
+  setUser: (user) => set({ user, isAuthenticated: !!user }),
+}))
+
+// cartStore.ts
+interface CartState {
+  items: CartItem[]
+  addItem: (item: CartItem) => void
+  removeItem: (itemId: string) => void
+}
+
+const useCartStore = create<CartState>((set) => ({
+  items: [],
+  addItem: (item) =>
+    set((state) => ({
+      items: [...state.items, item],
+    })),
+  removeItem: (itemId) =>
+    set((state) => ({
+      items: state.items.filter((item) => item.id !== itemId),
+    })),
+}))
+```
+
+## 2. TypeScript Integration
+
+### Define Strong Types for Store State and Actions
+
+```typescript
+// types.ts
+interface Todo {
+  id: string
+  title: string
+  completed: boolean
+}
+
+interface TodoState {
+  todos: Todo[]
+  loading: boolean
+  error: string | null
+  // Actions
+  addTodo: (title: string) => Promise<void>
+  toggleTodo: (id: string) => void
+  removeTodo: (id: string) => void
+  fetchTodos: () => Promise<void>
+}
+
+// store.ts
+const useTodoStore = create<TodoState>((set, get) => ({
+  todos: [],
+  loading: false,
+  error: null,
+
+  addTodo: async (title) => {
+    set({ loading: true, error: null })
+    try {
+      const newTodo = await api.createTodo({ title })
+      set((state) => ({
+        todos: [...state.todos, newTodo],
+        loading: false,
+      }))
+    } catch (error) {
+      set({ error: error.message, loading: false })
+    }
+  },
+  // ... other actions
+}))
+```
+
+## 3. Performance Optimization
+
+### Use Selectors for Specific State Slices
+
+```typescript
+// Bad: Re-renders on any state change
+function TodoCount() {
+  const store = useTodoStore()
+  return <div>Total: {store.todos.length}</div>
+}
+
+// Good: Only re-renders when todos length changes
+function TodoCount() {
+  const todoCount = useTodoStore((state) => state.todos.length)
+  return <div>Total: {todoCount}</div>
+}
+
+// Better: Memoized selector
+const selectTodoCount = (state: TodoState) => state.todos.length
+
+function TodoCount() {
+  const todoCount = useTodoStore(selectTodoCount)
+  return <div>Total: {todoCount}</div>
+}
+```
+
+### Implement Computed Values
+
+```typescript
+interface TodoState {
+  todos: Todo[]
+  // Computed values as getters
+  getCompletedTodos: () => Todo[]
+  getActiveTodos: () => Todo[]
+  getProgress: () => number
+}
+
+const useTodoStore = create<TodoState>((set, get) => ({
+  todos: [],
+
+  getCompletedTodos: () => get().todos.filter((todo) => todo.completed),
+  getActiveTodos: () => get().todos.filter((todo) => !todo.completed),
+  getProgress: () => {
+    const todos = get().todos
+    if (todos.length === 0) return 0
+    return get().getCompletedTodos().length / todos.length
+  },
+}))
+```
+
+## 4. Middleware Integration
+
+### Add Middleware for Logging and Persistence
+
+```typescript
+import { persist, devtools } from 'zustand/middleware'
+
+const useStore = create<State>()(
+  devtools(
+    persist(
+      (set) => ({
+        // state and actions
+      }),
+      {
+        name: 'app-storage',
+        partialize: (state) => ({
+          // Only persist specific state fields
+          user: state.user,
+          preferences: state.preferences,
+        }),
+      }
+    )
+  )
+)
+```
+
+## 5. Async Actions and Error Handling
+
+### Implement Async Actions with Loading States
+
+```typescript
+interface AsyncState<T> {
+  data: T | null
+  loading: boolean
+  error: string | null
+}
+
+interface UserState {
+  user: AsyncState<User>
+  fetchUser: (id: string) => Promise<void>
+}
+
+const useUserStore = create<UserState>((set) => ({
+  user: {
+    data: null,
+    loading: false,
+    error: null,
+  },
+
+  fetchUser: async (id) => {
+    set((state) => ({
+      user: {
+        ...state.user,
+        loading: true,
+        error: null,
+      },
+    }))
+
+    try {
+      const userData = await api.fetchUser(id)
+      set({
+        user: {
+          data: userData,
+          loading: false,
+          error: null,
+        },
+      })
+    } catch (error) {
+      set({
+        user: {
+          data: null,
+          loading: false,
+          error: error.message,
+        },
+      })
+    }
+  },
+}))
+```
+
+## 6. Testing
+
+### Unit Testing Stores
+
+```typescript
+import { act } from '@testing-library/react'
+
+describe('todoStore', () => {
+  beforeEach(() => {
+    useTodoStore.setState({ todos: [] })
+  })
+
+  it('should add todo', () => {
+    act(() => {
+      useTodoStore.getState().addTodo('New Todo')
+    })
+
+    const todos = useTodoStore.getState().todos
+    expect(todos).toHaveLength(1)
+    expect(todos[0].title).toBe('New Todo')
+  })
+
+  it('should toggle todo', () => {
+    act(() => {
+      useTodoStore.getState().addTodo('Test Todo')
+      const todoId = useTodoStore.getState().todos[0].id
+      useTodoStore.getState().toggleTodo(todoId)
+    })
+
+    const todo = useTodoStore.getState().todos[0]
+    expect(todo.completed).toBe(true)
+  })
+})
+```
+
+## 7. Store Reset and Cleanup
+
+### Implement Reset Functionality
+
+```typescript
+interface Store {
+  // ... other state and actions
+  reset: () => void
+}
+
+const initialState = {
+  todos: [],
+  filter: 'all',
+  loading: false,
+  error: null,
+}
+
+const useStore = create<Store>((set) => ({
+  ...initialState,
+  reset: () => set(initialState),
+}))
+
+// Usage in components
+function LogoutButton() {
+  const reset = useStore((state) => state.reset)
+
+  const handleLogout = () => {
+    reset()
+    // Other logout logic
+  }
+
+  return <button onClick={handleLogout}>Logout</button>
+}
+```
+
+## 8. Integration with React Query or SWR
+
+### Combine Zustand with Data Fetching Libraries
+
+```typescript
+import { useQuery } from '@tanstack/react-query'
+
+interface CacheState {
+  invalidateCache: () => void
+  cacheTimestamp: number
+}
+
+const useCacheStore = create<CacheState>((set) => ({
+  cacheTimestamp: Date.now(),
+  invalidateCache: () => set({ cacheTimestamp: Date.now() }),
+}))
+
+function TodoList() {
+  const cacheTimestamp = useCacheStore((state) => state.cacheTimestamp)
+
+  const { data: todos } = useQuery({
+    queryKey: ['todos', cacheTimestamp],
+    queryFn: fetchTodos,
+  })
+
+  return // ... render todos
+}
+```

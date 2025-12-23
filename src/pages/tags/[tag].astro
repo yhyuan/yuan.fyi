@@ -1,0 +1,172 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { formatDate } from '../../utils/date';
+
+export async function getStaticPaths() {
+  const allPosts = await getCollection('posts');
+
+  // Collect all unique tags
+  const uniqueTags = new Set<string>();
+  allPosts.forEach(post => {
+    const tags = post.data.tags || [];
+    tags.forEach(tag => uniqueTags.add(tag));
+  });
+
+  // Generate paths for each tag
+  return Array.from(uniqueTags).map(tag => {
+    const tagPosts = allPosts
+      .filter(post => post.data.tags?.includes(tag))
+      .sort((a, b) => new Date(b.data.publishDate).valueOf() - new Date(a.data.publishDate).valueOf());
+
+    return {
+      params: { tag },
+      props: { posts: tagPosts, tag }
+    };
+  });
+}
+
+const { posts, tag } = Astro.props;
+
+const title = `Posts tagged "${tag}"`;
+const description = `All blog posts tagged with ${tag}.`;
+const permalink = `${Astro.site.href}tags/${tag}`;
+---
+
+<BaseLayout title={title} description={description} permalink={permalink} current="tags">
+  <div class="container">
+    <div class="header">
+      <h1>Posts tagged <span class="tag-highlight">"{tag}"</span></h1>
+      <a href="/tags" class="back-link">&larr; All Tags</a>
+    </div>
+
+    <p class="post-count">{posts.length} {posts.length === 1 ? 'post' : 'posts'}</p>
+
+    {posts.map((post, index) => {
+      const href = `/blog/${post.data.slug}`;
+      return (
+        <div>
+          { index !== 0 && <hr /> }
+          <div class="post-item">
+            <h2>
+              <a href={href}>{post.data.title}</a>
+            </h2>
+            <p>{post.data.description}</p>
+            <div class="post-item-footer">
+              <span class="post-item-date">— {formatDate(post.data.publishDate)}</span>
+              {post.data.tags && post.data.tags.length > 0 && (
+                <div class="tags">
+                  {post.data.tags.map((t) => (
+                    <a href={`/tags/${t}`} class={`tag ${t === tag ? 'current-tag' : ''}`}>
+                      {t}
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    })}
+  </div>
+</BaseLayout>
+
+<style>
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 15px;
+  }
+
+  h1 {
+    margin: 0;
+  }
+
+  .tag-highlight {
+    color: var(--text-link);
+  }
+
+  .back-link {
+    color: var(--text-link);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: color 0.2s ease;
+  }
+
+  .back-link:hover {
+    color: var(--text-heading);
+    text-decoration: underline;
+  }
+
+  .post-count {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 30px;
+  }
+
+  h2,
+  .post-item-footer {
+    font-family: var(--font-family-sans);
+    font-weight: 700;
+  }
+
+  .post-item-date {
+    color: var(--text-secondary);
+    text-align: left;
+    text-transform: uppercase;
+    margin-right: 16px;
+  }
+
+  .post-item-footer {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .tags {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .tag {
+    display: inline-block;
+    padding: 4px 12px;
+    background: transparent;
+    border: 1px solid var(--text-secondary);
+    border-radius: 4px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+
+  .tag:hover {
+    background: var(--text-link);
+    border-color: var(--text-link);
+    color: var(--background);
+  }
+
+  .current-tag {
+    background: var(--text-link);
+    border-color: var(--text-link);
+    color: var(--background);
+    font-weight: 600;
+  }
+
+  hr {
+    margin: 60px auto;
+  }
+
+  @media (max-width: 640px) {
+    .header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+</style>

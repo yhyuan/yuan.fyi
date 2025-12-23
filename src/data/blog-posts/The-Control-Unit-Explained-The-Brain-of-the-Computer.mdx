@@ -1,0 +1,2042 @@
+---
+title: The Control Unit Explained The Brain of the Computer
+slug: the-control-unit-explained-the-brain-of-the-computer
+publishDate: 2025-11-22
+description: Learn about The Control Unit Explained The Brain of the Computer.
+date: 2025-11-22
+tags: ['NAND2Tetris']
+draft: false
+---
+
+# The Control Unit Explained: The Brain of the Computer
+
+Let me explain the control unit from the ground up - this is the "conductor" that orchestrates everything we've discussed so far!
+
+---
+
+## What is a Control Unit? (The Big Picture)
+
+### The Central Question
+
+```
+The Problem:
+────────────
+We have:
+├─ Registers (A, D, PC)
+├─ ALU (can do 18 operations)
+├─ Memory (ROM and RAM)
+└─ Many control signals needed
+
+Question: WHO decides which operations happen WHEN?
+
+Answer: THE CONTROL UNIT!
+```
+
+### The Conductor Analogy
+
+```
+Think of a symphony orchestra:
+
+Musicians (hardware components):
+├─ Violins (registers)
+├─ Brass (ALU)
+├─ Percussion (memory)
+└─ Each knows how to play their instrument
+
+Sheet Music (program):
+├─ Written instructions
+├─ Tells what to play
+└─ Stored in ROM
+
+Conductor (control unit):
+├─ Reads the sheet music
+├─ Tells each section when to play
+├─ Coordinates timing
+├─ Ensures harmony
+└─ THE BRAIN!
+
+Without the conductor:
+✗ Everyone plays different things
+✗ Wrong timing
+✗ Chaos!
+
+With the conductor:
+✓ Beautiful music (working computer)
+```
+
+### What the Control Unit Does
+
+```
+Control Unit Responsibilities:
+──────────────────────────────
+
+1. FETCH:
+   ├─ Read instruction from ROM[PC]
+   └─ Get the next command
+
+2. DECODE:
+   ├─ Interpret instruction bits
+   ├─ Figure out what operation is requested
+   └─ This is where the "brain work" happens
+
+3. EXECUTE:
+   ├─ Generate all control signals
+   ├─ LOAD_A, LOAD_D, WRITE_M
+   ├─ ALU control bits (6 bits)
+   ├─ PC control (increment or jump)
+   └─ Coordinate all components
+
+4. REPEAT:
+   └─ Move to next instruction (forever!)
+
+
+The Control Unit is COMBINATIONAL LOGIC:
+────────────────────────────────────────
+Input:  16-bit instruction (from ROM)
+Output: ~20 control signals
+Logic:  Pure gates (AND, OR, NOT, MUX)
+Time:   No memory, just instant decoding
+
+It's like a very fancy truth table!
+```
+
+---
+
+## The Hack Instruction Format
+
+Before we can decode, we need to understand what we're decoding!
+
+### Two Instruction Types
+
+```
+Hack has TWO completely different instruction types:
+
+Type 1: A-Instruction (Address Instruction)
+───────────────────────────────────────────
+├─ Load a 15-bit value into A register
+├─ Used for: constants, addresses, jump targets
+└─ Bit 15 = 0 (identifier)
+
+Type 2: C-Instruction (Compute Instruction)
+───────────────────────────────────────────
+├─ Do an ALU operation
+├─ Store result somewhere
+├─ Maybe jump somewhere
+└─ Bit 15 = 1 (identifier)
+
+The Control Unit's FIRST job:
+└─ Look at bit 15 to determine which type!
+```
+
+### A-Instruction Format (Detailed)
+
+```
+A-Instruction (16 bits):
+
+Bit:  15  14  13  12  11  10   9   8   7   6   5   4   3   2   1   0
+     ┌───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┐
+     │ 0 │ v │ v │ v │ v │ v │ v │ v │ v │ v │ v │ v │ v │ v │ v │ v │
+     └───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┘
+       ▲   └─────────────────────────────────────────────────────────┘
+       │                          15-bit value
+    Always 0
+    (A-instruction marker)
+
+
+What it does:
+─────────────
+A ← instruction[14:0]
+
+That's it! Just load the value into A register.
+
+
+Examples:
+─────────
+
+Assembly:  @17
+Binary:    0000000000010001
+Effect:    A ← 17
+
+Assembly:  @1000
+Binary:    0000001111101000
+Effect:    A ← 1000
+
+Assembly:  @LOOP
+Binary:    0000000001100100  (if LOOP is at address 100)
+Effect:    A ← 100
+
+
+Control Signals Generated:
+───────────────────────────
+LOAD_A = 1       (load into A)
+LOAD_D = 0       (don't change D)
+WRITE_M = 0      (don't write memory)
+PC_INC = 1       (increment PC, no jump)
+ALU_CTRL = X     (don't care, not used)
+
+Simple! Just load A and increment PC.
+```
+
+### C-Instruction Format (Complex!)
+
+```
+C-Instruction (16 bits):
+
+This is where the REAL complexity is!
+
+Bit:  15  14  13  12  11  10   9   8   7   6   5   4   3   2   1   0
+     ┌───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┐
+     │ 1 │ 1 │ 1 │ a │ c │ c │ c │ c │ c │ c │ d │ d │ d │ j │ j │ j │
+     └───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┘
+       ▲   ▲   ▲   ▲   └───────────┬───────────┘   └───┬───┘   └───┬───┘
+       │   │   │   │               │                   │           │
+       │   │   │   │           comp bits          dest bits    jump bits
+       │   │   │   │          (6 bits)            (3 bits)     (3 bits)
+       │   │   │   │
+       │   │   │   └─ a-bit (A or M)
+       │   │   │      0 = use A register
+       │   │   │      1 = use Memory[A]
+       │   │   │
+       │   │   └───── unused (always 1)
+       │   └─────────  unused (always 1)
+       └──────────────  instruction type (always 1 for C-inst)
+
+
+Field Breakdown:
+────────────────
+
+Bits [15:13]: 111 (C-instruction marker)
+Bit  [12]:    a-bit (A or M selector)
+Bits [11:6]:  comp field (ALU operation)
+Bits [5:3]:   dest field (where to store result)
+Bits [2:0]:   jump field (jump condition)
+
+
+Example: D = D + 1
+──────────────────
+Assembly:  D=D+1
+Binary:    1110011111010000
+
+Breakdown:
+├─ 111: C-instruction ✓
+├─ a=0: use A (but doesn't matter here)
+├─ comp=011111: ALU operation for D+1
+├─ dest=010: store to D register
+└─ jump=000: no jump
+
+Let me decode each field in detail...
+```
+
+### The 'comp' Field (ALU Control)
+
+```
+The comp field (6 bits) controls the ALU:
+
+These 6 bits directly map to ALU control signals!
+
+Bit:  11  10   9   8   7   6
+     ┌───┬───┬───┬───┬───┬───┐
+     │ c1│ c2│ c3│ c4│ c5│ c6│
+     └───┴───┴───┴───┴───┴───┘
+       │   │   │   │   │   │
+       └───┴───┴───┴───┴───┴────► ALU control
+          zx  nx  zy  ny  f   no
+
+Direct mapping!
+
+
+All Possible comp Values:
+──────────────────────────
+
+When a=0 (use A register):
+────────────────────────────
+comp    │ Computation │ Description
+────────┼─────────────┼──────────────────
+101010  │  0          │ Constant zero
+111111  │  1          │ Constant one
+111010  │  -1         │ Constant negative one
+001100  │  D          │ D register value
+110000  │  A          │ A register value
+001101  │  !D         │ NOT D
+110001  │  !A         │ NOT A
+001111  │  -D         │ Negate D
+110011  │  -A         │ Negate A
+011111  │  D+1        │ Increment D
+110111  │  A+1        │ Increment A
+001110  │  D-1        │ Decrement D
+110010  │  A-1        │ Decrement A
+000010  │  D+A        │ Add
+010011  │  D-A        │ Subtract
+000111  │  A-D        │ Reverse subtract
+000000  │  D&A        │ Bitwise AND
+010101  │  D|A        │ Bitwise OR
+
+
+When a=1 (use Memory[A]):
+──────────────────────────
+Same comp codes, but replace A with M!
+
+comp    │ Computation │ Description
+────────┼─────────────┼──────────────────
+101010  │  0          │ Still zero
+110000  │  M          │ Memory value
+110001  │  !M         │ NOT M
+110011  │  -M         │ Negate M
+110111  │  M+1        │ Increment M
+110010  │  M-1        │ Decrement M
+000010  │  D+M        │ Add D and M
+010011  │  D-M        │ D minus M
+000111  │  M-D        │ M minus D
+000000  │  D&M        │ Bitwise AND
+010101  │  D|M        │ Bitwise OR
+
+
+Examples:
+─────────
+D=D+1    comp=011111 (zx=0,nx=1,zy=1,ny=1,f=1,no=1)
+D=A      comp=110000 (zx=1,nx=1,zy=0,ny=0,f=0,no=0)
+D=M+1    comp=110111 (a=1, comp=110111)
+```
+
+### The 'dest' Field (Destination)
+
+```
+The dest field (3 bits) controls where to store result:
+
+Bit:   5   4   3
+     ┌───┬───┬───┐
+     │ d1│ d2│ d3│
+     └───┴───┴───┘
+       │   │   │
+       │   │   └────► destM (write to Memory)
+       │   └────────► destD (write to D register)
+       └────────────► destA (write to A register)
+
+Each bit independently controls a destination!
+
+
+Truth Table:
+────────────
+d1  d2  d3  │ Notation │ Effect
+────────────┼──────────┼─────────────────────────
+ 0   0   0  │   null   │ Don't store (discard result)
+ 0   0   1  │    M     │ Memory[A] = result
+ 0   1   0  │    D     │ D = result
+ 0   1   1  │   MD     │ Memory[A] = result, D = result
+ 1   0   0  │    A     │ A = result
+ 1   0   1  │   AM     │ A = result, Memory[A] = result
+ 1   1   0  │   AD     │ A = result, D = result
+ 1   1   1  │   AMD    │ A = result, D = result, M = result
+
+
+Multiple Destinations!
+──────────────────────
+You can write to multiple places at once!
+
+Example: AD=D+1
+├─ dest=110 (d1=1, d2=1, d3=0)
+├─ Both A and D get the result
+└─ Efficient! One computation → two saves
+
+
+Control Signal Generation:
+───────────────────────────
+LOAD_A  = dest[2] (bit 5)
+LOAD_D  = dest[1] (bit 4)
+WRITE_M = dest[0] (bit 3)
+
+Direct mapping! Simple hardware!
+```
+
+### The 'jump' Field (Program Flow)
+
+```
+The jump field (3 bits) controls PC behavior:
+
+Bit:   2   1   0
+     ┌───┬───┬───┐
+     │ j1│ j2│ j3│
+     └───┴───┴───┘
+       │   │   │
+       │   │   └────► JGT (jump if greater than 0)
+       │   └────────► JEQ (jump if equal to 0)
+       └────────────► JLT (jump if less than 0)
+
+Jump is CONDITIONAL - depends on ALU flags!
+
+
+Truth Table:
+────────────
+j1  j2  j3  │ Mnemonic │ Jump Condition
+────────────┼──────────┼────────────────────────
+ 0   0   0  │   null   │ No jump (PC++)
+ 0   0   1  │   JGT    │ Jump if result > 0
+ 0   1   0  │   JEQ    │ Jump if result == 0
+ 0   1   1  │   JGE    │ Jump if result >= 0
+ 1   0   0  │   JLT    │ Jump if result < 0
+ 1   0   1  │   JNE    │ Jump if result != 0
+ 1   1   0  │   JLE    │ Jump if result <= 0
+ 1   1   1  │   JMP    │ Unconditional jump (always)
+
+
+How Jump Works:
+───────────────
+1. ALU computes result
+2. ALU generates flags:
+   ├─ ZR (zero flag): result == 0
+   └─ NG (negative flag): result < 0
+3. Control unit looks at jump bits AND flags
+4. Decides: PC++ or PC←A?
+
+
+The Jump Logic (Boolean):
+
+First, extract information from flags:
+├─ ZR=1 → result is zero
+├─ NG=1 → result is negative
+├─ PS=(!NG AND !ZR) → result is positive
+
+Then, check jump conditions:
+JUMP = (j1 AND NG)              // Jump if negative
+     OR (j2 AND ZR)              // Jump if zero
+     OR (j3 AND (!NG AND !ZR))  // Jump if positive
+
+
+Examples:
+─────────
+D;JGT  (jump if D > 0)
+├─ j1=0, j2=0, j3=1
+├─ JUMP = (0 AND NG) OR (0 AND ZR) OR (1 AND PS)
+├─ JUMP = PS
+└─ Jump only if result is positive ✓
+
+0;JMP  (unconditional jump)
+├─ j1=1, j2=1, j3=1
+├─ JUMP = (1 AND NG) OR (1 AND ZR) OR (1 AND PS)
+├─ JUMP = NG OR ZR OR PS
+├─ Since (NG OR ZR OR PS) is always true...
+└─ Always jump! ✓
+
+
+Control Signal Generation:
+───────────────────────────
+PC_LOAD = JUMP (computed from j bits and ALU flags)
+PC_INC  = !JUMP (increment when not jumping)
+```
+
+---
+
+## Control Unit Architecture
+
+### Block Diagram
+
+```
+Complete Control Unit Architecture:
+
+                 ┌──────────────────────────────────┐
+                 │    INSTRUCTION INPUT             │
+                 │    (16 bits from ROM)            │
+                 └──────────────┬───────────────────┘
+                                │
+                    Instruction[15:0]
+                                │
+                                ▼
+                 ┌──────────────────────────────────┐
+                 │  INSTRUCTION DECODER             │
+                 │                                  │
+                 │  1. Detect A-inst vs C-inst      │
+                 │     (check bit 15)               │
+                 │                                  │
+                 │  2. Extract fields:              │
+                 │     - a-bit    (bit 12)          │
+                 │     - comp     (bits 11:6)       │
+                 │     - dest     (bits 5:3)        │
+                 │     - jump     (bits 2:0)        │
+                 └──────────────┬───────────────────┘
+                                │
+                                ├────► a-bit (A_OR_M)
+                                │
+                                ├────► comp[5:0] (ALU_CTRL)
+                                │
+                                ▼
+                 ┌──────────────────────────────────┐
+                 │  DESTINATION DECODER             │
+                 │                                  │
+                 │  Generate:                       │
+                 │  - LOAD_A = dest[2] AND C_INST   │
+                 │  - LOAD_D = dest[1] AND C_INST   │
+                 │  - WRITE_M = dest[0] AND C_INST  │
+                 └──────────────┬───────────────────┘
+                                │
+                                ├────► LOAD_A
+                                ├────► LOAD_D  
+                                ├────► WRITE_M
+                                │
+                                ▼
+       ┌────────────────────────────────────────────┐
+       │  ALU FLAGS (from ALU)                      │
+       │  - ZR (zero flag)                          │
+       │  - NG (negative flag)                      │
+       └────────┬───────────────────────────────────┘
+                │
+                ▼
+       ┌────────────────────────────────────────────┐
+       │  JUMP LOGIC                                │
+       │                                            │
+       │  Combine jump bits with ALU flags:        │
+       │  JUMP = (j1 AND NG) OR                    │
+       │         (j2 AND ZR) OR                    │
+       │         (j3 AND !NG AND !ZR)              │
+       │                                            │
+       │  PC_LOAD = JUMP AND C_INST                │
+       │  PC_INC = !PC_LOAD                        │
+       └────────┬───────────────────────────────────┘
+                │
+                ├────► PC_LOAD
+                └────► PC_INC
+
+         OUTPUT: ALL CONTROL SIGNALS
+         ────────────────────────────
+         ├─ LOAD_A (to A register)
+         ├─ LOAD_D (to D register)
+         ├─ WRITE_M (to RAM)
+         ├─ READ_M (for RAM read)
+         ├─ A_OR_M (to X input mux)
+         ├─ ALU_CTRL[5:0] (to ALU)
+         ├─ PC_LOAD (to PC)
+         └─ PC_INC (to PC)
+```
+
+### Key Insight: Pure Combinational Logic
+
+```
+CRITICAL UNDERSTANDING:
+───────────────────────
+
+The control unit has NO STATE!
+
+Input:  16-bit instruction
+Output: Control signals
+Logic:  Pure gates (no flip-flops!)
+Delay:  ~20-30ns (gate propagation)
+
+It's like a giant lookup table implemented in gates!
+
+       Instruction ──► [Logic Gates] ──► Control Signals
+                         ▲
+                         │
+                    ALU Flags (ZR, NG)
+
+Every clock cycle:
+1. New instruction arrives
+2. Control unit decodes it (combinational)
+3. Control signals generated (immediately)
+4. Components respond
+5. Repeat!
+
+No memory in control unit itself!
+(Only in registers, which it controls)
+```
+
+---
+
+## Hardware Implementation
+
+### Instruction Type Detection
+
+```
+First job: Determine A-instruction vs C-instruction
+
+Logic:
+──────
+C_INST = instruction[15]
+
+When instruction[15] = 0 → A-instruction
+When instruction[15] = 1 → C-instruction
+
+Circuit (trivial):
+──────────────────
+instruction[15] ──────────► C_INST
+
+
+Why this matters:
+─────────────────
+├─ A-instructions: ignore comp, dest, jump fields
+├─ C-instructions: use all fields
+└─ C_INST signal gates other control signals
+
+
+Using 74HC04 (NOT gate) for clarity:
+─────────────────────────────────────
+
+instruction[15] ──────┬─────► C_INST
+                      │
+                      │
+                ┌─────▼─────┐
+                │    NOT    ├─► A_INST
+                └───────────┘
+                   74HC04
+
+Both signals available for gating!
+```
+
+### Field Extraction (Wire Routing)
+
+```
+Most fields are just direct wire connections!
+
+A-bit (A or M selector):
+────────────────────────
+instruction[12] ──────────► A_OR_M
+
+Goes directly to X input multiplexer!
+
+No gates needed - just a wire!
+
+
+Comp field (ALU control):
+──────────────────────────
+instruction[11] ──────────► ALU_CTRL[5] (zx)
+instruction[10] ──────────► ALU_CTRL[4] (nx)
+instruction[9]  ──────────► ALU_CTRL[3] (zy)
+instruction[8]  ──────────► ALU_CTRL[2] (ny)
+instruction[7]  ──────────► ALU_CTRL[1] (f)
+instruction[6]  ──────────► ALU_CTRL[0] (no)
+
+Direct connection to ALU preprocessing!
+
+Again, no logic gates - just wires!
+
+
+Dest field (destination bits):
+───────────────────────────────
+instruction[5] ──────────► dest[2] (destA)
+instruction[4] ──────────► dest[1] (destD)
+instruction[3] ──────────► dest[0] (destM)
+
+These need gating with C_INST (next section)
+
+
+Jump field (jump bits):
+────────────────────────
+instruction[2] ──────────► jump[2] (j1)
+instruction[1] ──────────► jump[1] (j2)
+instruction[0] ──────────► jump[0] (j3)
+
+These need jump logic (complex, coming up)
+
+
+The Beauty:
+───────────
+Most of the control unit is just WIRE ROUTING!
+The instruction format was designed for this!
+Brilliant design! ✓
+```
+
+### Destination Control Logic
+
+```
+Generate load signals for registers:
+
+Logic Equations:
+────────────────
+LOAD_A  = instruction[5] AND C_INST
+LOAD_D  = instruction[4] AND C_INST
+WRITE_M = instruction[3] AND C_INST
+
+Why AND with C_INST?
+────────────────────
+├─ For C-instructions: use dest bits
+└─ For A-instructions: always load A, never D or M
+
+Actually, for A-instructions:
+────────────────────────────
+LOAD_A  = A_INST OR (instruction[5] AND C_INST)
+        = !C_INST OR (instruction[5] AND C_INST)
+
+LOAD_D  = instruction[4] AND C_INST
+WRITE_M = instruction[3] AND C_INST
+
+
+Circuit Implementation (74HC08 AND gates):
+───────────────────────────────────────────
+
+For LOAD_D:
+──────────
+         ┌─────────┐
+inst[4] ─┤1      3 ├──► LOAD_D
+         │  74HC08 │
+C_INST ──┤2        │
+         └─────────┘
+
+For WRITE_M:
+───────────
+         ┌─────────┐
+inst[3] ─┤4      6 ├──► WRITE_M
+         │  74HC08 │
+C_INST ──┤5        │
+         └─────────┘
+
+For LOAD_A (more complex):
+──────────────────────────
+Need: LOAD_A = !C_INST OR (inst[5] AND C_INST)
+
+Using De Morgan: !C_INST OR X = !(C_INST AND !X)
+
+Step 1: AND gate
+         ┌─────────┐
+inst[5] ─┤1      3 ├──► temp
+         │  74HC08 │
+C_INST ──┤2        │
+         └─────────┘
+
+Step 2: OR with !C_INST (use NAND and NOT)
+         ┌─────────┐
+C_INST ──┤1      3 ├──┐
+         │  74HC00 │  │
+C_INST ──┤2  NAND  │  │  ┌─────────┐
+         └─────────┘  └──┤1      3 ├──► LOAD_A
+                         │  74HC08 │
+temp ─────────────────┬──┤2    OR  │
+                      │  └─────────┘
+temp ─────────────────┘
+
+Actually, simpler way using OR gate (74HC32):
+─────────────────────────────────────────────
+         ┌─────────┐
+temp ────┤1      3 ├──► LOAD_A
+         │  74HC32 │
+!C_INST ─┤2    OR  │
+         └─────────┘
+
+
+Complete Circuit (using one 74HC08 and one 74HC32):
+────────────────────────────────────────────────────
+
+         C_INST
+            │
+            ├──────────────────┐
+            │                  │
+            │                  │
+inst[5] ────┼──┐               │
+            │  │ AND           │
+            └──┤  74HC08  ──┬──┤
+               └──────────┘ │  │
+                   temp     │  │
+                            │  │
+                            │  │ OR
+         !C_INST ───────────┴──┤  74HC32 ──► LOAD_A
+                               └────────────
+
+inst[4] ────┐
+            │ AND
+C_INST ─────┤  74HC08 ──────────────────► LOAD_D
+            └──────────
+
+inst[3] ────┐
+            │ AND
+C_INST ─────┤  74HC08 ──────────────────► WRITE_M
+            └──────────
+```
+
+### Jump Logic (The Complex Part)
+
+This is the most intricate part of the control unit!
+
+```
+Jump Decision Logic:
+
+Inputs:
+───────
+├─ jump[2:0] (j1, j2, j3) from instruction
+└─ ZR, NG flags from ALU
+
+Output:
+───────
+└─ JUMP (should we jump?)
+
+
+Step 1: Extract conditions from flags
+──────────────────────────────────────
+
+From ALU flags, we know:
+├─ ZR = 1 → result is zero
+├─ NG = 1 → result is negative
+└─ Need: PS (positive) = !NG AND !ZR
+
+Circuit for PS:
+──────────────
+         ┌─────────┐
+    NG ──┤1      3 ├─► !NG
+         │  74HC04 │
+         └─────────┘
+         
+         ┌─────────┐
+    ZR ──┤1      3 ├─► !ZR
+         │  74HC04 │
+         └─────────┘
+
+         ┌─────────┐
+   !NG ──┤1      3 ├─► PS
+         │  74HC08 │    (positive)
+   !ZR ──┤2    AND │
+         └─────────┘
+
+
+Step 2: Check each jump condition
+──────────────────────────────────
+
+j1 (jump if negative):
+         ┌─────────┐
+jump[2]─►┤1      3 ├─► JLT
+         │  74HC08 │   (jump if less than)
+    NG ─►┤2    AND │
+         └─────────┘
+
+j2 (jump if zero):
+         ┌─────────┐
+jump[1]─►┤4      6 ├─► JEQ
+         │  74HC08 │   (jump if equal)
+    ZR ─►┤5    AND │
+         └─────────┘
+
+j3 (jump if positive):
+         ┌─────────┐
+jump[0]─►┤10    11 ├─► JGT
+         │  74HC08 │   (jump if greater)
+    PS ─►┤9    AND │
+         └─────────┘
+
+
+Step 3: Combine conditions
+───────────────────────────
+
+JUMP = JLT OR JEQ OR JGT
+
+Using 74HC32 (OR gate):
+──────────────────────
+
+         ┌─────────┐
+   JLT ──┤1      3 ├──┐ temp1
+         │  74HC32 │  │
+   JEQ ──┤2    OR  │  │
+         └─────────┘  │
+                      │
+                      │
+         ┌────────────┘
+         │
+         │  ┌─────────┐
+         └──┤1      3 ├──► JUMP
+            │  74HC32 │
+   JGT ─────┤2    OR  │
+            └─────────┘
+
+
+Step 4: Gate with C_INST
+─────────────────────────
+
+Only jump for C-instructions!
+
+         ┌─────────┐
+  JUMP ──┤1      3 ├──► PC_LOAD
+         │  74HC08 │
+C_INST ──┤2    AND │
+         └─────────┘
+
+         ┌─────────┐
+PC_LOAD─►┤1      3 ├─► PC_INC
+         │  74HC04 │
+         └─────────┘
+
+
+Complete Jump Circuit:
+──────────────────────
+
+                     ZR, NG (from ALU)
+                         │
+                         ▼
+                  [Compute PS]
+                         │
+                         ▼
+        ┌────────────────┼────────────────┐
+        │                │                │
+        ▼                ▼                ▼
+    ┌────────┐      ┌────────┐      ┌────────┐
+    │j2 AND ZR│      │j1 AND NG│      │j3 AND PS│
+    │  (JEQ)  │      │  (JLT)  │      │  (JGT)  │
+    └────┬───┘      └────┬───┘      └────┬───┘
+         │               │               │
+         └───────┬───────┴───────┬───────┘
+                 │               │
+                 ▼               ▼
+            ┌─────────┐     ┌─────────┐
+            │   OR    │     │   OR    │
+            └────┬────┘     └─────────┘
+                 │
+                 ▼
+              [JUMP]
+                 │
+                 ▼
+         ┌───────────────┐
+         │ AND with      │
+         │ C_INST        │
+         └───────┬───────┘
+                 │
+                 ├──► PC_LOAD
+                 │
+                 └──► PC_INC (via NOT)
+```
+
+### Complete Control Unit Schematic
+
+```
+CONTROL UNIT - Complete IC-Level Schematic:
+
+                    INSTRUCTION[15:0]
+                           │
+            ┌──────────────┼──────────────┐
+            │              │              │
+            ▼              ▼              ▼
+    ┌──────────────────────────────────────────┐
+    │  U1: Instruction Buffer (74HC541)        │
+    │  (Optional - for signal strength)        │
+    └──┬───────────────────────────────────┬───┘
+       │                                   │
+       │ [15]                              │ [14:0]
+       ▼                                   ▼
+    C_INST                           (for A-instruction)
+       │                                   │
+       ├──────┬──────┬──────┬─────────┐   │
+       │      │      │      │         │   │
+       │[12]  │[11:6]│[5:3] │[2:0]    │   │
+       │      │      │      │         │   │
+       ▼      ▼      ▼      ▼         ▼   ▼
+    ┌────┬─────┬─────┬─────┬──────────────┐
+    │A_OR│ALU_ │dest │jump │    value     │
+    │ _M │CTRL │bits │bits │   [14:0]     │
+    └──┬─┴──┬──┴──┬──┴──┬──┴──────────┬───┘
+       │    │     │     │             │
+       │    │     │     │             │
+       │    │     │     │             ▼
+       │    │     │     │      ┌────────────┐
+       │    │     │     │      │ To A Reg   │
+       │    │     │     │      │ (data in)  │
+       │    │     │     │      └────────────┘
+       │    │     │     │
+       │    │     │     ▼
+       │    │     │  ┌──────────────────────┐
+       │    │     │  │ U2-U4: Jump Logic    │
+       │    │     │  │ 74HC08, 74HC32       │
+       │    │     │  │ Input: j[2:0],ZR,NG  │
+       │    │     │  │ Output: JUMP         │
+       │    │     │  └──────┬───────────────┘
+       │    │     │         │
+       │    │     │         ├─► PC_LOAD
+       │    │     │         └─► PC_INC
+       │    │     │
+       │    │     ▼
+       │    │  ┌──────────────────────┐
+       │    │  │ U5-U7: Dest Decode   │
+       │    │  │ 74HC08, 74HC32       │
+       │    │  │ Input: dest[2:0]     │
+       │    │  │        C_INST        │
+       │    │  └──────┬───────────────┘
+       │    │         │
+       │    │         ├─► LOAD_A
+       │    │         ├─► LOAD_D
+       │    │         └─► WRITE_M
+       │    │
+       │    ▼
+       │  Direct to ALU (6 wires)
+       │    │
+       │    ├─► ALU zx
+       │    ├─► ALU nx
+       │    ├─► ALU zy
+       │    ├─► ALU ny
+       │    ├─► ALU f
+       │    └─► ALU no
+       │
+       ▼
+    Direct to X input MUX
+       │
+       └─► A_OR_M
+
+
+IC Count:
+─────────
+U1:    74HC541 (buffer) - optional
+U2-U4: 74HC08, 74HC32, 74HC04 (jump logic)
+U5-U7: 74HC08, 74HC32, 74HC04 (dest decode)
+
+Total: ~6 ICs for complete control unit!
+
+Very simple compared to modern CPUs!
+```
+
+---
+
+## Complete Instruction Execution Examples
+
+Let me trace THREE complete instructions through the control unit:
+
+### Example 1: @100 (A-Instruction)
+
+```
+Assembly:  @100
+Binary:    0000000001100100
+
+Step-by-Step Decoding:
+──────────────────────
+
+t=0ns: Instruction arrives from ROM
+───────────────────────────────────
+ROM output → instruction bus
+INST[15:0] = 0000000001100100
+
+
+t=5ns: Control unit receives instruction
+─────────────────────────────────────────
+Through buffer (if present)
+Signal arrives at control logic
+
+
+t=10ns: Instruction type detection
+───────────────────────────────────
+INST[15] = 0
+
+         ┌─────────┐
+INST[15]─┤    0    ├──► C_INST = 0
+         └─────────┘
+
+C_INST = 0 → A-instruction! ✓
+
+
+t=15ns: Field extraction
+─────────────────────────
+For A-instruction, only value matters:
+
+Value = INST[14:0] = 000000001100100 = 100 decimal
+
+
+t=20ns: Control signals generated
+──────────────────────────────────
+
+LOAD_A calculation:
+───────────────────
+LOAD_A = !C_INST OR (INST[5] AND C_INST)
+       = !0 OR (X AND 0)
+       = 1 OR 0
+       = 1 ✓
+
+LOAD_D calculation:
+───────────────────
+LOAD_D = INST[4] AND C_INST
+       = X AND 0
+       = 0 ✓
+
+WRITE_M calculation:
+────────────────────
+WRITE_M = INST[3] AND C_INST
+        = X AND 0
+        = 0 ✓
+
+PC_LOAD calculation:
+────────────────────
+(No jump for A-instruction)
+PC_LOAD = 0
+PC_INC = 1 ✓
+
+
+t=25ns: Control signals stable
+───────────────────────────────
+
+Summary of all signals:
+───────────────────────
+LOAD_A  = 1    ◄── Load A register
+LOAD_D  = 0    ◄── Don't touch D
+WRITE_M = 0    ◄── Don't write memory
+READ_M  = 0    ◄── Don't read memory
+PC_LOAD = 0    ◄── Don't load PC
+PC_INC  = 1    ◄── Increment PC
+A_OR_M  = X    ◄── Don't care (not using ALU)
+ALU_CTRL = X   ◄── Don't care (not computing)
+
+
+t=110ns: Clock edge (end of cycle)
+──────────────────────────────────
+LOAD_A pulses HIGH
+A ← 100 ✓
+
+PC increments
+PC ← PC + 1 ✓
+
+
+Result:
+───────
+A = 100
+PC advanced to next instruction
+Simple and fast! ✓
+```
+
+### Example 2: D=M+1 (C-Instruction)
+
+```
+Assembly:  D=M+1
+Binary:    1111110111010000
+
+Detailed Breakdown:
+───────────────────
+Bit  15 14 13 │ 12 │ 11 10  9  8  7  6 │  5  4  3 │  2  1  0
+     1  1  1  │ 1  │  1  1  0  1  1  1 │  0  1  0 │  0  0  0
+     └──┬───┘   │   └────────┬────────┘   └───┬──┘   └───┬──┘
+     C-inst    a-bit   comp (M+1)         dest (D)    jump (none)
+
+
+Step-by-Step Decoding:
+──────────────────────
+
+t=10ns: Instruction type detection
+───────────────────────────────────
+INST[15] = 1
+
+C_INST = 1 → C-instruction! ✓
+
+
+t=15ns: Field extraction
+─────────────────────────
+
+a-bit:
+─────
+INST[12] = 1 → A_OR_M = 1
+Use Memory[A], not A register ✓
+
+comp field:
+───────────
+INST[11:6] = 110111
+
+This is the encoding for "Y+1" where Y is M
+ALU control:
+├─ zx = 1 (zero X input)
+├─ nx = 1 (negate it)
+├─ zy = 0 (use Y as is)
+├─ ny = 1 (negate Y)
+├─ f  = 1 (ADD)
+└─ no = 1 (negate output)
+
+Magic: (!0) + (!Y) negated = Y + 1 ✓
+
+dest field:
+───────────
+INST[5:3] = 010
+├─ d1 = 0 (don't load A)
+├─ d2 = 1 (load D) ✓
+└─ d3 = 0 (don't write M)
+
+jump field:
+───────────
+INST[2:0] = 000
+├─ j1 = 0
+├─ j2 = 0
+└─ j3 = 0
+No jump ✓
+
+
+t=20ns: Control signal generation
+──────────────────────────────────
+
+LOAD_A:
+───────
+LOAD_A = !C_INST OR (INST[5] AND C_INST)
+       = !1 OR (0 AND 1)
+       = 0 OR 0
+       = 0 ✓
+
+LOAD_D:
+───────
+LOAD_D = INST[4] AND C_INST
+       = 1 AND 1
+       = 1 ✓
+
+WRITE_M:
+────────
+WRITE_M = INST[3] AND C_INST
+        = 0 AND 1
+        = 0 ✓
+
+READ_M:
+───────
+READ_M = A_OR_M AND C_INST
+       = 1 AND 1
+       = 1 ✓
+
+(Need to read memory for M+1!)
+
+PC control:
+───────────
+Jump logic evaluates:
+├─ j1=0, j2=0, j3=0 → no jump condition
+└─ JUMP = 0
+
+PC_LOAD = 0
+PC_INC = 1 ✓
+
+
+t=25ns: All control signals stable
+───────────────────────────────────
+
+Complete signal set:
+────────────────────
+A_OR_M    = 1        ◄── Use M (memory)
+ALU_CTRL  = 110111   ◄── Compute M+1
+LOAD_A    = 0        ◄── Don't load A
+LOAD_D    = 1        ◄── Load D ✓
+WRITE_M   = 0        ◄── Don't write memory
+READ_M    = 1        ◄── Read memory ✓
+PC_LOAD   = 0        ◄── Don't load PC
+PC_INC    = 1        ◄── Increment PC ✓
+
+
+Execution Flow (parallel):
+───────────────────────────
+
+Memory Access (0-70ns):
+───────────────────────
+A register → RAM address
+READ_M = 1 → RAM outputs data
+M value (assume 0x0005) → X input MUX
+
+A_OR_M = 1 → MUX selects M
+X_IN = 0x0005 (from memory)
+
+ALU Computation (25-100ns):
+────────────────────────────
+ALU receives:
+├─ Control: 110111 (M+1 operation)
+├─ X input: 0x0005 (from M)
+└─ Y input: D (don't care for this operation)
+
+ALU computes: M + 1 = 0x0005 + 1 = 0x0006
+ALU_Out = 0x0006 ✓
+
+Save to D (110ns):
+──────────────────
+Clock edge!
+LOAD_D = 1 → pulses
+D ← 0x0006 ✓
+
+PC Update (110ns):
+──────────────────
+PC_INC = 1
+PC ← PC + 1 ✓
+
+
+Result:
+───────
+Before: M = 0x0005, D = 0x0000
+After:  M = 0x0005 (unchanged), D = 0x0006 ✓
+PC advanced ✓
+```
+
+### Example 3: D;JGT (Conditional Jump)
+
+```
+Assembly:  D;JGT (jump if D > 0)
+Binary:    1110001100000001
+
+Detailed Breakdown:
+───────────────────
+Bit  15 14 13 │ 12 │ 11 10  9  8  7  6 │  5  4  3 │  2  1  0
+     1  1  1  │ 0  │  0  0  1  1  0  0 │  0  0  0 │  0  0  1
+     └──┬───┘   │   └────────┬────────┘   └───┬──┘   └───┬──┘
+     C-inst    a-bit    comp (D)         dest (null)  jump (JGT)
+
+Scenario:
+─────────
+Let's say D = 0x0005 (positive)
+Should jump to address in A
+
+Assume A = 0x0200 (jump target)
+
+
+Step-by-Step Decoding:
+──────────────────────
+
+t=10ns: Instruction type
+────────────────────────
+C_INST = 1 ✓
+
+
+t=15ns: Field extraction
+─────────────────────────
+
+a-bit:
+─────
+A_OR_M = 0 (use A, but doesn't matter)
+
+comp field:
+───────────
+INST[11:6] = 001100
+This is "pass D through" (just output D)
+
+ALU_CTRL = 001100
+├─ Computes: D value
+└─ Result = D
+
+dest field:
+───────────
+INST[5:3] = 000
+No destination - discard result!
+(We only care about flags for jump)
+
+jump field:
+───────────
+INST[2:0] = 001
+├─ j1 = 0 (not JLT)
+├─ j2 = 0 (not JEQ)
+└─ j3 = 1 (JGT) ✓
+
+
+t=20-100ns: ALU computes D
+────────────────────────────
+ALU outputs D value: 0x0005
+
+ALU flags generated:
+├─ ZR = 0 (not zero)
+└─ NG = 0 (not negative)
+
+Therefore: result is POSITIVE ✓
+
+
+t=100ns: Jump logic evaluates
+──────────────────────────────
+
+Step 1: Compute PS (positive)
+─────────────────────────────
+PS = !NG AND !ZR
+   = !0 AND !0
+   = 1 AND 1
+   = 1 ✓
+
+Step 2: Check jump conditions
+──────────────────────────────
+JLT = j1 AND NG = 0 AND 0 = 0
+JEQ = j2 AND ZR = 0 AND 0 = 0
+JGT = j3 AND PS = 1 AND 1 = 1 ✓
+
+Step 3: Combine
+───────────────
+JUMP = JLT OR JEQ OR JGT
+     = 0 OR 0 OR 1
+     = 1 ✓
+
+Step 4: Gate with C_INST
+────────────────────────
+PC_LOAD = JUMP AND C_INST
+        = 1 AND 1
+        = 1 ✓
+
+PC_INC = !PC_LOAD
+       = !1
+       = 0 ✓
+
+
+t=110ns: Clock edge - JUMP!
+───────────────────────────
+
+PC_LOAD = 1 → PC loads new value
+PC ← A = 0x0200 ✓
+
+Next instruction will be fetched from 0x0200!
+
+
+Alternative Scenario: D is zero or negative
+────────────────────────────────────────────
+
+If D = 0x0000:
+├─ ZR = 1, NG = 0
+├─ PS = !1 AND !0 = 0
+├─ JGT = 1 AND 0 = 0
+├─ JUMP = 0
+└─ PC increments (no jump) ✓
+
+If D = 0xFFFF (negative):
+├─ ZR = 0, NG = 1
+├─ PS = !1 AND !0 = 0
+├─ JGT = 1 AND 0 = 0
+├─ JUMP = 0
+└─ PC increments (no jump) ✓
+
+
+Control Signals Summary:
+────────────────────────
+A_OR_M    = 0        ◄── Use A (doesn't matter)
+ALU_CTRL  = 001100   ◄── Pass D through
+LOAD_A    = 0        ◄── Don't load A
+LOAD_D    = 0        ◄── Don't load D
+WRITE_M   = 0        ◄── Don't write M
+READ_M    = 0        ◄── Don't read M
+PC_LOAD   = 1        ◄── LOAD PC FROM A! ✓
+PC_INC    = 0        ◄── Don't increment
+
+The jump happens! ✓
+```
+
+---
+
+## The Fetch-Decode-Execute Cycle
+
+### Complete Timing Diagram
+
+```
+One Complete Instruction Cycle (125ns @ 8MHz):
+
+PHASE 1: FETCH (0-70ns)
+───────────────────────
+Activity: Read instruction from ROM
+Key signals: PC → ROM address
+
+Timeline:
+t=0ns:   PC outputs address
+t=25ns:  ROM address decoded
+t=70ns:  Instruction valid at ROM output
+
+
+PHASE 2: DECODE (70-100ns)
+───────────────────────────
+Activity: Control unit generates all signals
+Key signals: Instruction → Control logic
+
+Timeline:
+t=70ns:  Instruction arrives at control unit
+t=75ns:  C_INST determined
+t=85ns:  Fields extracted
+t=95ns:  Jump logic completes
+t=100ns: All control signals stable
+
+
+PHASE 3: EXECUTE (0-110ns, overlaps!)
+──────────────────────────────────────
+Activity: Components respond to control signals
+Key signals: All control signals active
+
+Timeline (parallel operations):
+
+Memory Access (if needed):
+t=0ns:   A → RAM address
+t=70ns:  RAM data valid
+
+ALU Operation:
+t=25ns:  Register outputs stable
+t=40ns:  Through input muxes
+t=100ns: ALU result valid
+
+Register Updates:
+t=100ns: Setup time begins
+t=110ns: Clock edge - data captured!
+
+
+PHASE 4: PC UPDATE (110-125ns)
+───────────────────────────────
+Activity: Move to next instruction
+Key signals: PC_LOAD or PC_INC
+
+Timeline:
+t=110ns: Clock edge
+         ├─ If jump: PC ← A
+         └─ If no jump: PC ← PC + 1
+t=125ns: New PC value stable
+
+
+Complete Cycle Timing Diagram:
+───────────────────────────────
+
+Time:    0    25   50   75   100  125  (ns)
+         │    │    │    │    │    │
+
+CLK:     ───╗     ╔════╗     ╔════
+            ╚═════╝    ╚═════╝
+                       ▲
+                  Clock edge
+
+PC:      ──── N ────────────┴─ N+1 ──
+                            │
+                       Updates here
+
+ROM_ADDR: ─── N ─────────────────────
+              └─► (stable all cycle)
+
+INST:    ═══════╱╲╱╲╲═══════════════
+               └──►│◄─ Valid
+                  70ns
+
+C_INST:  ═══════════╱╲╱╲╲═══════════
+                   └──►│ Valid
+                      80ns
+
+CONTROL  ═══════════════╱╲╲═════════
+SIGNALS:               └─►│ All valid
+                         100ns
+
+ALU_OUT: ═══════════════════╱╲╲═════
+                           └─►│ Valid
+                             100ns
+
+LOAD_x:  ────────────────────╗  ╔═══
+                             ╚══╝
+                            110ns
+
+REG_OUT: ──── old ───────────┴─ new ─
+                             │
+                        Updates here
+```
+
+### Critical Paths
+
+```
+Path 1: Instruction Fetch
+─────────────────────────
+PC → ROM → Instruction Bus
+Time: 70ns (ROM access time)
+Bottleneck: ROM speed
+
+Path 2: Control Decode
+──────────────────────
+Instruction → Control Logic → Control Signals
+Time: 30ns (gate delays)
+Bottleneck: Jump logic (most gates)
+
+Path 3: ALU Operation
+─────────────────────
+Registers → ALU → Result
+Time: 100ns (carry chain)
+Bottleneck: 16-bit addition
+
+Path 4: Memory Access
+─────────────────────
+A → RAM → Data
+Time: 70ns (RAM access)
+Bottleneck: RAM speed
+
+
+LONGEST PATH (determines max frequency):
+────────────────────────────────────────
+Register → ALU → Register feedback
+Total: 110ns (25 + 60 + 25)
+
+This is why we run at 8MHz (125ns period)!
+
+Breakdown:
+├─ Register output: 25ns
+├─ Through ALU: 60ns
+├─ Register setup: 25ns
+└─ Margin: 15ns ✓
+
+All other paths fit within this timing!
+```
+
+---
+
+## PCB Layout for Control Unit
+
+### Physical Placement
+
+```
+Control Unit Location on Board:
+
+┌─────────────────────────────────────────┐
+│  Y = 0mm                                │
+│  [Power, Reset, Clock]                  │
+├─────────────────────────────────────────┤
+│  Y = 20mm                               │
+│  ┌────────────────────────────────────┐ │
+│  │ PROGRAM COUNTER                    │ │
+│  │ U6-U9: 74HC161 × 4                 │ │
+│  └────────┬───────────────────────────┘ │
+│           │ PC[14:0]                    │
+│           ▼                             │
+│  Y = 40mm                               │
+│  ┌────────────────────────────────────┐ │
+│  │ ROM (Instruction Memory)           │ │
+│  │ U1-U2: AT28C256 × 2                │ │
+│  └────────┬───────────────────────────┘ │
+│           │ INST[15:0]                  │
+│           ▼                             │
+│  Y = 80mm                               │
+│  ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓ │
+│  ┃ CONTROL UNIT (Small Area!)        ┃ │
+│  ┃                                    ┃ │
+│  ┃ U10: 74HC541 (buffer)             ┃ │
+│  ┃ U11-U13: Jump logic               ┃ │
+│  ┃ U14-U16: Dest decode              ┃ │
+│  ┃                                    ┃ │
+│  ┃ Size: ~4cm × 6cm                  ┃ │
+│  ┗━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┛ │
+│            │ Control Signals (fan-out)  │
+│            ├───────┬──────┬─────────┐   │
+│            ▼       ▼      ▼         ▼   │
+│  Y = 110mm                              │
+│  [A Reg]  [D Reg]  [ALU]  [RAM]        │
+│                                         │
+└─────────────────────────────────────────┘
+
+Notice: Control unit is SMALL!
+Only 6-8 ICs total
+Most of board is registers, ALU, memory
+```
+
+### Trace Routing Strategy
+
+```
+GROUP 1: ROM to Control Unit (16 traces)
+─────────────────────────────────────────
+From: ROM data outputs
+To:   Control unit inputs
+
+Routing:
+├─ Length: 40-60mm
+├─ Width: 0.4mm
+├─ Spacing: 0.3mm
+├─ Layer: Top (F.Cu)
+├─ Keep parallel
+└─ CRITICAL PATH! Keep short!
+
+
+GROUP 2: Control to Components (fan-out)
+─────────────────────────────────────────
+
+LOAD_A, LOAD_D, WRITE_M (high fanout):
+├─ Star topology from control unit
+├─ May need buffer if >4 destinations
+├─ Width: 0.5mm (extra drive strength)
+└─ Keep away from data buses
+
+ALU_CTRL[5:0] (to ALU):
+├─ 6 parallel traces
+├─ Direct routing to ALU
+├─ Length: 50-80mm
+└─ Can be longer (not critical timing)
+
+A_OR_M (to X input mux):
+├─ Single trace
+├─ Width: 0.4mm
+├─ Direct route
+└─ Moderate timing requirement
+
+PC_LOAD, PC_INC (to PC):
+├─ Two traces
+├─ Critical timing!
+├─ Short as possible
+└─ Route on top layer
+
+
+GROUP 3: ALU Flags Back (2 traces)
+───────────────────────────────────
+From: ALU (ZR, NG outputs)
+To:   Control unit (jump logic)
+
+Routing:
+├─ Length: 60-100mm (feedback path)
+├─ Width: 0.4mm
+├─ Can be longer (flags stable early)
+└─ Not timing-critical
+
+
+Layout Pattern:
+───────────────
+
+    ROM (top)
+      │
+      ├─► 16 traces (instruction bus)
+      │   (SHORT! Critical path!)
+      │
+      ▼
+    CONTROL UNIT (middle)
+      │
+      ├─► LOAD_A ──────────┐
+      ├─► LOAD_D ──────────┼───► (fan-out)
+      ├─► WRITE_M ─────────┼───► to registers
+      ├─► ALU_CTRL[5:0] ───┼───► to ALU
+      ├─► A_OR_M ──────────┼───► to mux
+      └─► PC signals ──────┘
+      
+      ▲
+      │
+      └─── ZR, NG (feedback from ALU)
+```
+
+### Decoupling and Power
+
+```
+Control Unit ICs:
+
+Each 74HC IC needs:
+├─ 0.1µF ceramic cap (close to VCC pin)
+├─ Within 5mm of IC
+└─ Short path to ground plane
+
+Total current draw:
+───────────────────
+├─ 6 ICs × 5mA = 30mA typical
+├─ Peak: 50mA (all gates switching)
+└─ Minimal compared to ALU!
+
+Power routing:
+──────────────
+├─ VCC traces: 0.8mm wide
+├─ GND plane: large pour on bottom
+├─ Multiple vias to ground plane
+└─ Star topology from power entry
+
+
+Special consideration for instruction bus:
+───────────────────────────────────────────
+16 parallel traces from ROM carry new instruction
+every cycle - high switching activity!
+
+Solution:
+├─ Keep traces short
+├─ Good ground return path
+├─ Buffer if signal integrity issues
+└─ 0.1µF cap at both ends (ROM and Control)
+```
+
+---
+
+## Design Optimizations
+
+### Speed Optimization
+
+```
+Current Design: 8 MHz (125ns period)
+Critical Path: 110ns (register → ALU → register)
+
+Potential Improvements:
+───────────────────────
+
+1. Faster ROM:
+──────────────
+Current: 70ns access time
+Upgrade:  55ns access time
+Gain:     15ns
+New max:  10 MHz ✓
+
+2. Faster RAM:
+──────────────
+Current: 55ns access time
+(Already good! Hard to improve)
+
+3. ALU Carry Lookahead:
+───────────────────────
+Current: Ripple carry (60ns)
+Upgrade:  74HC182 carry lookahead
+Gain:     30ns
+New max:  12-15 MHz ✓
+
+4. Register Pipeline:
+─────────────────────
+Add pipeline stage between ALU and registers
+Doubles latency but increases throughput
+Complex! Not worth it for Hack
+
+5. Faster Logic Family:
+───────────────────────
+Current: 74HC (~10ns per gate)
+Upgrade:  74AC (Advanced CMOS, ~5ns)
+Gain:     50% faster
+New max:  12 MHz ✓
+
+
+Realistic Maximum:
+──────────────────
+With careful optimization:
+├─ 55ns ROM
+├─ 74AC logic
+├─ Carry lookahead
+└─ Result: ~15 MHz possible!
+
+But: Diminishing returns
+8 MHz is perfectly fine for Hack ✓
+```
+
+### Size Optimization
+
+```
+Current Design: ~50 ICs total
+├─ Registers: 10 ICs (4+4+2 for PC)
+├─ ALU: 34 ICs
+├─ Control: 6 ICs
+└─ Memory interface: 2 ICs (transceivers)
+
+Reduction Options:
+──────────────────
+
+1. Use PLDs (Programmable Logic Devices):
+──────────────────────────────────────────
+Replace control unit (6 ICs) with one GAL16V8
+├─ Reduction: 5 ICs
+├─ Cost: Need programmer
+├─ Flexibility: Easy to modify logic
+└─ Educational: Loses visibility
+
+2. Use CPLD (Complex PLD):
+───────────────────────────
+Replace registers + control (16 ICs) with one CPLD
+├─ Reduction: 15 ICs
+├─ Cost: More expensive, needs JTAG programmer
+└─ Educational: Major loss of visibility
+
+3. Use FPGA:
+────────────
+Implement entire CPU in FPGA
+├─ Reduction: 49 ICs → 1 IC!
+├─ Cost: Moderate (~$20 for small FPGA)
+├─ Flexibility: Easy to modify anything
+└─ Educational: Total loss of visibility ✗
+
+
+Recommendation for Hack:
+────────────────────────
+Keep discrete logic!
+├─ Educational value is primary goal
+├─ Visibility of all signals
+├─ Easy to probe and debug
+├─ Understanding comes from seeing
+└─ Size and cost are secondary
+
+Discrete logic IS the point! ✓
+```
+
+---
+
+## Understanding Through Examples
+
+### Example Program: Loop Counter
+
+```
+Assembly Program:
+─────────────────
+    @10         // Loop 10 times
+    D=A         // D = 10 (counter)
+(LOOP)
+    @100        // Address to increment
+    M=M+1       // Increment RAM[100]
+    D=D-1       // Decrement counter
+    @LOOP       // Load loop address
+    D;JGT       // Jump if D > 0
+(END)
+    @END        // Infinite loop
+    0;JMP
+
+Let me trace the control unit for key instructions...
+
+
+Instruction 1: @10
+──────────────────
+Binary: 0000000000001010
+
+Control Unit Decode:
+├─ Bit 15 = 0 → A-instruction
+├─ Value = 10
+└─ Control: LOAD_A=1, PC_INC=1
+
+Result: A ← 10
+
+
+Instruction 2: D=A
+──────────────────
+Binary: 1110110000010000
+
+Control Unit Decode:
+├─ Bit 15 = 1 → C-instruction
+├─ a-bit = 0 (use A)
+├─ comp = 110000 (output A)
+├─ dest = 010 (save to D)
+└─ jump = 000 (no jump)
+
+Control Signals:
+├─ A_OR_M = 0
+├─ ALU_CTRL = 110000
+├─ LOAD_D = 1
+└─ PC_INC = 1
+
+Result: D ← A = 10
+
+
+Instruction 3: @100
+───────────────────
+Binary: 0000000001100100
+
+Control: LOAD_A=1, PC_INC=1
+Result: A ← 100 (address)
+
+
+Instruction 4: M=M+1
+────────────────────
+Binary: 1111110111001000
+
+Control Unit Decode:
+├─ C-instruction
+├─ a-bit = 1 (use M)
+├─ comp = 110111 (M+1)
+├─ dest = 001 (save to M only!)
+└─ jump = 000 (no jump)
+
+Control Signals:
+├─ A_OR_M = 1 (read memory)
+├─ ALU_CTRL = 110111 (increment)
+├─ WRITE_M = 1 (write back!)
+└─ PC_INC = 1
+
+Result: RAM[100] ← RAM[100] + 1
+
+
+Instruction 5: D=D-1
+────────────────────
+Binary: 1110001110010000
+
+Control: ALU does D-1, LOAD_D=1
+Result: D ← D - 1 (counter decrements)
+
+
+Instruction 6: @LOOP
+────────────────────
+(Assume LOOP is at address 2)
+Binary: 0000000000000010
+
+Control: LOAD_A=1
+Result: A ← 2 (loop address)
+
+
+Instruction 7: D;JGT
+────────────────────
+Binary: 1110001100000001
+
+Control Unit Decode:
+├─ comp = 001100 (output D)
+├─ dest = 000 (no save)
+├─ jump = 001 (JGT)
+└─ ALU computes D, generates flags
+
+If D > 0:
+├─ Flags: ZR=0, NG=0 → PS=1
+├─ Jump logic: JGT = j3 AND PS = 1 AND 1 = 1
+├─ JUMP = 1
+└─ PC_LOAD = 1 → PC ← A (jump to LOOP!)
+
+If D = 0:
+├─ Flags: ZR=1, NG=0 → PS=0
+├─ Jump logic: JGT = 1 AND 0 = 0
+└─ PC_INC = 1 (fall through to END)
+
+
+The control unit orchestrates this entire loop!
+Each cycle, it:
+1. Fetches instruction
+2. Decodes bits
+3. Generates control signals
+4. Components execute
+5. Repeat
+
+Beautiful! ✓
+```
+
+---
+
+## Summary: Control Unit Philosophy
+
+### The Conductor's Role
+
+```
+The Control Unit is the BRAIN:
+──────────────────────────────
+
+1. Reads "sheet music" (instructions from ROM)
+2. Interprets what to do (decode logic)
+3. Tells each "musician" when to play (control signals)
+4. Ensures perfect timing (synchronized to clock)
+5. Creates the "symphony" (program execution)
+
+
+Key Insights:
+─────────────
+
+Insight 1: Pure Combinational Logic
+────────────────────────────────────
+├─ No flip-flops in control unit itself
+├─ Just gates (AND, OR, NOT)
+├─ Instruction → Control signals (instant)
+└─ Like a big truth table in hardware
+
+Insight 2: Instruction Format Matters
+──────────────────────────────────────
+├─ Hack instructions designed for simple decode
+├─ Many bits connect directly (wires, no gates!)
+├─ Clever encoding minimizes logic needed
+└─ Design of instruction set = design of control unit
+
+Insight 3: Small but Critical
+──────────────────────────────
+├─ Only ~6 ICs (vs 34 for ALU)
+├─ But controls EVERYTHING
+├─ One wrong signal = broken computer
+└─ The brain may be small, but it's essential!
+
+Insight 4: Harvard Architecture Helps
+──────────────────────────────────────
+├─ Separate instruction and data memory
+├─ No bus arbitration needed
+├─ Simpler control logic
+└─ Fetch and execute overlap naturally
+
+
+The Beauty:
+───────────
+
+The control unit is ELEGANT:
+├─ Simple logic
+├─ Clear structure
+├─ Easy to understand
+├─ Easy to verify
+└─ Yet fully functional!
+
+This is great design! ✓
+```
+
+### The Complete Picture
+
+```
+How Everything Connects:
+
+         ╔═══════════════╗
+         ║ CONTROL UNIT  ║ ◄─── You are here!
+         ╚═══════╤═══════╝
+                 │
+       ┌─────────┼─────────┐
+       │         │         │
+       ▼         ▼         ▼
+   ┌───────┐ ┌───────┐ ┌───────┐
+   │   A   │ │   D   │ │  PC   │
+   │  Reg  │ │  Reg  │ │Counter│
+   └───┬───┘ └───┬───┘ └───┬───┘
+       │         │         │
+       └────┬────┴────┬────┘
+            │         │
+            ▼         ▼
+        ┌────────────────┐
+        │      ALU       │
+        └────────┬───────┘
+                 │
+                 ▼
+            ┌────────┐
+            │  RAM   │
+            └────────┘
+
+The control unit is the CONDUCTOR
+that makes this orchestra play! 🎵
+```
+
+Would you like me to explain:
+1. How to add new instructions to the Hack ISA?
+2. Microprogramming vs hardwired control?
+3. How modern CPUs handle control (microcode, ROMs)?
+4. Building a simple assembler to generate machine code?

@@ -1,0 +1,272 @@
+---
+title: Creating and Publishing a WASM-based NPM Package with Rust
+slug: creating-and-publishing-a-wasm-based-npm-package-with-rust
+publishDate: 2024-07-29
+description: Learn about Creating and Publishing a WASM-based NPM Package with Rust.
+date: 2024-07-29
+tags: ['Rust', 'WASM', 'NPM']
+draft: false
+---
+
+### Introduction
+
+In this guide, we'll walk through the process of creating a WebAssembly (WASM) package using Rust and publishing it to npm. We'll build a simple yet practical example that demonstrates how to bridge the gap between Rust's performance and JavaScript's ecosystem.
+
+<TOCInline toc={props.toc} exclude="Introduction" />{' '}
+
+## Prerequisites
+
+Before we begin, ensure you have the following installed:
+
+- Rust and Cargo (install via [rustup](https://rustup.rs/))
+- Node.js and npm
+- wasm-pack (`cargo install wasm-pack`)
+
+## Project Setup
+
+Let's create a new Rust library project:
+
+```bash
+cargo new --lib rust-wasm-example
+cd rust-wasm-example
+```
+
+First, update your `Cargo.toml` to include the necessary dependencies and metadata:
+
+```toml
+[package]
+name = "rust-wasm-example"
+version = "0.1.0"
+edition = "2021"
+description = "A WASM package example using Rust"
+license = "MIT"
+repository = "https://github.com/yourusername/rust-wasm-example"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wasm-bindgen = "0.2.89"
+serde = { version = "1.0", features = ["derive"] }
+serde-wasm-bindgen = "0.6"
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3.39"
+```
+
+## Creating the Rust Library
+
+Let's implement some useful functions that showcase Rust's strengths. We'll create a simple data processing library:
+
+```rust
+use wasm_bindgen::prelude::*;
+use serde::{Serialize, Deserialize};
+
+// Define a struct that can be shared between Rust and JavaScript
+#[derive(Serialize, Deserialize)]
+pub struct DataPoint {
+    value: f64,
+    timestamp: i64,
+}
+
+#[wasm_bindgen]
+pub struct DataAnalyzer {
+    data: Vec<DataPoint>,
+}
+
+#[wasm_bindgen]
+impl DataAnalyzer {
+    #[wasm_bindgen(constructor)]
+    pub fn new() -> Self {
+        DataAnalyzer {
+            data: Vec::new(),
+        }
+    }
+
+    pub fn add_point(&mut self, value: f64, timestamp: i64) {
+        self.data.push(DataPoint { value, timestamp });
+    }
+
+    pub fn calculate_average(&self) -> f64 {
+        if self.data.is_empty() {
+            return 0.0;
+        }
+        let sum: f64 = self.data.iter().map(|point| point.value).sum();
+        sum / self.data.len() as f64
+    }
+
+    pub fn get_min_max(&self) -> Option<JsValue> {
+        if self.data.is_empty() {
+            return None;
+        }
+
+        let min = self.data.iter().min_by(|a, b| a.value.partial_cmp(&b.value).unwrap())?;
+        let max = self.data.iter().max_by(|a, b| a.value.partial_cmp(&b.value).unwrap())?;
+
+        let result = JsValue::from_serde(&(min, max)).ok()?;
+        Some(result)
+    }
+}
+
+// Add some utility functions
+#[wasm_bindgen]
+pub fn fibonacci(n: u32) -> u32 {
+    match n {
+        0 => 0,
+        1 | 2 => 1,
+        _ => fibonacci(n - 1) + fibonacci(n - 2)
+    }
+}
+```
+
+## Testing Our Rust Code
+
+Create a `tests` directory and add `lib.rs`:
+
+```rust
+#![cfg(test)]
+
+use wasm_bindgen_test::*;
+use crate::DataAnalyzer;
+
+wasm_bindgen_test_configure!(run_in_browser);
+
+#[wasm_bindgen_test]
+fn test_data_analyzer() {
+    let mut analyzer = DataAnalyzer::new();
+    analyzer.add_point(1.0, 1000);
+    analyzer.add_point(2.0, 2000);
+    analyzer.add_point(3.0, 3000);
+
+    assert_eq!(analyzer.calculate_average(), 2.0);
+}
+
+#[wasm_bindgen_test]
+fn test_fibonacci() {
+    assert_eq!(super::fibonacci(0), 0);
+    assert_eq!(super::fibonacci(1), 1);
+    assert_eq!(super::fibonacci(5), 5);
+    assert_eq!(super::fibonacci(10), 55);
+}
+```
+
+## Building the WASM Package
+
+Now let's build our WASM package:
+
+```bash
+wasm-pack build --target bundler --scope your-npm-username
+```
+
+This will create a `pkg` directory containing our compiled WASM module and JavaScript bindings.
+
+## Creating Package.json
+
+Navigate to the `pkg` directory and customize the `package.json`:
+
+```json
+{
+  "name": "@your-npm-username/rust-wasm-example",
+  "version": "0.1.0",
+  "description": "A WASM package example using Rust",
+  "main": "rust_wasm_example.js",
+  "types": "rust_wasm_example.d.ts",
+  "files": ["rust_wasm_example_bg.wasm", "rust_wasm_example.js", "rust_wasm_example.d.ts"],
+  "scripts": {
+    "test": "wasm-pack test --node"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yourusername/rust-wasm-example.git"
+  },
+  "keywords": ["rust", "wasm", "webassembly"],
+  "author": "Your Name <your.email@example.com>",
+  "license": "MIT"
+}
+```
+
+## Publishing to npm
+
+Before publishing, make sure you're logged in to npm:
+
+```bash
+npm login
+```
+
+Then publish your package:
+
+```bash
+cd pkg
+npm publish --access=public
+```
+
+## Using the Package
+
+Here's how to use your new WASM package in a JavaScript/TypeScript project:
+
+```typescript
+import init, { DataAnalyzer, fibonacci } from '@your-npm-username/rust-wasm-example'
+
+async function example() {
+  // Initialize the WASM module
+  await init()
+
+  // Use the DataAnalyzer class
+  const analyzer = new DataAnalyzer()
+  analyzer.add_point(1.5, Date.now())
+  analyzer.add_point(2.5, Date.now())
+  analyzer.add_point(3.5, Date.now())
+
+  console.log('Average:', analyzer.calculate_average())
+  console.log('Min/Max:', analyzer.get_min_max())
+
+  // Use the fibonacci function
+  console.log('Fibonacci(10):', fibonacci(10))
+}
+
+example()
+```
+
+## Performance Considerations
+
+When using WASM modules, keep in mind:
+
+1. **Initialization Cost**: The `init()` function needs to be called before using any WASM functions. This has a one-time cost, so initialize early in your application.
+
+2. **Data Transfer**: Complex data structures need to be serialized when passing between JavaScript and WASM. Keep this in mind for performance-critical applications.
+
+3. **Memory Management**: WASM memory is managed separately from JavaScript's garbage collector. Our example uses `wasm-bindgen` to handle this automatically.
+
+## Debugging and Development
+
+For development, you can use:
+
+```bash
+wasm-pack build --dev
+```
+
+This will include debug symbols and make the output more debugger-friendly.
+
+To test in the browser:
+
+```bash
+wasm-pack test --headless --firefox
+```
+
+## Conclusion
+
+We've created a WASM package that leverages Rust's performance and safety features while being easily consumable in JavaScript projects. This approach is particularly useful for computationally intensive tasks like data processing, cryptography, or complex algorithms.
+
+The complete source code for this example is available on [GitHub](https://github.com/yourusername/rust-wasm-example).
+
+## Next Steps
+
+Consider exploring:
+
+- Adding more complex Rust functionality
+- Implementing async functions
+- Adding browser-specific optimizations
+- Creating a demo website showcasing your package
+- Setting up CI/CD for automated publishing
+
+Remember to keep your package maintained and respond to issues from the community!

@@ -1,0 +1,225 @@
+---
+title: Understanding Inheritance in JavaScript A Comprehensive Guide
+slug: understanding-inheritance-in-javascript-a-comprehensive-guide
+publishDate: 2024-06-27
+description: Learn about Understanding Inheritance in JavaScript A Comprehensive Guide.
+date: 2024-06-27
+tags: ['JavaScript']
+draft: false
+---
+
+### Introduction
+
+Inheritance is a fundamental concept in object-oriented programming (OOP) that allows one class (or object) to acquire properties and methods from another. In JavaScript, which uses a prototype-based inheritance system, the concept works a bit differently from classical inheritance found in languages like Java or C++. This blog post will walk you through the essentials of inheritance in JavaScript and how it can be applied effectively.
+
+<TOCInline toc={props.toc} exclude="Introduction" />
+
+#### **What is Inheritance in JavaScript?**
+
+Inheritance in JavaScript is a mechanism that allows one object to inherit properties and behaviors (methods) from another object. This is often referred to as **prototypal inheritance**. In JavaScript, every object has an internal property called `[[Prototype]]`, which is a reference to another object. This prototype chain continues up to the root object (`Object.prototype`).
+
+#### **Ways to Implement Inheritance in JavaScript**
+
+There are multiple ways to implement inheritance in JavaScript, including:
+
+1. **Prototypal Inheritance**
+2. **Constructor Functions**
+3. **ES6 Classes**
+
+Let’s dive into each of these approaches.
+
+#### 1. **Prototypal Inheritance**
+
+In JavaScript, objects can directly inherit from other objects using the prototype chain. You can create an object and set its prototype using `Object.create()`.
+
+```javascript
+const animal = {
+  eat() {
+    console.log('This animal is eating.')
+  },
+}
+
+const dog = Object.create(animal) // dog inherits from animal
+dog.bark = function () {
+  console.log('Woof!')
+}
+
+dog.eat() // Output: This animal is eating.
+dog.bark() // Output: Woof!
+
+Object.getPrototypeOf(dog) === animal // true
+
+const cat = Object.create(animal, {
+  age: {
+    value: 4,
+    enumerable: true,
+    writable: true,
+    configurable: false,
+  },
+})
+
+console.log(Object.getPrototypeOf(Object.prototype)) // null
+// Object and Function are function.
+console.log(Object.getPrototypeOf(Object) === Function.prototype) // true
+console.log(Object.getPrototypeOf(Function) === Function.prototype) // true
+```
+
+In this example, the `dog` object inherits the `eat()` method from the `animal` object. The inheritance is set through `Object.create()`.
+
+**Key Points:**
+
+- JavaScript object has an internal reference `[[Prototype]]` which is accessible via the `__proto__` property, but should never be accessed.
+- **`Object.create()`** allows us to set the prototype of an object and set up extra properties.
+- Methods and properties defined in the prototype are accessible to the inheriting object.
+- **`Object.getPrototypeOf`** can find an object's prototype and **`Object.setPrototypeOf`** can set an object's prototype.
+- **`Object.create(null)`** creates `null` prototype object and make it impossible to update `Object.prototype` and impact the created objects.
+
+#### 2. **Constructor Functions and Prototypes**
+
+Before ES6, inheritance was often achieved using **constructor functions** and manually setting prototypes. Constructor functions mimic class-based inheritance by allowing the creation of objects that share methods via prototypes.
+
+```javascript
+function Animal(name) {
+  this.name = name
+}
+
+Animal.prototype.eat = function () {
+  console.log(this.name + ' is eating.')
+}
+
+function Dog(name, breed) {
+  Animal.call(this, name) // Call the Animal constructor
+  this.breed = breed
+}
+
+Dog.prototype = Object.create(Animal.prototype) // Inherit from Animal
+Dog.prototype.constructor = Dog // Reset the constructor
+
+Dog.prototype.bark = function () {
+  console.log(this.name + ' barks: Woof!')
+}
+
+const myDog = new Dog('Buddy', 'Golden Retriever')
+myDog.eat() // Output: Buddy is eating.
+myDog.bark() // Output: Buddy barks: Woof!
+
+// Using Object.getPrototypeOf()
+console.log(Object.getPrototypeOf(myDog) === Dog.prototype) // true
+
+// Using isPrototypeOf()
+console.log(Dog.prototype.isPrototypeOf(myDog)) // true
+
+// Using instanceof
+console.log(myDog instanceof Dog) // true
+console.log(myDog instanceof Animal) // true
+
+console.log(Dog.prototype.constructor === Dog) // true
+```
+
+**Key Points:**
+
+- **`Animal.call(this, name)`** calls the parent constructor inside the child constructor.
+- **`Dog.prototype = Object.create(Animal.prototype)`** sets up the prototype chain.
+- Always remember to reset the **constructor property** after inheriting the prototype.
+
+#### 3. **Inheritance with ES6 Classes**
+
+In ES6, JavaScript introduced the `class` syntax, which is syntactic sugar over JavaScript’s existing prototype-based inheritance. It offers a cleaner and more intuitive way to handle inheritance.
+
+```javascript
+class Animal {
+  constructor(name) {
+    this.name = name
+  }
+
+  eat() {
+    console.log(`${this.name} is eating.`)
+  }
+}
+
+class Dog extends Animal {
+  #owner = '' // private property
+  constructor(name, breed) {
+    super(name) // Calls the parent class constructor
+    this.breed = breed
+  }
+
+  bark() {
+    console.log(`${this.name} barks: Woof!`)
+  }
+
+  static staticMethod(x) {
+    // static method
+    // ......
+  }
+}
+
+const myDog = new Dog('Buddy', 'Golden Retriever')
+myDog.eat() // Output: Buddy is eating.
+myDog.bark() // Output: Buddy barks: Woof!
+
+// Using Object.getPrototypeOf()
+console.log(Object.getPrototypeOf(myDog) === Dog.prototype) // true
+
+// Using isPrototypeOf()
+console.log(Dog.prototype.isPrototypeOf(myDog)) // true
+
+// Using instanceof
+console.log(myDog instanceof Dog) // true
+console.log(myDog instanceof Animal) // true
+
+console.log(Dog.prototype.constructor === Dog) // true
+```
+
+**Key Points:**
+
+- **`extends`** keyword is used to indicate that one class is inheriting from another.
+- **`super()`** is required to call the parent class’s constructor.
+- This approach is much cleaner and easier to understand than the constructor function approach.
+
+#### **Prototype Chain in JavaScript**
+
+Whenever you access a property or method on an object, JavaScript first checks whether that property exists on the object itself. If not, it moves up the **prototype chain** to the object's prototype and so on until it either finds the property or reaches the end of the chain (`null`).
+
+```javascript
+const dog = new Dog('Buddy', 'Golden Retriever')
+console.log(dog.hasOwnProperty('bark')) // true
+console.log(dog.hasOwnProperty('eat')) // false (found on the prototype)
+```
+
+#### **Advantages of Prototypal Inheritance**
+
+- **Efficiency**: Methods and properties can be shared among objects, saving memory.
+- **Dynamic Objects**: Prototypes can be changed at runtime, providing flexibility in object design.
+
+#### **Best Practices for Using Inheritance in JavaScript**
+
+- **Use ES6 Classes**: Whenever possible, prefer the ES6 class syntax. It’s more readable and easier to maintain.
+- **Don’t Overcomplicate**: Avoid deep inheritance chains, as they can make debugging difficult and code harder to understand.
+- **Favor Composition Over Inheritance**: In many cases, using object composition (building objects with smaller pieces of functionality) can be more flexible than inheritance.
+
+#### **Conclusion**
+
+JavaScript’s inheritance system is flexible, allowing for different patterns like prototypal inheritance, constructor functions, and ES6 classes. Understanding how the prototype chain works and how to implement inheritance effectively can help you design better, more efficient applications. With the cleaner class syntax introduced in ES6, inheritance in JavaScript has become easier to work with and understand.
+
+By mastering inheritance in JavaScript, you'll have a solid foundation for creating modular, reusable code and writing scalable applications. Happy coding!
+
+#### **References**
+
+https://bigfrontend.dev/quiz/function-ii
+
+```js
+console.log(Function.prototype.__proto__ === Object.prototype)
+console.log(Function.__proto__ === Object.__proto__)
+console.log(Function.__proto__.__proto__ === Object.prototype)
+console.log(Object.constructor.prototype === Object.prototype)
+console.log(Function.constructor === Function)
+console.log(Object.constructor === Object)
+console.log(Array.__proto__ === Function.__proto__)
+console.log(Array.constructor === Function)
+console.log(Object.__proto__ === Function)
+console.log(Function.__proto__ === Function.prototype)
+console.log(Object instanceof Object)
+console.log(Function instanceof Function)
+console.log(Map instanceof Map)
+```

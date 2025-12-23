@@ -1,0 +1,596 @@
+---
+title: Advanced TypeScript Mastering Type Manipulation Techniques
+slug: mastering-typescript-type-modifiers-enhancing-type-safety-and-flexibility
+publishDate: 2024-07-12
+description: Learn about Advanced TypeScript Mastering Type Manipulation Techniques.
+date: 2024-07-12
+tags: ['TypeScript']
+draft: false
+---
+
+### Introduction
+
+TypeScript's type system is powerful and flexible, allowing developers to create complex types that accurately represent their data structures and functions. In this blog post, we'll explore various techniques for manipulating types in TypeScript, enabling you to write more expressive and type-safe code.
+
+<TOCInline toc={props.toc} exclude="Introduction" />{' '}
+
+#### 1. Union Types
+
+Union types allow a value to be one of several types.
+
+```typescript
+type StringOrNumber = string | number
+
+function printId(id: StringOrNumber) {
+  console.log(`ID is: ${id}`)
+}
+
+printId(101) // OK
+printId('202') // OK
+```
+
+#### 2. Intersection Types
+
+Intersection types combine multiple types into one.
+
+```typescript
+type Loggable = {
+  log: () => void
+}
+
+type Identifiable = {
+  id: string
+}
+
+type LoggableIdentifiable = Loggable & Identifiable
+
+const obj: LoggableIdentifiable = {
+  id: '123',
+  log: () => console.log('Logged'),
+}
+```
+
+#### 3. Type Aliases
+
+Type aliases create a new name for a type.
+
+```typescript
+type Point = {
+  x: number
+  y: number
+}
+
+function printCoord(pt: Point) {
+  console.log(`The coordinate's x value is ${pt.x}`)
+  console.log(`The coordinate's y value is ${pt.y}`)
+}
+```
+
+#### 4. Mapped Types
+
+Mapped types allow you to create new types based on old ones.
+
+##### Adding and removing Property Modifiers
+
+```typescript
+type Readonly<T> = {
+  readonly [P in keyof T]: T[P]
+}
+
+interface Mutable {
+  x: number
+  y: number
+}
+
+type ReadonlyPoint = Readonly<Mutable>
+
+let point: ReadonlyPoint = { x: 10, y: 20 }
+point.x = 5 // Error: Cannot assign to 'x' because it is a read-only property.
+```
+
+```typescript
+type NotOptional<T> = {
+  [P in keyof T]-?: T[P]
+}
+
+interface Optional {
+  x?: number
+  y?: number
+}
+
+type Mandatory = NotOptional<Optional>
+
+let point: Mandatory = { x: 10 } // Error: y can not be missing because it is a required property.
+```
+
+##### Remapping Property Keys
+
+```typescript
+type AnyProps<T> = {
+  [P in keyof T as string]: T[P]
+}
+
+interface NamedProps {
+  x: number
+  y: number
+}
+
+type Flexible = AnyProps<NamedProps>
+
+/**
+ * type Flexible = {
+ *    [x: string]: string
+ * }
+ */
+```
+
+#### 5. Conditional Types
+
+Conditional types select one of two possible types based on a condition.
+
+```typescript
+type NonNullable<T> = T extends null | undefined ? never : T
+
+type A = NonNullable<string | null> // type A = string
+```
+
+#### 6. Index Types
+
+Index types let you use the type system to query the structure of your types.
+
+```typescript
+function getProperty<T, K extends keyof T>(obj: T, key: K) {
+  return obj[key]
+}
+
+let x = { a: 1, b: 2, c: 3, d: 4 }
+
+getProperty(x, 'a') // OK
+getProperty(x, 'm') // Error: Argument of type '"m"' is not assignable to parameter of type '"a" | "b" | "c" | "d"'.
+```
+
+#### 7. Utility Types
+
+TypeScript provides several utility types to facilitate common type transformations.
+
+##### `Partial<T>`
+
+Makes all properties in T optional.
+
+```typescript
+interface Todo {
+  title: string
+  description: string
+}
+
+function updateTodo(todo: Todo, fieldsToUpdate: Partial<Todo>) {
+  return { ...todo, ...fieldsToUpdate }
+}
+```
+
+##### `Pick<T>`
+
+Constructs a type by picking the set of properties K from T.
+
+```typescript
+interface Todo {
+  title: string
+  description: string
+  completed: boolean
+}
+
+type TodoPreview = Pick<Todo, 'title' | 'completed'>
+```
+
+##### `Omit<T>`
+
+Constructs a type by picking all properties from T and then removing K.
+
+```typescript
+interface Todo {
+  title: string
+  description: string
+  completed: boolean
+}
+
+type TodoInfo = Omit<Todo, 'completed'>
+```
+
+##### `Partial<T>`
+
+Makes all properties in T optional.
+
+```typescript
+interface Todo {
+  title: string
+  description: string
+}
+
+function updateTodo(todo: Todo, fieldsToUpdate: Partial<Todo>) {
+  return { ...todo, ...fieldsToUpdate }
+}
+```
+
+##### `Required<T>`
+
+Makes all properties in T required.
+
+```typescript
+interface Props {
+  a?: number
+  b?: string
+}
+
+const obj: Props = { a: 5 } // OK
+const obj2: Required<Props> = { a: 5 } // Error: Property 'b' is missing
+```
+
+##### `Readonly<T>`
+
+Makes all properties in T readonly.
+
+```typescript
+interface Todo {
+  title: string
+}
+
+const todo: Readonly<Todo> = {
+  title: 'Delete inactive users',
+}
+
+todo.title = 'Hello' // Error: Cannot assign to 'title' because it is a read-only property.
+```
+
+##### `Record<K, T>`
+
+Constructs an object type whose property keys are K and whose property values are T.
+
+```typescript
+interface CatInfo {
+  age: number
+  breed: string
+}
+
+type CatName = 'miffy' | 'boris' | 'mordred'
+
+const cats: Record<CatName, CatInfo> = {
+  miffy: { age: 10, breed: 'Persian' },
+  boris: { age: 5, breed: 'Maine Coon' },
+  mordred: { age: 16, breed: 'British Shorthair' },
+}
+```
+
+##### `Pick<T, K>`
+
+Constructs a type by picking the set of properties K from T.
+
+```typescript
+interface Todo {
+  title: string
+  description: string
+  completed: boolean
+}
+
+type TodoPreview = Pick<Todo, 'title' | 'completed'>
+```
+
+##### `Omit<T, K>`
+
+Constructs a type by picking all properties from T and then removing K.
+
+```typescript
+interface Todo {
+  title: string
+  description: string
+  completed: boolean
+}
+
+type TodoInfo = Omit<Todo, 'completed'>
+```
+
+##### `Exclude<T, U>`
+
+Constructs a type by excluding from T all union members that are assignable to U.
+
+```typescript
+type T0 = Exclude<'a' | 'b' | 'c', 'a'> // "b" | "c"
+type T1 = Exclude<'a' | 'b' | 'c', 'a' | 'b'> // "c"
+```
+
+##### `Extract<T, U>`
+
+Constructs a type by extracting from T all union members that are assignable to U.
+
+```typescript
+type T0 = Extract<'a' | 'b' | 'c', 'a' | 'f'> // "a"
+type T1 = Extract<string | number | (() => void), Function> // () => void
+```
+
+##### `NonNullable<T>`
+
+Constructs a type by excluding null and undefined from T.
+
+```typescript
+type T0 = NonNullable<string | number | undefined> // string | number
+type T1 = NonNullable<string[] | null | undefined> // string[]
+```
+
+##### `Parameters<T>`
+
+Constructs a tuple type from the types used in the parameters of a function type T.
+
+```typescript
+declare function f1(arg: { a: number; b: string }): void
+type T0 = Parameters<typeof f1> // [{ a: number; b: string }]
+```
+
+##### `ReturnType<T>`
+
+Constructs a type consisting of the return type of function T.
+
+```typescript
+declare function f1(): { a: number; b: string }
+type T0 = ReturnType<typeof f1> // { a: number; b: string }
+```
+
+##### `InstanceType<T>`
+
+Constructs a type consisting of the instance type of a constructor function type T.
+
+```typescript
+class C {
+  x = 0
+  y = 0
+}
+
+type T0 = InstanceType<typeof C> // C
+```
+
+##### `Awaited<T>`
+
+Constructs a type by recursively unwrapping Promises.
+
+```typescript
+type A = Awaited<Promise<string>> // string
+type B = Awaited<Promise<Promise<number>>> // number
+type C = Awaited<boolean | Promise<number>> // boolean | number
+```
+
+##### `ConstructorParameters<T>`
+
+Constructs a tuple or array type from the types of a constructor function type.
+
+```typescript
+class Person {
+  constructor(name: string, age: number) {}
+}
+
+type PersonConstructorParams = ConstructorParameters<typeof Person> // [string, number]
+```
+
+##### `OmitThisParameter<T>`
+
+Removes the 'this' parameter from a function type.
+
+```typescript
+function toHex(this: Number) {
+  return this.toString(16)
+}
+
+type ToHexWithoutThis = OmitThisParameter<typeof toHex> // () => string
+```
+
+##### `ThisParameterType<T>`
+
+Extracts the type of the 'this' parameter from a function type, or `unknown` if the function type has no 'this' parameter.
+
+```typescript
+function toHex(this: Number) {
+  return this.toString(16)
+}
+
+type ToHexThisType = ThisParameterType<typeof toHex> // Number
+```
+
+##### `ThisType<T>`
+
+This utility does not return a transformed type. Instead, it serves as a marker for a contextual `this` type.
+
+```typescript
+interface ThisType<T> {}
+
+type ObjectDescriptor<D, M> = {
+  data?: D
+  methods?: M & ThisType<D & M> // Type of 'this' in methods is D & M
+}
+
+function makeObject<D, M>(desc: ObjectDescriptor<D, M>): D & M {
+  let data: object = desc.data || {}
+  let methods: object = desc.methods || {}
+  return { ...data, ...methods } as D & M
+}
+
+let obj = makeObject({
+  data: { x: 0, y: 0 },
+  methods: {
+    moveBy(dx: number, dy: number) {
+      this.x += dx // Strongly typed this
+      this.y += dy // Strongly typed this
+    },
+  },
+})
+
+obj.x = 10
+obj.y = 20
+obj.moveBy(5, 5)
+```
+
+These utility types provide powerful tools for manipulating types in TypeScript, allowing for more flexible and reusable type definitions.
+
+#### 8. Template Literal Types
+
+Template literal types build on string literal types, and have the ability to expand into many strings via unions.
+
+```typescript
+type World = 'world'
+type Greeting = `hello ${World}` // type Greeting = "hello world"
+
+type EmailLocaleIDs = 'welcome_email' | 'email_heading'
+type FooterLocaleIDs = 'footer_title' | 'footer_sendoff'
+
+type AllLocaleIDs = `${EmailLocaleIDs | FooterLocaleIDs}_id`
+// type AllLocaleIDs = "welcome_email_id" | "email_heading_id" | "footer_title_id" | "footer_sendoff_id"
+```
+
+TypeScript includes a set of type operators that you can use with template literal types:
+
+##### `Uppercase<StringType>`
+
+Converts each character in the string to uppercase.
+
+```typescript
+type Greeting = 'Hello, world'
+type ShoutyGreeting = Uppercase<Greeting> // type ShoutyGreeting = "HELLO, WORLD"
+
+type ASCIICacheKey<Str extends string> = `ID-${Uppercase<Str>}`
+type MainID = ASCIICacheKey<'my_app'> // type MainID = "ID-MY_APP"
+```
+
+##### `Lowercase<StringType>`
+
+Converts each character in the string to lowercase.
+
+```typescript
+type Greeting = 'Hello, world'
+type QuietGreeting = Lowercase<Greeting> // type QuietGreeting = "hello, world"
+
+type ASCIICacheKey<Str extends string> = `id-${Lowercase<Str>}`
+type MainID = ASCIICacheKey<'MY_APP'> // type MainID = "id-my_app"
+```
+
+##### `Capitalize<StringType>`
+
+Converts the first character in the string to uppercase.
+
+```typescript
+type LowercaseGreeting = 'hello, world'
+type Greeting = Capitalize<LowercaseGreeting> // type Greeting = "Hello, world"
+
+type LowercaseColors = 'red' | 'green' | 'blue'
+type Colors = Capitalize<LowercaseColors> // type Colors = "Red" | "Green" | "Blue"
+```
+
+##### `Uncapitalize<StringType>`
+
+Converts the first character in the string to lowercase.
+
+```typescript
+type UppercaseGreeting = 'HELLO WORLD'
+type UnkapGreeting = Uncapitalize<UppercaseGreeting> // type UnkapGreeting = "hELLO WORLD"
+
+type UppercaseColors = 'RED' | 'GREEN' | 'BLUE'
+type Colors = Uncapitalize<UppercaseColors> // type Colors = "rED" | "gREEN" | "bLUE"
+```
+
+These type operators allow for powerful string manipulation at the type level, enabling you to create more expressive and precise types based on string literals.
+
+#### 9. Recursive Types
+
+TypeScript allows the creation of recursive type aliases.
+
+```typescript
+type JsonValue = string | number | boolean | null | JsonArray | JsonObject
+interface JsonArray extends Array<JsonValue> {}
+interface JsonObject {
+  [key: string]: JsonValue
+}
+```
+
+#### 10. Indexed Access Types
+
+Indexed Access Types allow you to use an index to access a type from another type. This is a powerful feature that enables you to create new types based on the properties of existing types.
+
+##### Basic Indexed Access
+
+You can use an indexed access type to look up a specific property on another type:
+
+```typescript
+type Person = { age: number; name: string; alive: boolean }
+type Age = Person['age'] // type Age = number
+```
+
+##### Using Union to Access Multiple Properties
+
+The indexing type is itself a type, so we can use unions, keyof, or other types entirely:
+
+```typescript
+type Person = { age: number; name: string; alive: boolean }
+type I1 = Person['age' | 'name'] // type I1 = string | number
+
+type I2 = Person[keyof Person] // type I2 = string | number | boolean
+
+type AliveOrName = 'alive' | 'name'
+type I3 = Person[AliveOrName] // type I3 = string | boolean
+```
+
+##### Accessing Nested Properties
+
+You can use this feature to dig into nested objects:
+
+```typescript
+type NestedPerson = {
+  name: string
+  address: {
+    street: string
+    city: string
+  }
+}
+
+type City = NestedPerson['address']['city'] // type City = string
+```
+
+##### Accessing Array Types
+
+When indexing into an array type, we can use `number` to get the type of the array elements:
+
+```typescript
+const MyArray = [
+  { name: 'Alice', age: 15 },
+  { name: 'Bob', age: 23 },
+  { name: 'Eve', age: 38 },
+]
+
+type Person = (typeof MyArray)[number]
+// type Person = {
+//     name: string;
+//     age: number;
+// }
+
+type Age = (typeof MyArray)[number]['age'] // type Age = number
+type Name = (typeof MyArray)[number]['name'] // type Name = string
+```
+
+##### Using with Generics
+
+Indexed access types work well with generics:
+
+```typescript
+function getProperty<T, K extends keyof T>(obj: T, key: K) {
+  return obj[key]
+}
+
+let x = { a: 1, b: 2, c: 3, d: 4 }
+
+getProperty(x, 'a') // okay
+getProperty(x, 'm') // error: Argument of type '"m"' is not assignable to parameter of type '"a" | "b" | "c" | "d"'.
+```
+
+Indexed Access Types are a powerful feature in TypeScript that allows for flexible and precise type manipulation. They're especially useful when working with complex object types or when you need to create new types based on the structure of existing types.
+
+#### Conclusion
+
+Mastering these type manipulation techniques allows you to create more expressive and precise types in TypeScript. This leads to better type checking, improved code documentation, and ultimately, fewer bugs in your code.
+
+Remember, while these techniques are powerful, it's important to use them judiciously. Overuse can lead to complex type definitions that are hard to understand and maintain. Always strive for a balance between type safety and code readability.
+
+As you continue to work with TypeScript, you'll find more ways to leverage its type system to write safer, more maintainable code. Happy coding!

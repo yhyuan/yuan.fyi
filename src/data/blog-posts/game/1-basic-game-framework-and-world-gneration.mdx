@@ -1,0 +1,1078 @@
+---
+title: 1 Basic Game Framework and World Gneration
+slug: 1-basic-game-framework-and-world-gneration
+publishDate: 2024-10-14
+description: Learn about 1 Basic Game Framework and World Gneration.
+date: 2024-10-14
+tags: ['JavaScript', 'Game']
+draft: false
+---
+
+### Introduction
+
+This is the first step to create a "TerraCraft 2D", a Minecraft-inspired sandbox game that demonstrates Phaser 3's core features through practical implementation. The game will include terrain generation, block manipulation, crafting, survival mechanics, and multiplayer capabilities.
+
+<TOCInline toc={props.toc} exclude="Introduction" />
+
+## Project Structure
+
+```
+terracraft2d/
+├── src/
+│   ├── config/
+│   │   ├── GameConfig.ts
+│   │   └── BlockTypes.ts
+│   ├── world/
+│   │   ├── Chunk.ts
+│   │   ├── ChunkManager.ts
+│   │   ├── WorldGenerator.ts
+│   │   └── NoiseGenerator.ts
+│   ├── controllers/
+│   │   └── CameraController.ts
+│   ├── scenes/
+│   │   ├── PreloadScene.ts
+│   │   ├── MenuScene.ts
+│   │   └── GameScene.ts
+│   ├── types/
+│   │   └── index.ts
+│   └── main.ts
+├── public/
+│   └── assets/
+│       ├── sprites/
+│       ├── audio/
+│       └── fonts/
+├── index.html
+├── package.json
+├── tsconfig.json
+├── vite.config.ts
+└── README.md
+```
+
+## Setup Instructions
+
+```bash
+# Create project directory
+mkdir terracraft2d
+cd terracraft2d
+
+# Initialize package.json
+npm init -y
+
+# Install dependencies
+npm install phaser
+npm install -D vite typescript @types/node
+
+# Create project structure
+mkdir -p src/{config,world,controllers,scenes,types} public/assets/{sprites,audio,fonts}
+```
+
+## File Contents
+
+### package.json
+```json
+{
+  "name": "terracraft2d",
+  "version": "1.0.0",
+  "description": "2D Minecraft clone built with Phaser 3 and TypeScript",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "phaser": "^3.70.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.0",
+    "vite": "^5.0.0"
+  }
+}
+```
+
+### tsconfig.json
+```json
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "module": "ESNext",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "allowSyntheticDefaultImports": true
+  },
+  "include": ["src"]
+}
+```
+
+### vite.config.ts
+```typescript
+import { defineConfig } from 'vite';
+
+export default defineConfig({
+  base: './',
+  build: {
+    assetsInlineLimit: 0,
+  },
+  server: {
+    port: 3000,
+    host: true
+  }
+});
+```
+
+### index.html
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TerraCraft 2D - Vite + TypeScript</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #2c3e50;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+        #game-container {
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            border: 2px solid #34495e;
+        }
+        #info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            font-size: 14px;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 5px;
+            user-select: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container"></div>
+    <div id="info">
+        <p>WASD/Arrow Keys: Move Camera</p>
+        <p>Q/E: Zoom In/Out</p>
+        <p>Mouse Wheel: Zoom</p>
+        <p>R: Reset Camera</p>
+        <p>G: Toggle Grid</p>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
+```
+
+### src/types/index.ts
+```typescript
+export interface BlockType {
+    id: number;
+    name: string;
+    color: number | null;
+    solid: boolean;
+}
+
+export interface ChunkData {
+    x: number;
+    y: number;
+    blocks: number[][];
+}
+
+export interface Vector2 {
+    x: number;
+    y: number;
+}
+```
+
+### src/config/GameConfig.ts
+```typescript
+export const GameConfig = {
+    TILE_SIZE: 32,
+    CHUNK_SIZE: 16,
+    RENDER_DISTANCE: 3,
+    WORLD_HEIGHT: 128,
+    SEA_LEVEL: 64,
+    CAMERA_SPEED: 300,
+    ZOOM_SPEED: 0.1,
+    MIN_ZOOM: 0.5,
+    MAX_ZOOM: 3,
+    GAME_WIDTH: 1024,
+    GAME_HEIGHT: 768
+} as const;
+```
+
+### src/config/BlockTypes.ts
+```typescript
+import { BlockType } from '../types';
+
+export const BlockTypes: Record<string, BlockType> = {
+    AIR: { id: 0, name: 'Air', color: null, solid: false },
+    STONE: { id: 1, name: 'Stone', color: 0x808080, solid: true },
+    DIRT: { id: 2, name: 'Dirt', color: 0x8B4513, solid: true },
+    GRASS: { id: 3, name: 'Grass', color: 0x228B22, solid: true },
+    SAND: { id: 4, name: 'Sand', color: 0xF4E4B5, solid: true },
+    WATER: { id: 5, name: 'Water', color: 0x006994, solid: false },
+    WOOD: { id: 6, name: 'Wood', color: 0x8B4513, solid: true },
+    LEAVES: { id: 7, name: 'Leaves', color: 0x228B22, solid: true },
+    COAL: { id: 8, name: 'Coal', color: 0x2F2F2F, solid: true },
+    IRON: { id: 9, name: 'Iron', color: 0xAF8E77, solid: true },
+    BEDROCK: { id: 10, name: 'Bedrock', color: 0x1A1A1A, solid: true }
+} as const;
+
+export const getBlockById = (id: number): BlockType | undefined => {
+    return Object.values(BlockTypes).find(block => block.id === id);
+};
+```
+
+### src/world/NoiseGenerator.ts
+```typescript
+export class NoiseGenerator {
+    private seed: number;
+    private p: number[];
+
+    constructor(seed: number = Date.now()) {
+        this.seed = seed;
+        this.p = this.createPermutation();
+    }
+
+    private createPermutation(): number[] {
+        const p: number[] = [];
+        for (let i = 0; i < 256; i++) {
+            p[i] = i;
+        }
+        
+        let n = this.seed;
+        for (let i = 255; i > 0; i--) {
+            n = (n * 16807) % 2147483647;
+            const j = n % (i + 1);
+            [p[i], p[j]] = [p[j], p[i]];
+        }
+        
+        return [...p, ...p];
+    }
+
+    private fade(t: number): number {
+        return t * t * t * (t * (t * 6 - 15) + 10);
+    }
+
+    private lerp(t: number, a: number, b: number): number {
+        return a + t * (b - a);
+    }
+
+    private grad(hash: number, x: number, y: number): number {
+        const h = hash & 3;
+        const u = h < 2 ? x : y;
+        const v = h < 2 ? y : x;
+        return ((h & 1) === 0 ? u : -u) + ((h & 2) === 0 ? v : -v);
+    }
+
+    public noise(x: number, y: number): number {
+        const X = Math.floor(x) & 255;
+        const Y = Math.floor(y) & 255;
+        
+        x -= Math.floor(x);
+        y -= Math.floor(y);
+        
+        const u = this.fade(x);
+        const v = this.fade(y);
+        
+        const A = this.p[X] + Y;
+        const B = this.p[X + 1] + Y;
+        
+        return this.lerp(v,
+            this.lerp(u, this.grad(this.p[A], x, y),
+                        this.grad(this.p[B], x - 1, y)),
+            this.lerp(u, this.grad(this.p[A + 1], x, y - 1),
+                        this.grad(this.p[B + 1], x - 1, y - 1))
+        );
+    }
+
+    public octaveNoise(x: number, y: number, octaves: number = 4, persistence: number = 0.5): number {
+        let total = 0;
+        let frequency = 1;
+        let amplitude = 1;
+        let maxValue = 0;
+        
+        for (let i = 0; i < octaves; i++) {
+            total += this.noise(x * frequency, y * frequency) * amplitude;
+            maxValue += amplitude;
+            amplitude *= persistence;
+            frequency *= 2;
+        }
+        
+        return total / maxValue;
+    }
+}
+```
+
+### src/world/Chunk.ts
+```typescript
+import * as Phaser from 'phaser';
+import { GameConfig } from '../config/GameConfig';
+import { BlockTypes, getBlockById } from '../config/BlockTypes';
+
+export class Chunk {
+    private scene: Phaser.Scene;
+    public chunkX: number;
+    public chunkY: number;
+    private blocks: number[][];
+    private graphics: Phaser.GameObjects.Graphics;
+    private gridGraphics: Phaser.GameObjects.Graphics;
+    private gridVisible: boolean = false;
+
+    constructor(scene: Phaser.Scene, chunkX: number, chunkY: number) {
+        this.scene = scene;
+        this.chunkX = chunkX;
+        this.chunkY = chunkY;
+        this.blocks = [];
+        this.graphics = scene.add.graphics();
+        this.gridGraphics = scene.add.graphics();
+        
+        const worldX = chunkX * GameConfig.CHUNK_SIZE * GameConfig.TILE_SIZE;
+        const worldY = chunkY * GameConfig.CHUNK_SIZE * GameConfig.TILE_SIZE;
+        this.graphics.setPosition(worldX, worldY);
+        this.gridGraphics.setPosition(worldX, worldY);
+        
+        this.initialize();
+    }
+
+    private initialize(): void {
+        for (let x = 0; x < GameConfig.CHUNK_SIZE; x++) {
+            this.blocks[x] = [];
+            for (let y = 0; y < GameConfig.CHUNK_SIZE; y++) {
+                this.blocks[x][y] = BlockTypes.AIR.id;
+            }
+        }
+    }
+
+    public setBlock(localX: number, localY: number, blockId: number): void {
+        if (localX >= 0 && localX < GameConfig.CHUNK_SIZE &&
+            localY >= 0 && localY < GameConfig.CHUNK_SIZE) {
+            this.blocks[localX][localY] = blockId;
+        }
+    }
+
+    public getBlock(localX: number, localY: number): number | null {
+        if (localX >= 0 && localX < GameConfig.CHUNK_SIZE &&
+            localY >= 0 && localY < GameConfig.CHUNK_SIZE) {
+            return this.blocks[localX][localY];
+        }
+        return null;
+    }
+
+    public render(): void {
+        this.graphics.clear();
+        
+        for (let x = 0; x < GameConfig.CHUNK_SIZE; x++) {
+            for (let y = 0; y < GameConfig.CHUNK_SIZE; y++) {
+                const blockId = this.blocks[x][y];
+                const blockType = getBlockById(blockId);
+                
+                if (blockType && blockType.color !== null) {
+                    this.graphics.fillStyle(blockType.color, 1);
+                    this.graphics.fillRect(
+                        x * GameConfig.TILE_SIZE,
+                        y * GameConfig.TILE_SIZE,
+                        GameConfig.TILE_SIZE,
+                        GameConfig.TILE_SIZE
+                    );
+                }
+            }
+        }
+        
+        this.renderGrid();
+    }
+
+    private renderGrid(): void {
+        this.gridGraphics.clear();
+        
+        if (!this.gridVisible) return;
+        
+        this.gridGraphics.lineStyle(1, 0x333333, 0.3);
+        
+        for (let x = 0; x <= GameConfig.CHUNK_SIZE; x++) {
+            this.gridGraphics.moveTo(x * GameConfig.TILE_SIZE, 0);
+            this.gridGraphics.lineTo(x * GameConfig.TILE_SIZE, GameConfig.CHUNK_SIZE * GameConfig.TILE_SIZE);
+        }
+        
+        for (let y = 0; y <= GameConfig.CHUNK_SIZE; y++) {
+            this.gridGraphics.moveTo(0, y * GameConfig.TILE_SIZE);
+            this.gridGraphics.lineTo(GameConfig.CHUNK_SIZE * GameConfig.TILE_SIZE, y * GameConfig.TILE_SIZE);
+        }
+        
+        this.gridGraphics.lineStyle(2, 0xFFFF00, 0.5);
+        this.gridGraphics.strokeRect(0, 0, 
+            GameConfig.CHUNK_SIZE * GameConfig.TILE_SIZE,
+            GameConfig.CHUNK_SIZE * GameConfig.TILE_SIZE
+        );
+    }
+
+    public toggleGrid(visible: boolean): void {
+        this.gridVisible = visible;
+        this.renderGrid();
+    }
+
+    public destroy(): void {
+        this.graphics.destroy();
+        this.gridGraphics.destroy();
+    }
+}
+```
+
+### src/world/WorldGenerator.ts
+```typescript
+import { GameConfig } from '../config/GameConfig';
+import { BlockTypes } from '../config/BlockTypes';
+import { NoiseGenerator } from './NoiseGenerator';
+
+export class WorldGenerator {
+    private terrainNoise: NoiseGenerator;
+    private caveNoise: NoiseGenerator;
+    private oreNoise: NoiseGenerator;
+
+    constructor(seed: number = Date.now()) {
+        this.terrainNoise = new NoiseGenerator(seed);
+        this.caveNoise = new NoiseGenerator(seed + 1);
+        this.oreNoise = new NoiseGenerator(seed + 2);
+    }
+
+    public generateChunk(chunkX: number, chunkY: number): number[][] {
+        const chunk: number[][] = [];
+        
+        for (let x = 0; x < GameConfig.CHUNK_SIZE; x++) {
+            chunk[x] = [];
+            for (let y = 0; y < GameConfig.CHUNK_SIZE; y++) {
+                const worldX = chunkX * GameConfig.CHUNK_SIZE + x;
+                const worldY = chunkY * GameConfig.CHUNK_SIZE + y;
+                
+                chunk[x][y] = this.generateBlock(worldX, worldY);
+            }
+        }
+        
+        return chunk;
+    }
+
+    private generateBlock(worldX: number, worldY: number): number {
+        const heightValue = this.terrainNoise.octaveNoise(worldX * 0.01, 0, 4, 0.6);
+        const height = Math.floor(GameConfig.SEA_LEVEL + heightValue * 30);
+        
+        if (worldY < height - 5) {
+            return BlockTypes.AIR.id;
+        }
+        
+        const caveValue = this.caveNoise.octaveNoise(worldX * 0.05, worldY * 0.05, 2, 0.5);
+        if (Math.abs(caveValue) < 0.1 && worldY > height) {
+            return BlockTypes.AIR.id;
+        }
+        
+        if (worldY === height - 5) {
+            return BlockTypes.GRASS.id;
+        }
+        
+        if (worldY > height - 5 && worldY < height) {
+            return BlockTypes.DIRT.id;
+        }
+        
+        if (worldY >= GameConfig.WORLD_HEIGHT - 5) {
+            return BlockTypes.BEDROCK.id;
+        }
+        
+        if (worldY >= height) {
+            const coalChance = this.oreNoise.noise(worldX * 0.1, worldY * 0.1);
+            if (coalChance > 0.8 && worldY < GameConfig.WORLD_HEIGHT - 20) {
+                return BlockTypes.COAL.id;
+            }
+            
+            if (coalChance > 0.85 && worldY > GameConfig.WORLD_HEIGHT - 40) {
+                return BlockTypes.IRON.id;
+            }
+            
+            return BlockTypes.STONE.id;
+        }
+        
+        if (worldY >= GameConfig.SEA_LEVEL && worldY < height) {
+            return BlockTypes.WATER.id;
+        }
+        
+        return BlockTypes.AIR.id;
+    }
+}
+```
+
+### src/world/ChunkManager.ts
+```typescript
+import * as Phaser from 'phaser';
+import { GameConfig } from '../config/GameConfig';
+import { Chunk } from './Chunk';
+import { WorldGenerator } from './WorldGenerator';
+
+export class ChunkManager {
+    private scene: Phaser.Scene;
+    private worldGenerator: WorldGenerator;
+    private chunks: Map<string, Chunk>;
+    private gridVisible: boolean = false;
+
+    constructor(scene: Phaser.Scene, worldGenerator: WorldGenerator) {
+        this.scene = scene;
+        this.worldGenerator = worldGenerator;
+        this.chunks = new Map();
+    }
+
+    private getChunkKey(chunkX: number, chunkY: number): string {
+        return `${chunkX},${chunkY}`;
+    }
+
+    public loadChunk(chunkX: number, chunkY: number): Chunk {
+        const key = this.getChunkKey(chunkX, chunkY);
+        
+        if (this.chunks.has(key)) {
+            return this.chunks.get(key)!;
+        }
+        
+        const chunk = new Chunk(this.scene, chunkX, chunkY);
+        const generatedBlocks = this.worldGenerator.generateChunk(chunkX, chunkY);
+        
+        for (let x = 0; x < GameConfig.CHUNK_SIZE; x++) {
+            for (let y = 0; y < GameConfig.CHUNK_SIZE; y++) {
+                chunk.setBlock(x, y, generatedBlocks[x][y]);
+            }
+        }
+        
+        chunk.render();
+        chunk.toggleGrid(this.gridVisible);
+        this.chunks.set(key, chunk);
+        
+        return chunk;
+    }
+
+    public unloadChunk(chunkX: number, chunkY: number): void {
+        const key = this.getChunkKey(chunkX, chunkY);
+        const chunk = this.chunks.get(key);
+        
+        if (chunk) {
+            chunk.destroy();
+            this.chunks.delete(key);
+        }
+    }
+
+    public updateVisibleChunks(cameraX: number, cameraY: number): void {
+        const centerChunkX = Math.floor(cameraX / (GameConfig.CHUNK_SIZE * GameConfig.TILE_SIZE));
+        const centerChunkY = Math.floor(cameraY / (GameConfig.CHUNK_SIZE * GameConfig.TILE_SIZE));
+        
+        for (let dx = -GameConfig.RENDER_DISTANCE; dx <= GameConfig.RENDER_DISTANCE; dx++) {
+            for (let dy = -GameConfig.RENDER_DISTANCE; dy <= GameConfig.RENDER_DISTANCE; dy++) {
+                this.loadChunk(centerChunkX + dx, centerChunkY + dy);
+            }
+        }
+        
+        this.chunks.forEach((chunk, key) => {
+            const distance = Math.max(
+                Math.abs(chunk.chunkX - centerChunkX),
+                Math.abs(chunk.chunkY - centerChunkY)
+            );
+            
+            if (distance > GameConfig.RENDER_DISTANCE + 1) {
+                this.unloadChunk(chunk.chunkX, chunk.chunkY);
+            }
+        });
+    }
+
+    public toggleGrid(): void {
+        this.gridVisible = !this.gridVisible;
+        this.chunks.forEach(chunk => {
+            chunk.toggleGrid(this.gridVisible);
+        });
+    }
+
+    public getBlockAt(worldX: number, worldY: number): number | null {
+        const chunkX = Math.floor(worldX / GameConfig.CHUNK_SIZE);
+        const chunkY = Math.floor(worldY / GameConfig.CHUNK_SIZE);
+        const localX = worldX % GameConfig.CHUNK_SIZE;
+        const localY = worldY % GameConfig.CHUNK_SIZE;
+        
+        const key = this.getChunkKey(chunkX, chunkY);
+        const chunk = this.chunks.get(key);
+        
+        if (chunk) {
+            return chunk.getBlock(localX, localY);
+        }
+        
+        return null;
+    }
+
+    public getChunkCount(): number {
+        return this.chunks.size;
+    }
+}
+```
+
+### src/controllers/CameraController.ts
+```typescript
+import * as Phaser from 'phaser';
+import { GameConfig } from '../config/GameConfig';
+import { Vector2 } from '../types';
+
+export class CameraController {
+    private scene: Phaser.Scene;
+    private camera: Phaser.Cameras.Scene2D.Camera;
+    private velocity: Vector2;
+    private cursors: Phaser.Types.Input.Keyboard.CursorKeys;
+    private wasd: Record<string, Phaser.Input.Keyboard.Key>;
+    private zoomKeys: Record<string, Phaser.Input.Keyboard.Key>;
+    private resetKey: Phaser.Input.Keyboard.Key;
+
+    constructor(scene: Phaser.Scene, camera: Phaser.Cameras.Scene2D.Camera) {
+        this.scene = scene;
+        this.camera = camera;
+        this.velocity = { x: 0, y: 0 };
+        
+        this.cursors = scene.input.keyboard!.createCursorKeys();
+        this.wasd = scene.input.keyboard!.addKeys('W,S,A,D') as Record<string, Phaser.Input.Keyboard.Key>;
+        this.zoomKeys = scene.input.keyboard!.addKeys('Q,E') as Record<string, Phaser.Input.Keyboard.Key>;
+        this.resetKey = scene.input.keyboard!.addKey('R');
+        
+        this.setupMouseWheel();
+    }
+
+    private setupMouseWheel(): void {
+        this.scene.input.on('wheel', (_pointer: Phaser.Input.Pointer, _gameObjects: any[], _deltaX: number, deltaY: number) => {
+            const zoomChange = deltaY > 0 ? -GameConfig.ZOOM_SPEED : GameConfig.ZOOM_SPEED;
+            this.setZoom(this.camera.zoom + zoomChange);
+        });
+    }
+
+    public update(delta: number): void {
+        this.velocity.x = 0;
+        this.velocity.y = 0;
+        
+        if (this.cursors.left.isDown || this.wasd.A.isDown) {
+            this.velocity.x = -GameConfig.CAMERA_SPEED;
+        }
+        if (this.cursors.right.isDown || this.wasd.D.isDown) {
+            this.velocity.x = GameConfig.CAMERA_SPEED;
+        }
+        if (this.cursors.up.isDown || this.wasd.W.isDown) {
+            this.velocity.y = -GameConfig.CAMERA_SPEED;
+        }
+        if (this.cursors.down.isDown || this.wasd.S.isDown) {
+            this.velocity.y = GameConfig.CAMERA_SPEED;
+        }
+        
+        const moveDistance = (delta / 1000) / this.camera.zoom;
+        this.camera.scrollX += this.velocity.x * moveDistance;
+        this.camera.scrollY += this.velocity.y * moveDistance;
+        
+        if (this.zoomKeys.Q.isDown) {
+            this.setZoom(this.camera.zoom + GameConfig.ZOOM_SPEED * (delta / 1000));
+        }
+        if (this.zoomKeys.E.isDown) {
+            this.setZoom(this.camera.zoom - GameConfig.ZOOM_SPEED * (delta / 1000));
+        }
+        
+        if (Phaser.Input.Keyboard.JustDown(this.resetKey)) {
+            this.resetCamera();
+        }
+    }
+
+    private setZoom(newZoom: number): void {
+        this.camera.zoom = Phaser.Math.Clamp(newZoom, GameConfig.MIN_ZOOM, GameConfig.MAX_ZOOM);
+    }
+
+    private resetCamera(): void {
+        this.camera.scrollX = 0;
+        this.camera.scrollY = 0;
+        this.camera.zoom = 1;
+    }
+}
+```
+
+### src/scenes/PreloadScene.ts
+```typescript
+import * as Phaser from 'phaser';
+
+export class PreloadScene extends Phaser.Scene {
+    constructor() {
+        super({ key: 'PreloadScene' });
+    }
+
+    preload(): void {
+        const width = this.cameras.main.width;
+        const height = this.cameras.main.height;
+        
+        const progressBar = this.add.graphics();
+        const progressBox = this.add.graphics();
+        progressBox.fillStyle(0x222222, 0.8);
+        progressBox.fillRect(width / 2 - 160, height / 2 - 25, 320, 50);
+        
+        const loadingText = this.make.text({
+            x: width / 2,
+            y: height / 2 - 60,
+            text: 'Loading TerraCraft 2D...',
+            style: {
+                font: '20px monospace',
+                color: '#ffffff'
+            }
+        });
+        loadingText.setOrigin(0.5, 0.5);
+        
+        this.load.on('progress', (value: number) => {
+            progressBar.clear();
+            progressBar.fillStyle(0xffffff, 1);
+            progressBar.fillRect(width / 2 - 150, height / 2 - 15, 300 * value, 30);
+        });
+        
+        this.load.on('complete', () => {
+            progressBar.destroy();
+            progressBox.destroy();
+            loadingText.destroy();
+        });
+    }
+
+    create(): void {
+        this.scene.start('MenuScene');
+    }
+}
+```
+
+### src/scenes/MenuScene.ts
+```typescript
+import * as Phaser from 'phaser';
+
+export class MenuScene extends Phaser.Scene {
+    constructor() {
+        super({ key: 'MenuScene' });
+    }
+
+    create(): void {
+        const { width, height } = this.cameras.main;
+        
+        this.add.rectangle(0, 0, width, height, 0x2c3e50).setOrigin(0);
+        
+        const title = this.add.text(width / 2, height / 3, 'TerraCraft 2D', {
+            fontSize: '48px',
+            fontFamily: 'Arial',
+            color: '#ffffff',
+            stroke: '#000000',
+            strokeThickness: 6
+        }).setOrigin(0.5);
+        
+        this.add.text(width / 2, height / 3 + 60, 'A 2D Minecraft Clone in Phaser 3', {
+            fontSize: '18px',
+            fontFamily: 'Arial',
+            color: '#cccccc'
+        }).setOrigin(0.5);
+        
+        const playButton = this.add.rectangle(width / 2, height / 2 + 50, 200, 50, 0x3498db)
+            .setInteractive({ useHandCursor: true });
+        
+        const playText = this.add.text(width / 2, height / 2 + 50, 'Play', {
+            fontSize: '24px',
+            fontFamily: 'Arial',
+            color: '#ffffff'
+        }).setOrigin(0.5);
+        
+        playButton.on('pointerover', () => {
+            playButton.setFillStyle(0x2980b9);
+        });
+        
+        playButton.on('pointerout', () => {
+            playButton.setFillStyle(0x3498db);
+        });
+        
+        playButton.on('pointerdown', () => {
+            this.scene.start('GameScene');
+        });
+        
+        this.add.text(10, height - 20, 'Phase 1: Basic Framework (TypeScript)', {
+            fontSize: '12px',
+            fontFamily: 'Arial',
+            color: '#666666'
+        });
+    }
+}
+```
+
+### src/scenes/GameScene.ts
+```typescript
+import * as Phaser from 'phaser';
+import { GameConfig } from '../config/GameConfig';
+import { WorldGenerator } from '../world/WorldGenerator';
+import { ChunkManager } from '../world/ChunkManager';
+import { CameraController } from '../controllers/CameraController';
+
+export class GameScene extends Phaser.Scene {
+    private worldGenerator!: WorldGenerator;
+    private chunkManager!: ChunkManager;
+    private cameraController!: CameraController;
+    private debugText!: Phaser.GameObjects.Text;
+
+    constructor() {
+        super({ key: 'GameScene' });
+    }
+
+    create(): void {
+        this.physics.world.setBounds(
+            -GameConfig.CHUNK_SIZE * GameConfig.TILE_SIZE * 10,
+            -GameConfig.CHUNK_SIZE * GameConfig.TILE_SIZE * 10,
+            GameConfig.CHUNK_SIZE * GameConfig.TILE_SIZE * 20,
+            GameConfig.CHUNK_SIZE * GameConfig.TILE_SIZE * 20
+        );
+        
+        const worldSeed = Date.now();
+        this.worldGenerator = new WorldGenerator(worldSeed);
+        this.chunkManager = new ChunkManager(this, this.worldGenerator);
+        
+        this.cameraController = new CameraController(this, this.cameras.main);
+        
+        this.cameras.main.setBackgroundColor(0x87CEEB);
+        
+        this.input.keyboard!.on('keydown-G', () => {
+            this.chunkManager.toggleGrid();
+        });
+        
+        this.chunkManager.updateVisibleChunks(0, 0);
+        
+        this.createDebugInfo();
+    }
+
+    private createDebugInfo(): void {
+        this.debugText = this.add.text(10, 10, '', {
+            fontSize: '14px',
+            fontFamily: 'monospace',
+            color: '#ffffff',
+            backgroundColor: 'rgba(0,0,0,0.7)',
+            padding: { x: 10, y: 5 }
+        }).setScrollFactor(0).setDepth(1000);
+    }
+
+    update(time: number, delta: number): void {
+        this.cameraController.update(delta);
+        
+        this.chunkManager.updateVisibleChunks(
+            this.cameras.main.scrollX + this.cameras.main.width / 2,
+            this.cameras.main.scrollY + this.cameras.main.height / 2
+        );
+        
+        const worldX = Math.floor((this.cameras.main.scrollX + this.cameras.main.width / 2) / GameConfig.TILE_SIZE);
+        const worldY = Math.floor((this.cameras.main.scrollY + this.cameras.main.height / 2) / GameConfig.TILE_SIZE);
+        const chunkX = Math.floor(worldX / GameConfig.CHUNK_SIZE);
+        const chunkY = Math.floor(worldY / GameConfig.CHUNK_SIZE);
+        
+        this.debugText.setText([
+            `World Pos: ${worldX}, ${worldY}`,
+            `Chunk: ${chunkX}, ${chunkY}`,
+            `Loaded Chunks: ${this.chunkManager.getChunkCount()}`,
+            `Zoom: ${this.cameras.main.zoom.toFixed(2)}x`,
+            `FPS: ${Math.round(this.game.loop.actualFps)}`
+        ]);
+    }
+}
+```
+
+### src/main.ts
+```typescript
+import * as Phaser from 'phaser';
+import { PreloadScene } from './scenes/PreloadScene';
+import { MenuScene } from './scenes/MenuScene';
+import { GameScene } from './scenes/GameScene';
+import { GameConfig } from './config/GameConfig';
+
+const config: Phaser.Types.Core.GameConfig = {
+    type: Phaser.AUTO,
+    width: GameConfig.GAME_WIDTH,
+    height: GameConfig.GAME_HEIGHT,
+    parent: 'game-container',
+    backgroundColor: '#2c3e50',
+    physics: {
+        default: 'arcade',
+        arcade: {
+            debug: false
+        }
+    },
+    scene: [PreloadScene, MenuScene, GameScene],
+    pixelArt: true,
+    antialias: false
+};
+
+new Phaser.Game(config);
+```
+
+### .gitignore
+```
+node_modules/
+dist/
+.vite/
+*.log
+.DS_Store
+.env
+.env.local
+```
+
+### README.md
+```markdown
+# TerraCraft 2D - Phaser 3 Minecraft Clone
+
+A 2D Minecraft-inspired game built with Phaser 3, TypeScript, and Vite.
+
+## Features
+
+- Procedural world generation with Perlin noise
+- Chunk-based infinite world system
+- Multiple block types with different properties
+- Cave generation and ore distribution
+- Smooth camera controls with zoom
+- Debug overlay with performance metrics
+
+## Development
+
+### Prerequisites
+
+- Node.js 16+ 
+- npm or yarn
+
+### Installation
+
+```bash
+# Clone the repository
+git clone <your-repo-url>
+cd terracraft2d
+
+# Install dependencies
+npm install
+```
+
+### Running the Development Server
+
+```bash
+npm run dev
+```
+
+The game will be available at `http://localhost:3000`
+
+### Building for Production
+
+```bash
+npm run build
+```
+
+The built files will be in the `dist/` directory.
+
+### Type Checking
+
+```bash
+npm run type-check
+```
+
+## Controls
+
+- **WASD/Arrow Keys**: Move camera
+- **Q/E**: Zoom in/out
+- **Mouse Wheel**: Zoom
+- **R**: Reset camera position
+- **G**: Toggle chunk grid overlay
+
+## Project Structure
+
+```
+src/
+├── config/         # Game configuration and constants
+├── world/          # World generation and chunk management
+├── controllers/    # Input and camera controllers
+├── scenes/         # Phaser scenes
+├── types/          # TypeScript type definitions
+└── main.ts         # Entry point
+```
+
+## Architecture
+
+### World Generation
+
+The world is generated using Perlin noise with multiple octaves:
+- Terrain height generation
+- Cave carving
+- Ore distribution
+
+### Chunk System
+
+- Chunks are 16x16 blocks
+- Dynamic loading/unloading based on camera position
+- Render distance of 3 chunks in each direction
+
+### Block System
+
+Currently implemented blocks:
+- Air, Stone, Dirt, Grass
+- Sand, Water
+- Wood, Leaves
+- Coal Ore, Iron Ore
+- Bedrock
+
+## Future Improvements
+
+- [ ] Block breaking and placing
+- [ ] Player character
+- [ ] Inventory system
+- [ ] Crafting system
+- [ ] Day/night cycle
+- [ ] Entities and mobs
+- [ ] Multiplayer support
+
+## License
+
+MIT
+```
+
+## Next Steps
+
+1. **Install the project:**
+```bash
+# Create the project directory
+mkdir terracraft2d
+cd terracraft2d
+
+# Copy all the files from the setup above
+
+# Install dependencies
+npm install
+
+# Run the development server
+npm run dev
+```
+
+2. **Benefits of this TypeScript + Vite setup:**
+   - **Type Safety**: Full TypeScript support with strict typing
+   - **Hot Module Replacement**: Instant updates during development
+   - **Better IDE Support**: IntelliSense, auto-completion, and refactoring
+   - **Modern Build Tool**: Fast builds with Vite
+   - **Modular Architecture**: Clean separation of concerns
+   - **Easy Testing**: Can add Jest or Vitest for unit tests
+
+3. **Key Improvements over the vanilla JS version:**
+   - Proper module system with ES modules
+   - Type definitions for all game objects
+   - Better error catching at compile time
+   - Cleaner project organization
+   - Modern development workflow
+
+The project is now ready for Phase 2 where you can add block interaction, player mechanics, and more advanced features!

@@ -1,0 +1,186 @@
+---
+title: Well-Known Symbols in JavaScript A Comprehensive Guide
+slug: well-known-symbols-in-javascript-a-comprehensive-guide
+publishDate: 2024-07-01
+description: Learn about Well-Known Symbols in JavaScript A Comprehensive Guide.
+date: 2024-07-01
+tags: ['JavaScript']
+draft: false
+---
+
+### Introduction
+
+JavaScript introduced symbols in ECMAScript 2015 (ES6) as a new primitive type. Among these, a special category known as "well-known symbols" plays a crucial role in metaprogramming and customizing object behavior. In this guide, we'll explore these well-known symbols and how they can be used to tap into JavaScript's internal language behaviors.
+
+<TOCInline toc={props.toc} exclude="Introduction" />
+
+#### What are Well-Known Symbols?
+
+Well-known symbols are predefined symbol values that are used as keys for certain object properties. They allow you to hook into core language behaviors and customize them for your objects. These symbols are properties of the `Symbol` object.
+
+Let's dive into each well-known symbol and see how they can be used:
+
+##### 1. Symbol.iterator
+
+This symbol specifies the default iterator for an object. It's used by `for...of` loops.
+
+```javascript
+const myIterable = {
+  *[Symbol.iterator]() {
+    yield 1
+    yield 2
+    yield 3
+  },
+}
+
+for (let value of myIterable) {
+  console.log(value)
+}
+// Output: 1, 2, 3
+```
+
+##### 2. Symbol.asyncIterator
+
+This symbol specifies the default AsyncIterator for an object. It's used by `for await...of` loops.
+
+```javascript
+const myAsyncIterable = {
+  async *[Symbol.asyncIterator]() {
+    yield await Promise.resolve(1)
+    yield await Promise.resolve(2)
+    yield await Promise.resolve(3)
+  },
+}
+
+;(async () => {
+  for await (let value of myAsyncIterable) {
+    console.log(value)
+  }
+})()
+// Output: 1, 2, 3
+```
+
+##### 3. Symbol.toStringTag
+
+This symbol is used to create the default string description of an object. It's accessed internally by `Object.prototype.toString()`.
+
+```javascript
+class MyClass {
+  get [Symbol.toStringTag]() {
+    return 'MyClass'
+  }
+}
+
+console.log(Object.prototype.toString.call(new MyClass()))
+// Output: [object MyClass]
+```
+
+##### 4. Symbol.toPrimitive
+
+This symbol is used to convert an object to a primitive value.
+
+```javascript
+const obj = {
+  [Symbol.toPrimitive](hint) {
+    if (hint === 'number') {
+      return 42
+    }
+    if (hint === 'string') {
+      return 'hello'
+    }
+    return true
+  },
+}
+
+console.log(+obj) // Output: 42
+console.log(`${obj}`) // Output: hello
+console.log(obj + '') // Output: true
+```
+
+##### 5. Symbol.isConcatSpreadable
+
+This symbol is used to configure if an object should be flattened to its array elements when using `Array.prototype.concat()`.
+
+```javascript
+const arr = [1, 2]
+const obj = { length: 2, 0: 3, 1: 4, [Symbol.isConcatSpreadable]: true }
+
+console.log([].concat(arr, obj))
+// Output: [1, 2, 3, 4]
+```
+
+##### 6. Symbol.species
+
+This symbol specifies a constructor function that is used to create derived objects.
+
+```javascript
+class MyArray extends Array {
+  static get [Symbol.species]() {
+    return Array
+  }
+}
+
+const a = new MyArray(1, 2, 3)
+const mapped = a.map((x) => x * x)
+
+console.log(mapped instanceof MyArray) // false
+console.log(mapped instanceof Array) // true
+```
+
+##### 7. Symbol.match, Symbol.replace, Symbol.search, Symbol.split
+
+These symbols are used to define custom matching, replacing, searching, and splitting behaviors on objects when used with corresponding string methods.
+
+```javascript
+const caseInsensitive = {
+  [Symbol.match](str) {
+    return this.toLowerCase() === str.toLowerCase()
+  },
+}
+
+console.log('hello'.match(caseInsensitive)) // null
+console.log('HELLO'.match(caseInsensitive)) // true
+```
+
+##### 8. Symbol.hasInstance
+
+This symbol is used to determine if a constructor object recognizes an object as its instance.
+
+```javascript
+class MyClass {
+  static [Symbol.hasInstance](instance) {
+    return Array.isArray(instance)
+  }
+}
+
+console.log([] instanceof MyClass) // true
+console.log({} instanceof MyClass) // false
+```
+
+##### 9. Symbol.unscopables
+
+This symbol is used to specify object properties that should be excluded from a `with` environment bindings.
+
+```javascript
+const obj = {
+  foo: 1,
+  bar: 2,
+}
+
+obj[Symbol.unscopables] = {
+  foo: true,
+}
+
+with (obj) {
+  console.log(bar) // 2
+  console.log(foo) // ReferenceError: foo is not defined
+}
+```
+
+#### Conclusion
+
+Well-known symbols provide powerful ways to customize object behavior and hook into JavaScript's internal operations. They're a key part of JavaScript's metaprogramming capabilities, allowing developers to create more flexible and expressive code.
+
+When using well-known symbols, remember that they're meant to integrate with JavaScript's existing behaviors. Use them when you need to customize how your objects interact with built-in language features.
+
+As you continue to explore JavaScript, keep these well-known symbols in mind. They can be powerful tools when used appropriately in your code.

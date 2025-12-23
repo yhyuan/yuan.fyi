@@ -1,0 +1,598 @@
+---
+title: Leetcode Pattern 9 Topological Sorting
+slug: pattern-09-topological-sort
+publishDate: 2024-05-12
+description: Learn about Leetcode Pattern 9 Topological Sorting.
+date: 2024-05-12
+tags: ["leetcode", "pattern"]
+draft: false
+---
+
+### Introduction
+
+Topological sorting is a fundamental concept in computer science, particularly in the realm of graph theory. It's used to order vertices in a directed graph in such a way that for any directed edge \( (u, v) \), vertex \( u \) comes before \( v \) in the ordering. This concept is crucial for solving various problems, such as scheduling tasks, resolving dependencies, and more.
+
+Topological sorting of a directed graph is a linear ordering of its vertices. It is applicable only to Directed Acyclic Graphs (DAGs)—graphs that have no cycles. The key idea is that for every directed edge \( (u, v) \) from vertex \( u \) to vertex \( v \), \( u \) must appear before \( v \) in the ordering.
+
+Consider a simple directed graph representing course prerequisites:
+- Course A must be taken before Course B.
+- Course B must be taken before Course C.
+
+Here, a valid topological sort would be A → B → C, indicating that A must come before B, and B must come before C.
+
+Applications of Topological Sorting include:
+
+1. **Task Scheduling:**
+   - In project management, tasks must be completed in a specific order due to dependencies. Topological sorting helps in finding an order to complete all tasks.
+
+2. **Build Systems:**
+   - In software development, build systems often use topological sorting to determine the order in which files should be compiled.
+
+3. **Course Prerequisites:**
+   - In academic settings, topological sorting can determine the order in which courses should be taken based on prerequisites.
+
+4. **Dependency Resolution:**
+   - Package managers use topological sorting to resolve dependencies between software packages.
+
+Two common algorithms for topological sorting are Kahn's Algorithm and Depth-First Search (DFS) based algorithm.
+
+**1. Kahn's Algorithm:**
+
+Kahn's Algorithm is an iterative approach that uses in-degree to sort vertices. Here’s a high-level overview:
+
+- **Step 1:** Compute the in-degree of each vertex (number of incoming edges).
+- **Step 2:** Initialize a queue with all vertices that have an in-degree of 0.
+- **Step 3:** While the queue is not empty:
+  - Dequeue a vertex and add it to the topological order.
+  - For each outgoing edge from the dequeued vertex, decrease the in-degree of the target vertex.
+  - If the in-degree of the target vertex becomes 0, enqueue it.
+- **Step 4:** Continue until the queue is empty. If all vertices are processed, the resulting order is a valid topological sort.
+
+```python
+from collections import deque, defaultdict
+
+def kahn_topological_sort(graph):
+    # Calculate in-degrees of all vertices
+    in_degree = {u: 0 for u in graph}
+    for u in graph:
+        for v in graph[u]:
+            in_degree[v] += 1
+
+    # Initialize the queue with vertices with 0 in-degree
+    queue = deque([u for u in graph if in_degree[u] == 0])
+
+    # List to store the topological order
+    topo_order = []
+
+    while queue:
+        u = queue.popleft()
+        topo_order.append(u)
+
+        # Decrease in-degree of all neighbors of u
+        for v in graph[u]:
+            in_degree[v] -= 1
+            if in_degree[v] == 0:
+                queue.append(v)
+
+    # Check if topological sort is possible (i.e., no cycle)
+    if len(topo_order) == len(graph):
+        return topo_order
+    else:
+        return [] # "Graph has at least one cycle, topological sort not possible"
+
+# Example usage
+graph = {
+    5: [0, 2],
+    4: [0, 1],
+    2: [3],
+    3: [1],
+    0: [],
+    1: []
+}
+
+topo_order = kahn_topological_sort(graph)
+print("Topological Order:", topo_order)
+```
+**2. Depth-First Search (DFS) Based Algorithm:**
+1. **Initialize a stack to store the order of vertices.**
+2. **Create a visited set to track the visited vertices.**
+3. **For each vertex, if it is not visited, perform DFS from that vertex.**
+4. **In the DFS function, mark the vertex as visited.**
+5. **Recursively visit all the unvisited neighbors.**
+6. **After visiting all neighbors, add the current vertex to the stack.**
+7. **Once all vertices are processed, the stack will contain the topological order (in reverse).**
+8. **Reverse the stack to get the correct topological order.**
+
+Let's break down the implementation of the DFS-based topological sort in Python.
+
+```python
+from collections import defaultdict
+
+class Graph:
+    def __init__(self, vertices):
+        self.graph = defaultdict(list)  # Dictionary containing adjacency List
+        self.V = vertices               # Number of vertices in the graph
+
+    # Function to add an edge to graph
+    def add_edge(self, u, v):
+        self.graph[u].append(v)
+
+    # Recursive function used by topologicalSort
+    def dfs(self, v, visited, stack):
+        visited.add(v)                  # Mark the current node as visited
+        for neighbor in self.graph[v]:  # Recur for all the vertices adjacent to this vertex
+            if neighbor not in visited:
+                self.dfs(neighbor, visited, stack)
+        stack.append(v)                 # Push current vertex to stack which stores the result
+
+    # The function to do Topological Sort
+    def topological_sort(self):
+        visited = set()
+        stack = []
+
+        # Call the recursive helper function to store Topological Sort
+        # starting from all vertices one by one
+        for vertex in range(self.V):
+            if vertex not in visited:
+                self.dfs(vertex, visited, stack)
+
+        # Return the reverse of the stack which contains the topological order
+        return stack[::-1]
+
+# Example usage:
+g = Graph(6)
+g.add_edge(5, 2)
+g.add_edge(5, 0)
+g.add_edge(4, 0)
+g.add_edge(4, 1)
+g.add_edge(2, 3)
+g.add_edge(3, 1)
+
+print("Topological Sort of the given graph is:")
+print(g.topological_sort())
+```
+
+<TOCInline toc={props.toc} exclude="Introduction" />
+
+### Topological Sorting Problems
+
+#### 207.Course Schedule
+
+There are a total of numCourses courses you have to take, labeled from 0 to numCourses - 1. You are given an array prerequisites where prerequisites[i] = [ai, bi] indicates that you must take course bi first if you want to take course ai.
+
+For example, the pair [0, 1], indicates that to take course 0 you have to first take course 1.
+Return true if you can finish all courses. Otherwise, return false.
+
+```python
+class Solution:
+    def canFinish(self, numCourses: int, prerequisites: List[List[int]]) -> bool:
+        # Build adjacency list representation of the graph
+        graph = [[] for _ in range(numCourses)]
+        for course, prereq in prerequisites:
+            graph[course].append(prereq)
+
+        # Initialize visited array
+        visited = [0] * numCourses  # 0: not visited, 1: visited, -1: visiting
+
+        # DFS to check for cycle
+        def dfs(course):
+            # If already visited, return True (no cycle)
+            if visited[course] == 1:
+                return True
+            # If currently visiting, return False (cycle found)
+            if visited[course] == -1:
+                return False
+
+            # Mark as currently visiting
+            visited[course] = -1
+
+            # DFS on neighbors
+            for neighbor in graph[course]:
+                if not dfs(neighbor):
+                    return False
+
+            # Mark as visited
+            visited[course] = 1
+            return True
+
+        # Start DFS from each course
+        for course in range(numCourses):
+            if not dfs(course):
+                return False
+
+        # If no cycle found, return True
+        return True
+```
+
+```javascript
+/**
+ * @param {number} numCourses
+ * @param {number[][]} prerequisites
+ * @return {boolean}
+ */
+var canFinish = function(numCourses, prerequisites) {
+  const graph = new Array(numCourses).fill(0).map(() => []);
+  const visited = new Array(numCourses).fill(false);
+  const recStack = new Array(numCourses).fill(false);
+
+  for (const [course, prerequisite] of prerequisites) {
+    graph[course].push(prerequisite);
+  }
+
+  for (let i = 0; i < numCourses; i++) {
+    if (isCyclicUtil(i, graph, visited, recStack)) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
+function isCyclicUtil(v, graph, visited, recStack) {
+  if (recStack[v]) return true;
+
+  if (visited[v]) return false;
+
+  visited[v] = true;
+  recStack[v] = true;
+
+  for (const neighbor of graph[v]) {
+    if (isCyclicUtil(neighbor, graph, visited, recStack)) {
+      return true;
+    }
+  }
+
+  recStack[v] = false;
+  return false;
+}
+```
+
+#### 210.Course Schedule II
+
+There are a total of numCourses courses you have to take, labeled from 0 to numCourses - 1. You are given an array prerequisites where prerequisites[i] = [ai, bi] indicates that you must take course bi first if you want to take course ai.
+
+For example, the pair [0, 1], indicates that to take course 0 you have to first take course 1.
+Return the ordering of courses you should take to finish all courses. If there are many valid answers, return any of them. If it is impossible to finish all courses, return an empty array.
+
+```python
+class Solution:
+    def findOrder(self, numCourses: int, prerequisites: List[List[int]]) -> List[int]:
+        # Build adjacency list representation of the graph
+        graph = [[] for _ in range(numCourses)]
+        for course, prereq in prerequisites:
+            graph[course].append(prereq)
+
+        # Initialize visited and result arrays
+        visited = [0] * numCourses  # 0: not visited, 1: visited, -1: visiting
+        result = []
+
+        # DFS to perform topological sort
+        def dfs(course):
+            # If already visited, return True
+            if visited[course] == 1:
+                return True
+            # If currently visiting, return False (cycle detected)
+            if visited[course] == -1:
+                return False
+
+            # Mark as currently visiting
+            visited[course] = -1
+
+            # DFS on neighbors
+            for neighbor in graph[course]:
+                if not dfs(neighbor):
+                    return False
+
+            # Mark as visited and append to result
+            visited[course] = 1
+            result.append(course)
+            return True
+
+        # Start DFS from each course
+        for course in range(numCourses):
+            if not dfs(course):
+                return []
+
+        # If no cycle found, return result in reverse order
+        return result[::-1]
+```
+
+```python
+class Solution:
+    def findOrder(self, numCourses: int, prerequisites: List[List[int]]) -> List[int]:
+        # Build adjacency list representation of the graph
+        graph = {}
+        for i in range(numCourses):
+            graph[i] = []
+        for course, prereq in prerequisites:
+            graph[prereq].append(course)
+        topo_order = kahn_topological_sort(graph)
+        return topo_order
+```
+
+#### 269.Alien Dictionary
+
+There is a new alien language that uses the English alphabet. However, the order of the letters is unknown to you.
+
+You are given a list of strings words from the alien language's dictionary. Now it is claimed that the strings in words are
+sorted lexicographically
+by the rules of this new language.
+
+If this claim is incorrect, and the given arrangement of string in words cannot correspond to any order of letters, return "".
+
+Otherwise, return a string of the unique letters in the new alien language sorted in lexicographically increasing order by the new language's rules. If there are multiple solutions, return any of them.
+
+```python
+from collections import defaultdict, deque
+
+class Solution:
+    def alienOrder(self, words: List[str]) -> str:
+        # Step 1: Build the directed graph
+        graph = defaultdict(set)
+        in_degree = {char: 0 for word in words for char in word}
+        for i in range(1, len(words)):
+            word1, word2 = words[i-1], words[i]
+            for j in range(min(len(word1), len(word2))):
+                if word1[j] != word2[j]:
+                    if word2[j] not in graph[word1[j]]:
+                        graph[word1[j]].add(word2[j])
+                        in_degree[word2[j]] += 1
+                    break
+            else:
+                if len(word1) > len(word2):
+                    return ""
+
+        # Step 2: Perform topological sort
+        result = []
+        queue = deque([char for char in in_degree if in_degree[char] == 0])
+        while queue:
+            char = queue.popleft()
+            result.append(char)
+            for neighbor in graph[char]:
+                in_degree[neighbor] -= 1
+                if in_degree[neighbor] == 0:
+                    queue.append(neighbor)
+
+        # Step 3: Check for cycle
+        if len(result) != len(in_degree):
+            return ""
+
+        # Step 4: Return the lexicographically sorted order
+        return "".join(result)
+```
+
+```typescript
+function alienOrder(words: string[]): string {
+  function kahnTopologicalSort(graph: { [key: string]: string[] }): string[] {
+    const inDegree: {[key: string]: number} = {};
+    for (const u in graph) {
+      inDegree[u] = 0;
+    }
+    for (const u in graph) {
+      graph[u].forEach(v => {
+        inDegree[v] = (inDegree[v] || 0) + 1;
+      });
+    }
+    // Initialize the queue with vertices with 0 in-degree
+    const queue: string[] = [];
+    for (const u in graph) {
+        if (inDegree[u] === 0) {
+            queue.push(u);
+        }
+    }
+    // List to store the topological order
+    const topoOrder: string[] = [];
+
+    while (queue.length > 0) {
+        const u = queue.shift()!;
+        topoOrder.push(u);
+
+        // Decrease in-degree of all neighbors of u
+        graph[u].forEach(v => {
+          inDegree[v]--;
+          if (inDegree[v] === 0) {
+              queue.push(v);
+          }
+        });
+    }
+    // Check if topological sort is possible (i.e., no cycle)
+    if (topoOrder.length === Object.keys(graph).length) {
+        return topoOrder;
+    } else {
+        return []; // "Graph has at least one cycle, topological sort not possible"
+    }
+  }
+  function buildGraph(words: string[]): { [key: string]: string[] } {
+    const graph: { [key: string]: string[] } = {};
+    words.forEach(word => {
+        [...word].forEach(ch => {
+            graph[ch] = [];
+        });
+    });
+    for (let j = 0; j < words.length - 1; j++) {
+        const minLeng = Math.min(words[j].length, words[j + 1].length);
+        for (let i = 0; i < minLeng; i ++) {
+            const char1 = words[j].charAt(i);
+            const char2 = words[j + 1].charAt(i);
+            if (char1 !== char2 && words[j].slice(0, i) === words[j + 1].slice(0, i)) {
+                graph[char1].push(char2);
+            }
+        }
+        // special case: ["abc","ab"]
+        if ((words[j].length > minLeng) && (words[j].slice(0, minLeng) === words[j + 1]))  {
+            return {};
+        }
+    }
+
+    return graph;
+  }
+  const graph: { [key: string]: string[] } = buildGraph(words);
+  // console.log(graph);
+  return kahnTopologicalSort(graph).join("");
+};
+```
+
+#### 444.Sequence Reconstruction
+
+You are given an integer array nums of length n where nums is a permutation of the integers in the range [1, n]. You are also given a 2D integer array sequences where sequences[i] is a subsequence of nums.
+
+Check if nums is the shortest possible and the only supersequence. The shortest supersequence is a sequence with the shortest length and has all sequences[i] as subsequences. There could be multiple valid supersequences for the given array sequences.
+
+For example, for sequences = [[1,2],[1,3]], there are two shortest supersequences, [1,2,3] and [1,3,2].
+While for sequences = [[1,2],[1,3],[1,2,3]], the only shortest supersequence possible is [1,2,3]. [1,2,3,4] is a possible supersequence but not the shortest.
+Return true if nums is the only shortest supersequence for sequences, or false otherwise.
+
+A subsequence is a sequence that can be derived from another sequence by deleting some or no elements without changing the order of the remaining elements.
+
+```python
+
+```
+
+#### 310.Minimum Height Trees
+
+A tree is an undirected graph in which any two vertices are connected by exactly one path. In other words, any connected graph without simple cycles is a tree.
+
+Given a tree of n nodes labelled from 0 to n - 1, and an array of n - 1 edges where edges[i] = [ai, bi] indicates that there is an undirected edge between the two nodes ai and bi in the tree, you can choose any node of the tree as the root. When you select a node x as the root, the result tree has height h. Among all possible rooted trees, those with minimum height (i.e. min(h)) are called minimum height trees (MHTs).
+
+Return a list of all MHTs' root labels. You can return the answer in any order.
+
+The height of a rooted tree is the number of edges on the longest downward path between the root and a leaf.
+
+```python
+from collections import defaultdict
+
+class Solution:
+    def findMinHeightTrees(self, n: int, edges: List[List[int]]) -> List[int]:
+        if n == 1:
+            return [0]
+
+        # Step 1: Build adjacency list representation of the graph
+        graph = defaultdict(set)
+        for u, v in edges:
+            graph[u].add(v)
+            graph[v].add(u)
+
+        # Step 2: Initialize list of leaf nodes
+        leaves = [node for node in graph if len(graph[node]) == 1]
+
+        # Step 3: Remove leaf nodes iteratively
+        while n > 2:
+            n -= len(leaves)
+            new_leaves = []
+            for leaf in leaves:
+                neighbor = graph[leaf].pop()  # Remove leaf node
+                graph[neighbor].remove(leaf)  # Update neighbor's degree
+                if len(graph[neighbor]) == 1:  # If neighbor becomes a leaf node
+                    new_leaves.append(neighbor)
+            leaves = new_leaves
+
+        # Step 4: Return remaining nodes as roots of MHTs
+        return leaves
+```
+
+```typescript
+function findMinHeightTrees(n: number, edges: number[][]): number[] {
+  if (n === 1) return [0];
+  const buildGraph = (n: number, edges: number[][]): {[key: string]: number[]} => {
+      let graph: {[key: string]: number[]} = {};
+      // Array(n).fill(0)
+      [...Array(n)].forEach((_, i) => {
+        graph[i] = [];
+      });
+      edges.forEach(edge => {
+          graph[edge[0]].push(edge[1]);
+          graph[edge[1]].push(edge[0]);
+      });
+      return graph;
+  };
+  const kahnTopologicalSort = (graph: { [key: string]: number[] }): number[] => {
+      const inDegree: {[key: string]: number} = {};
+      Object.keys(graph).forEach(u => inDegree[u] = 0);
+      Object.keys(graph)
+        .forEach(u => graph[u]
+            .forEach(v => inDegree[v] += 1));
+      // Initialize the queue with vertices with 1 in-degree
+      let queue: number[] = Object.keys(inDegree).map(Number).filter(u => inDegree[u] === 1);
+      // List to store the topological order
+      while (queue.length > 0) {
+          let nextQueue: number[] = [];
+          const ans: number[] = [];
+          queue.forEach(u => {
+            inDegree[u] -= 1;
+            graph[u].forEach(v => {
+                inDegree[v] -= 1;
+                if (inDegree[v] === 1) {
+                    nextQueue.push(v);
+                }
+            });
+          });
+          if (nextQueue.length === 0) {
+              return queue;
+          }
+          queue = nextQueue;
+      }
+  }
+  const graph = buildGraph(n, edges);
+  return kahnTopologicalSort(graph);
+};
+```
+
+#### 1136. Parallel Courses
+
+You are given an integer n, which indicates that there are n courses labeled from 1 to n. You are also given an array relations where relations[i] = [prevCoursei, nextCoursei], representing a prerequisite relationship between course prevCoursei and course nextCoursei: course prevCoursei has to be taken before course nextCoursei.
+
+In one semester, you can take any number of courses as long as you have taken all the prerequisites in the previous semester for the courses you are taking.
+
+Return the minimum number of semesters needed to take all courses. If there is no way to take all the courses, return -1.
+
+```typescript
+function minimumSemesters(n: number, relations: number[][]): number {
+    const buildGraph = (n: number, relations: number[][]): {[key: string]: number[]} => {
+        let graph: {[key: string]: number[]} = {};
+        [...Array(n)].forEach((_, i) => {
+          graph[i + 1] = [];
+        });
+        relations.forEach(relation => {
+            graph[relation[0]].push(relation[1]);
+        });
+        return graph;
+    };
+    const kahnTopologicalSort = (graph: { [key: string]: number[] }): number => {
+        const inDegree: {[key: string]: number} = {};
+        Object.keys(graph).forEach(u => inDegree[u] = 0);
+        Object.keys(graph)
+          .forEach(u => graph[u]
+              .forEach(v => inDegree[v] += 1));
+        // Initialize the queue with vertices with 0 in-degree
+        let queue: number[] = Object.keys(inDegree).map(Number).filter(u => inDegree[u] === 0);
+        // List to store the topological order
+        const topoOrder: number[] = [];
+        let ans = 0;
+
+        while (queue.length > 0) {
+            let nextQueue: number[] = [];
+            queue.forEach(u => {
+              topoOrder.push(u);
+              // Decrease in-degree of all neighbors of u
+              graph[u].forEach(v => {
+                inDegree[v]--;
+                if (inDegree[v] === 0) {
+                    nextQueue.push(v);
+                }
+              });
+            });
+            queue = nextQueue;
+            ans += 1;
+        }
+        // Check if topological sort is possible (i.e., no cycle)
+        if (topoOrder.length === Object.keys(graph).length) {
+            return ans;
+        } else {
+            return -1;
+        }
+    }
+
+    const graph = buildGraph(n, relations);
+    return kahnTopologicalSort(graph);
+};
+```

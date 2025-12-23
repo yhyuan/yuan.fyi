@@ -1,0 +1,191 @@
+---
+title: Mastering Advanced Generic Types in TypeScript
+slug: mastering-advanced-generic-types-in-typescript
+publishDate: 2024-07-11
+description: Learn about Mastering Advanced Generic Types in TypeScript.
+date: 2024-07-11
+tags: ['TypeScript']
+draft: false
+---
+
+### Introduction
+
+TypeScript's type system is one of its most powerful features, and generics are at the heart of writing reusable, type-safe code. While basic generics are relatively straightforward, TypeScript offers a range of advanced generic techniques that can help solve complex typing problems. In this post, we'll explore some of these advanced concepts.
+
+<TOCInline toc={props.toc} exclude="Introduction" />{' '}
+
+#### 1. Conditional Types
+
+Conditional types allow you to create types that depend on other types. They're defined using a structure similar to ternary operators in JavaScript.
+
+```typescript
+type IsArray<T> = T extends any[] ? true : false
+
+type WithArray = IsArray<string[]> // true
+type WithoutArray = IsArray<number> // false
+```
+
+Conditional types become particularly powerful when combined with infer:
+
+```typescript
+type UnpackArray<T> = T extends Array<infer U> ? U : T
+
+type Unpacked1 = UnpackArray<string[]> // string
+type Unpacked2 = UnpackArray<number> // number
+```
+
+#### 2. Mapped Types
+
+Mapped types allow you to create new types based on old ones by transforming properties.
+
+```typescript
+type Readonly<T> = {
+  readonly [P in keyof T]: T[P]
+}
+
+interface Mutable {
+  x: number
+  y: string
+}
+
+type Immutable = Readonly<Mutable>
+// Equivalent to: { readonly x: number; readonly y: string; }
+```
+
+You can also remove properties or change their optionality:
+
+```typescript
+type Optional<T> = {
+  [P in keyof T]?: T[P]
+}
+
+type Required<T> = {
+  [P in keyof T]-?: T[P]
+}
+```
+
+#### 3. Template Literal Types
+
+Template literal types allow you to manipulate string-based types:
+
+```typescript
+type World = 'world'
+type Greeting = `hello ${World}` // "hello world"
+
+type EmailLocaleIDs = 'welcome_email' | 'email_heading'
+type FooterLocaleIDs = 'footer_title' | 'footer_sendoff'
+
+type AllLocaleIDs = `${EmailLocaleIDs | FooterLocaleIDs}_id`
+// "welcome_email_id" | "email_heading_id" | "footer_title_id" | "footer_sendoff_id"
+```
+
+#### 4. Recursive Types
+
+TypeScript allows you to create recursive type aliases, which can be useful for defining tree-like structures:
+
+```typescript
+type TreeNode<T> = {
+  value: T
+  left?: TreeNode<T>
+  right?: TreeNode<T>
+}
+
+let tree: TreeNode<number> = {
+  value: 1,
+  left: {
+    value: 2,
+    left: {
+      value: 4,
+    },
+  },
+  right: {
+    value: 3,
+  },
+}
+```
+
+#### 5. Higher-Order Types
+
+You can create "higher-order types" that operate on other types, similar to how higher-order functions operate on other functions:
+
+```typescript
+type ArrayType<T> = T[]
+type StringArray = ArrayType<string> // string[]
+
+type Func<T> = (arg: T) => T
+type StringFunc = Func<string> // (arg: string) => string
+```
+
+#### 6. Variadic Tuple Types
+
+TypeScript 4.0 introduced variadic tuple types, allowing you to work with tuples of arbitrary length:
+
+```typescript
+type Tail<T extends any[]> = T extends [any, ...infer U] ? U : never
+
+type TailResult = Tail<[string, number, boolean]> // [number, boolean]
+```
+
+#### 7. Key Remapping in Mapped Types
+
+TypeScript 4.1 added the ability to remap keys in mapped types:
+
+```typescript
+type Getters<T> = {
+  [K in keyof T as `get${Capitalize<string & K>}`]: () => T[K]
+}
+
+interface Person {
+  name: string
+  age: number
+}
+
+type PersonGetters = Getters<Person>
+// { getName: () => string; getAge: () => number; }
+```
+
+#### 8. Generic Type Inference in Conditional Types
+
+You can use the `infer` keyword to infer types within conditional types:
+
+```typescript
+type ReturnType<T> = T extends (...args: any[]) => infer R ? R : any
+
+function add(a: number, b: number): number {
+  return a + b
+}
+
+type AddReturnType = ReturnType<typeof add> // number
+```
+
+#### 9. Distributive Conditional Types
+
+Conditional types are distributive over union types:
+
+```typescript
+type ToArray<T> = T extends any ? T[] : never
+
+type StrNumBool = string | number | boolean
+type StrNumBoolArray = ToArray<StrNumBool> // string[] | number[] | boolean[]
+```
+
+#### 10. Indexed Access Types
+
+You can use indexed access types to look up a specific property on another type:
+
+```typescript
+type Person = { age: number; name: string; alive: boolean }
+type Age = Person['age'] // number
+
+type I1 = Person['age' | 'name'] // string | number
+
+type I2 = Person[keyof Person] // string | number | boolean
+```
+
+#### Conclusion
+
+These advanced generic techniques in TypeScript provide powerful tools for creating flexible, reusable, and type-safe code. While they can be complex, mastering these concepts allows you to express intricate type relationships and create highly abstract, yet type-safe libraries and applications.
+
+Remember, with great power comes great responsibility. While these techniques are powerful, they can also make your code harder to understand if overused. Always strive for a balance between type safety and code readability.
+
+Happy TypeScripting!

@@ -1,0 +1,259 @@
+---
+title: Mastering Classes and Interfaces in TypeScript
+slug: mastering-classes-and-interfaces-in-typescript
+publishDate: 2024-07-09
+description: Learn about Mastering Classes and Interfaces in TypeScript.
+date: 2024-07-09
+tags: ['TypeScript']
+draft: false
+---
+
+### Introduction
+
+TypeScript extends JavaScript's object-oriented capabilities with a robust system of classes and interfaces. These features provide powerful tools for creating structured, maintainable, and scalable code. In this blog post, we'll explore the ins and outs of classes and interfaces in TypeScript.
+
+<TOCInline toc={props.toc} exclude="Introduction" />{' '}
+
+#### Classes in TypeScript
+
+Classes in TypeScript offer a familiar syntax for developers coming from other object-oriented languages, while also providing strong typing and other TypeScript-specific features.
+
+##### Basic Class Syntax
+
+Here's a basic example of a class in TypeScript:
+
+```typescript
+class Person {
+  name: string
+  age: number
+
+  constructor(name: string, age: number) {
+    this.name = name
+    this.age = age
+  }
+
+  greet() {
+    console.log(`Hello, my name is ${this.name} and I'm ${this.age} years old.`)
+  }
+}
+
+const alice = new Person('Alice', 30)
+alice.greet() // Outputs: Hello, my name is Alice and I'm 30 years old.
+```
+
+##### Access Modifiers
+
+TypeScript provides three access modifiers: `public`, `private`, and `protected`.
+
+```typescript
+class Employee {
+  private id: number
+  protected department: string
+  public name: string
+
+  constructor(id: number, name: string, department: string) {
+    this.id = id
+    this.name = name
+    this.department = department
+  }
+}
+```
+
+- `public`: Accessible from anywhere (default)
+- `private`: Only accessible within the class
+- `protected`: Accessible within the class and its subclasses
+
+##### Inheritance
+
+TypeScript supports single inheritance using the `extends` keyword:
+
+```typescript
+class Manager extends Employee {
+  private reports: Employee[]
+
+  constructor(id: number, name: string, department: string) {
+    super(id, name, department)
+    this.reports = []
+  }
+
+  addReport(employee: Employee) {
+    this.reports.push(employee)
+  }
+}
+```
+
+##### Static Members
+
+Static members belong to the class itself rather than to instances of the class:
+
+```typescript
+class MathOperations {
+  static PI: number = 3.14159
+
+  static calculateCircumference(radius: number): number {
+    return 2 * MathOperations.PI * radius
+  }
+}
+
+console.log(MathOperations.PI) // 3.14159
+console.log(MathOperations.calculateCircumference(5)) // 31.4159
+```
+
+##### Abstract Classes
+
+Abstract classes serve as base classes for other classes but cannot be instantiated directly:
+
+```typescript
+abstract class Shape {
+  abstract calculateArea(): number
+
+  displayArea() {
+    console.log(`The area is ${this.calculateArea()}`)
+  }
+}
+
+class Circle extends Shape {
+  constructor(private radius: number) {
+    super()
+  }
+
+  calculateArea(): number {
+    return Math.PI * this.radius ** 2
+  }
+}
+
+const circle = new Circle(5)
+circle.displayArea() // Outputs: The area is 78.53981633974483
+```
+
+#### Interfaces in TypeScript
+
+Interfaces define contracts in your code and provide a way to define custom types.
+
+##### Basic Interface Syntax
+
+Here's a simple interface definition:
+
+```typescript
+interface Person {
+  name: string
+  age: number
+  greet(): void
+}
+
+let user: Person = {
+  name: 'Alice',
+  age: 30,
+  greet() {
+    console.log(`Hello, I'm ${this.name}`)
+  },
+}
+```
+
+##### Optional Properties
+
+Interfaces can have optional properties, marked with a `?`:
+
+```typescript
+interface Config {
+  color?: string
+  width?: number
+}
+
+function createBox(config: Config): { color: string; area: number } {
+  let newBox = { color: 'white', area: 100 }
+  if (config.color) {
+    newBox.color = config.color
+  }
+  if (config.width) {
+    newBox.area = config.width ** 2
+  }
+  return newBox
+}
+```
+
+##### Readonly Properties
+
+You can make properties readonly, which prevents them from being changed after initialization:
+
+```typescript
+interface Point {
+  readonly x: number
+  readonly y: number
+}
+
+let p1: Point = { x: 10, y: 20 }
+// p1.x = 5; // Error: Cannot assign to 'x' because it is a read-only property.
+```
+
+##### Extending Interfaces
+
+Interfaces can extend one or more interfaces:
+
+```typescript
+interface Shape {
+  color: string
+}
+
+interface Square extends Shape {
+  sideLength: number
+}
+
+let square: Square = {
+  color: 'blue',
+  sideLength: 10,
+}
+```
+
+##### Implementing Interfaces in Classes
+
+Classes can implement one or more interfaces:
+
+```typescript
+interface Printable {
+  print(): void
+}
+
+interface Loggable {
+  log(): void
+}
+
+class Console implements Printable, Loggable {
+  print() {
+    console.log('Printing...')
+  }
+
+  log() {
+    console.log('Logging...')
+  }
+}
+```
+
+#### Classes vs Interfaces
+
+While both classes and interfaces can be used to define object shapes, they have different use cases:
+
+- Use classes when you need to create instances, implement logic, or use inheritance.
+- Use interfaces when you want to define a contract for object shapes or create complex types.
+
+Interfaces are often preferred for defining the shape of objects, especially in cases where you're not creating instances:
+
+```typescript
+interface UserData {
+  id: number
+  name: string
+  email: string
+}
+
+function processUser(user: UserData) {
+  // Process the user data
+}
+```
+
+#### Conclusion
+
+Classes and interfaces are fundamental building blocks in TypeScript that enable you to write more structured and type-safe code. Classes provide a way to create reusable components with logic and state, while interfaces allow you to define contracts and complex types.
+
+By leveraging these features, you can create more robust and maintainable codebases. Remember that TypeScript's structural typing system means that objects don't need to explicitly implement an interface to be considered compatible with it – they just need to have the right shape.
+
+As you continue to work with TypeScript, you'll find that the judicious use of classes and interfaces can significantly improve the clarity and reliability of your code. Happy coding!

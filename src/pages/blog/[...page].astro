@@ -1,0 +1,101 @@
+---
+import { getCollection } from 'astro:content'
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { formatDate } from '../../utils/date';
+
+export async function getStaticPaths({ paginate }) {
+  let allPosts = await getCollection('posts');
+  allPosts = allPosts.sort((a, b) => new Date(b.data.publishDate).valueOf() - new Date(a.data.publishDate).valueOf());
+
+  return paginate(allPosts, { pageSize: 10 });
+}
+
+const { page } = Astro.props;
+
+const title = 'Blog';
+const description = 'Latest articles.';
+const permalink = `${Astro.site.href}blog`;
+---
+
+<BaseLayout title={title} description={description} permalink={permalink} current="blog">
+  <div class="container">
+    <h1>Blog</h1>
+    {page.data.map((post, index) => {
+      const href = `/blog/${post.data.slug}`;
+      return (
+        <div>
+          { index !== 0 && <hr /> }
+          <div class="post-item">
+            <h2>
+              <a href={href}>{post.data.title}</a>
+            </h2>
+            <p>{post.data.description}</p>
+            <div class="post-item-footer">
+              <span class="post-item-date">— {formatDate(post.data.publishDate)}</span>
+            </div>
+          </div>
+        </div>
+      )
+    })}
+
+    <nav class="pagination">
+      {page.url.prev && <a href={page.url.prev} class="pagination-link">&larr; Newer Posts</a>}
+      <span class="pagination-info">Page {page.currentPage} of {page.lastPage}</span>
+      {page.url.next && <a href={page.url.next} class="pagination-link">Older Posts &rarr;</a>}
+    </nav>
+  </div>
+</BaseLayout>
+
+<style>
+  h2,
+  .post-item-footer {
+    font-family: var(--font-family-sans);
+    font-weight: 700;
+  }
+
+  .post-item-date {
+    color: var(--text-secondary);
+    text-align: left;
+    text-transform: uppercase;
+    margin-right: 16px;
+  }
+
+  hr {
+    margin: 60px auto;
+  }
+
+  .pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 60px;
+    padding-top: 40px;
+    border-top: 1px solid var(--text-secondary);
+    gap: 20px;
+  }
+
+  .pagination-link {
+    color: var(--text-link);
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.2s ease;
+  }
+
+  .pagination-link:hover {
+    color: var(--text-heading);
+    text-decoration: underline;
+  }
+
+  .pagination-info {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 640px) {
+    .pagination {
+      flex-direction: column;
+      text-align: center;
+    }
+  }
+</style>

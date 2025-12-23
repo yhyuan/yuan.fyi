@@ -1,0 +1,917 @@
+---
+title: Leetcode Pattern 6 Heaps
+slug: pattern-06-two-heaps
+publishDate: 2024-05-07
+description: Learn about Leetcode Pattern 6 Heaps.
+date: 2024-05-07
+tags: ["leetcode", "pattern"]
+draft: false
+---
+
+### Introduction
+
+This pattern aims to quickly calculate the median value of a data stream. To achieve this, we use two heaps: a Min Heap and a Max Heap. The Min Heap stores the larger half of the values, while the Max Heap stores the smaller half. If the total number of elements is odd, the Min Heap will contain one more element than the Max Heap.
+
+With these two heaps properly maintained, calculating the median becomes straightforward. If the count of elements is even, we take the minimum value from the Min Heap and the maximum value from the Max Heap, and compute their average as the median. If the count is odd, the median is simply the top element of the Min Heap.
+
+Here's how we maintain these two heaps:
+
+1. **Insertion:** Compare the new number with the top of the Min Heap. If it's larger or if the heaps are empty, push it to the Min Heap. Otherwise, push the number to the Max Heap.
+2. **Balancing:** We then balance the elements between the two heaps. If the difference in size between the heaps is 0 or 1, we leave them as is. However, if the Min Heap has fewer elements than the Max Heap, we pop an element from the Max Heap and push it into the Min Heap. Conversely, if the Min Heap has more elements than the Max Heap, we pop an element from the Min Heap and push it into the Max Heap.
+
+By following these steps, we can efficiently maintain the heaps and calculate the median value of the data stream.
+
+Python Code:
+
+```python
+import heapq
+
+class MedianFinder:
+
+    def __init__(self):
+        self.maxHeap = []
+        self.minHeap = []
+        self.count = 0
+
+    def balance(self):
+        if len(self.minHeap) == len(self.maxHeap) or len(self.minHeap) == len(self.maxHeap) + 1:
+            return
+        if len(self.minHeap) < len(self.maxHeap):
+            val = heappop(self.maxHeap)
+            heappush(self.minHeap, -val)
+        if len(self.minHeap) > len(self.maxHeap) + 1:
+            val = heappop(self.minHeap)
+            heappush(self.maxHeap, -val)
+        return
+
+    def addNum(self, num: int) -> None:
+        if len(self.minHeap) == 0 or num > self.minHeap[0]: # larger value
+            heappush(self.minHeap, num)
+        else:
+            heappush(self.maxHeap, -num)
+        self.count += 1
+        self.balance()
+
+    def findMedian(self) -> float:
+        if self.count % 2 == 0:
+            return (self.minHeap[0] + (-self.maxHeap[0])) * 0.5
+        return self.minHeap[0]
+```
+
+TypeScript Code
+```typescript
+class Heap<T> {
+  private heap: T[];
+  private compare: (a: T, b: T) => number;
+
+  constructor(compare: (a: T, b: T) => number) {
+    this.heap = [];
+    this.compare = compare;
+  }
+
+  private swap(i: number, j: number): void {
+    [this.heap[i], this.heap[j]] = [this.heap[j], this.heap[i]];
+  }
+
+  private heapifyUp(index: number): void {
+    if (index === 0) return;
+    const parentIndex = Math.floor((index - 1) / 2);
+    const comparison = this.compare(this.heap[index], this.heap[parentIndex]);
+    if (comparison < 0) {
+      this.swap(index, parentIndex);
+      this.heapifyUp(parentIndex);
+    }
+  }
+
+  private heapifyDown(parent: number): void {
+    const left = 2 * parent + 1;
+    const right = 2 * parent + 2;
+    let index = parent;
+    const heapSize = this.size();
+    let comparison = 0;
+    [left, right].forEach((child) => {
+      if (child < heapSize) {
+        comparison = this.compare(this.heap[child], this.heap[index]);
+        if (comparison < 0) {
+          index = child;
+        }
+      }
+    });
+    if (index !== parent) {
+      this.swap(parent, index);
+      this.heapifyDown(index);
+    }
+  }
+
+  insert(value: T): void {
+    this.heap.push(value);
+    this.heapifyUp(this.heap.length - 1);
+  }
+
+  extract(): T | undefined {
+    if (this.heap.length === 0) {
+      return undefined;
+    }
+    if (this.heap.length === 1) {
+      const value = this.heap.pop();
+      return value;
+    }
+    this.swap(0, this.heap.length - 1);
+    const value = this.heap.pop()!;
+    this.heapifyDown(0);
+    return value;
+  }
+
+  delete(value: T): boolean {
+    const index = this.heap.findIndex((element) => element === value);
+    if (index === -1) {
+      return false;
+    }
+    if (index === this.heap.length - 1) {
+      this.heap.pop();
+      return true;
+    }
+    // use the number in the last value to replace the index.
+    this.heap[index] = this.heap.pop()!;
+    if (index < this.heap.length) {
+      this.heapifyDown(index);
+      this.heapifyUp(index);
+    }
+    return true;
+  }
+
+  peek(): T | undefined {
+    return this.heap.length > 0 ? this.heap[0] : undefined;
+  }
+
+  size(): number {
+    return this.heap.length;
+  }
+
+  isEmpty(): boolean {
+    return this.heap.length === 0;
+  }
+}
+```
+```typescript
+class MedianFinder {
+  private minHeap: Heap;
+  private maxHeap: Heap;
+  constructor() {
+    this.minHeap = new Heap(HeapType.MIN);
+    this.maxHeap = new Heap(HeapType.MAX);
+  }
+
+  private balance(): void {
+    if (this.minHeap.size() < this.maxHeap.size()) {
+      const val = this.maxHeap.extract();
+      this.minHeap.insert(val!);
+    }
+    if (this.minHeap.size() > this.maxHeap.size() + 1) {
+      const val = this.minHeap.extract();
+      this.maxHeap.insert(val!);
+    }
+  }
+
+  addNum(num: number): void {
+    if (this.minHeap.size() === 0 || num > this.minHeap.peek()!) {
+      this.minHeap.insert(num);
+    } else {
+      this.maxHeap.insert(num);
+    }
+    this.balance();
+  }
+
+  deleteNum(num: number): void {
+    if (num >= this.minHeap.peek()!) {
+      this.minHeap.delete(num);
+    } else {
+      this.maxHeap.delete(num);
+    }
+    this.balance();
+  }
+
+  findMedian(): number {
+    const count = this.minHeap.size() + this.maxHeap.size();
+    if (count % 2 == 0) {
+      return 0.5 * (this.minHeap.peek()! + this.maxHeap.peek()!);
+    }
+    return this.minHeap.peek()!;
+  }
+}
+```
+
+<TOCInline toc={props.toc} exclude="Introduction" />
+
+### 1.Two Heaps Problems
+
+#### 295. Find Median from Data Stream[Hard]
+
+The median is the middle value in an ordered integer list. If the size of the list is even, there is no middle value, and the median is the mean of the two middle values.
+
+For example, for arr = [2,3,4], the median is 3.
+For example, for arr = [2,3], the median is (2 + 3) / 2 = 2.5.
+Implement the MedianFinder class:
+
+MedianFinder() initializes the MedianFinder object.
+void addNum(int num) adds the integer num from the data stream to the data structure.
+double findMedian() returns the median of all elements so far. Answers within 10-5 of the actual answer will be accepted.
+
+Follow up:
+
+If all integer numbers from the stream are in the range [0, 100], how would you optimize your solution?
+If 99% of all integer numbers from the stream are in the range [0, 100], how would you optimize your solution?
+
+```typescript
+// Check Introduction section
+```
+
+Follow up Solution:
+If all integer numbers from the stream are in the range [0, 100], how would you optimize your solution?
+If 99% of all integer numbers from the stream are in the range [0, 100], how would you optimize your solution?
+use freq to count the number frequency. It will decrease the time of the calculation of mean to O(1).
+
+```typescript
+class MedianFinder {
+    private freq: number[];
+    private smallCount: number;
+    private largeCount: number;
+    constructor() {
+        this.freq = Array(101).fill(0);
+        this.smallCount = 0;
+        this.largeCount = 0;
+    }
+
+    addNum(num: number): void {
+        if (num >= 0 && num <= 100) {
+            this.freq[num] += 1;
+            return;
+        }
+        if (num < 0) {
+            this.smallCount += 1;
+            return;
+        }
+        this.largeCount += 1;
+    }
+
+    findMedian(): number {
+        const totalCount = this.smallCount + this.largeCount + this.freq.reduce((acc, cur) => acc + cur, 0);
+        const middlePosition = Math.floor(totalCount / 2);
+
+        let count = this.smallCount;
+        for (let i = 0; i < this.freq.length; i++) {
+            count += this.freq[i];
+            if (count > middlePosition) {
+                return i;
+            } else if (count === middlePosition && totalCount % 2 === 0) {
+                // If total count is even and we're exactly at the middle,
+                // we need to find the next non-zero frequency
+                for (let j = i + 1; j < this.freq.length; j++) {
+                    if (this.freq[j] > 0) {
+                        return (i + j) / 2;
+                    }
+                }
+            }
+        }
+
+        // This should never happen if the input is valid
+        throw new Error("Invalid input: unable to calculate median");
+    }
+}
+```
+
+#### 480. Sliding Window Median[Hard]
+
+The median is the middle value in an ordered integer list. If the size of the list is even, there is no middle value. So the median is the mean of the two middle values.
+
+For examples, if arr = [2,3,4], the median is 3.
+For examples, if arr = [1,2,3,4], the median is (2 + 3) / 2 = 2.5.
+You are given an integer array nums and an integer k. There is a sliding window of size k which is moving from the very left of the array to the very right. You can only see the k numbers in the window. Each time the sliding window moves right by one position.
+
+Return the median array for each window in the original array. Answers within 10-5 of the actual value will be accepted.
+
+**Solution:** Similar to problem 295, *Find Median from Data Stream*, we can use two heaps to solve this problem. The key difference is that we also need to handle the removal of elements from the left side of the sliding window.
+
+```typescript
+function medianSlidingWindow(nums: number[], k: number): number[] {
+  if (k === 1) {
+    return nums;
+  }
+  const n = nums.length;
+  const ans = [];
+  const medianFinder: MedianFinder = new MedianFinder();
+  Array(k)
+    .fill(0)
+    .forEach((_, i) => medianFinder.addNum(nums[i]));
+  ans.push(medianFinder.findMedian());
+  nums.forEach((num, i) => {
+    if (i + k < n) {
+      medianFinder.addNum(nums[i + k]);
+      medianFinder.deleteNum(nums[i]);
+      ans.push(medianFinder.findMedian());
+    }
+  });
+  return ans;
+}
+```
+
+#### 502. IPO[Hard]
+
+Suppose LeetCode will start its IPO soon. In order to sell a good price of its shares to Venture Capital, LeetCode would like to work on some projects to increase its capital before the IPO. Since it has limited resources, it can only finish at most k distinct projects before the IPO. Help LeetCode design the best way to maximize its total capital after finishing at most k distinct projects.
+
+You are given n projects where the ith project has a pure profit profits[i] and a minimum capital of capital[i] is needed to start it.
+
+Initially, you have w capital. When you finish a project, you will obtain its pure profit and the profit will be added to your total capital.
+
+Pick a list of at most k distinct projects from given projects to maximize your final capital, and return the final maximized capital.
+
+The answer is guaranteed to fit in a 32-bit signed integer.
+
+**Solution:** We start by sorting the capital array along with its indices. Concurrently, we create a max heap for the profits, also indexed.
+
+We then add all projects where `capital[i] <= w` to the max heap. From this heap, we extract the project with the maximum profit and update the current capital with this profit.
+
+This process is repeated until we have completed `k` projects.
+
+This solution uses only one heap.
+
+```typescript
+function findMaximizedCapital(k: number, w: number, profits: number[], capital: number[]): number {
+    const n = capital.length;
+    const capitalIndices: [number, number][] = capital.map((cap, index) => [cap, index]);
+    capitalIndices.sort((a, b) => {
+        if (a[0] !== b[0]) return a[0] - b[0];
+        return a[1] - b[1];
+    }); // sort it with capital and index
+
+    const profitsIndices: Heap<[number, number]> = new Heap<[number, number]>((a: [number, number], b: [number, number]) => {
+        if (a[0] !== b[0]) {
+            return b[0] - a[0]; // Max Heap
+        }
+        return a[1] - b[1];
+    });
+
+    let j = 0;
+    for (let i = 0; i < k; i++) {
+        // Add all project with less than w capital to the profitsIndices
+        while (j < n && capitalIndices[j][0] <= w) {
+            const projectIndex = capitalIndices[j][1];
+            profitsIndices.insert([profits[projectIndex], projectIndex]);
+            j += 1;
+        }
+        if (profitsIndices.size() === 0) {
+            return w;
+        }
+        // Pick the one with largest profit.
+        const [profit, _] = profitsIndices.extract()!
+        w += profit;
+    }
+    return w;
+}
+```
+
+### 2.Top K Element Problems
+
+#### 215.Kth Largest Element in an Array[Medium]
+
+Given an integer array nums and an integer k, return the kth largest element in the array.
+
+Note that it is the kth largest element in the sorted order, not the kth distinct element.
+
+Can you solve it without sorting?
+
+**Solution:** Create a min heap of size `K` to store the largest `K` elements. The root of the heap will be the smallest of these `K` elements. When a new element is greater than the root, insert this element into the heap and remove the root to keep the heap size at `K`.
+
+```python
+import heapq
+
+class Solution:
+    def findKthLargest(self, nums: List[int], k: int) -> int:
+        # Create a min-heap with the first k elements
+        heap = nums[:k]
+        heapq.heapify(heap)
+
+        # Process the remaining elements
+        for num in nums[k:]:
+            if num > heap[0]:
+                # Or heapq.heappushpop(heap, num)
+                heapq.heappop(heap)
+                heapq.heappush(heap, nums[i])
+
+        # The root of the heap is the kth largest element
+        return heap[0]
+```
+
+```typescript
+function findKthLargest(nums: number[], k: number): number {
+  const heap = new Heap((a: number, b: number) => a - b);
+  for (let i = 0; i < k; i++) {
+    heap.insert(nums[i]);
+  }
+  const n = nums.length;
+  for (let i = k; i < n; i++) {
+    if (heap.peek() < nums[i]) {
+      heap.extract();
+      heap.insert(nums[i]);
+    }
+  }
+  return heap.peek();
+}
+```
+
+#### 973.K Closest Point to Origin[Medium]
+
+Given an array of points where points[i] = [xi, yi] represents a point on the X-Y plane and an integer k, return the k closest points to the origin (0, 0).
+
+The distance between two points on the X-Y plane is the Euclidean distance (i.e., √(x1 - x2)^2 + (y1 - y2)^2).
+
+You may return the answer in any order. The answer is guaranteed to be unique (except for the order that it is in).
+
+**Solution:** Insert the distance and coordinates (x, y) into a max heap. If the heap size exceeds `K`, remove the elements from the heap. The remaining points in the max heap will be the final results.
+
+```python
+import heapq
+
+class Solution:
+    def kClosest(self, points: List[List[int]], k: int) -> List[List[int]]:
+        # Define a lambda function to calculate the squared Euclidean distance
+        distance = lambda point: point[0]**2 + point[1]**2
+
+        # Create a max-heap using negative distances to store the k closest points
+        max_heap = []
+
+        for point in points:
+            dist = distance(point)
+            # If heap size is less than k, push the current point
+            if len(max_heap) < k:
+                heapq.heappush(max_heap, (-dist, point))
+            else:
+                # If the current distance is smaller than the farthest point in the heap
+                if dist < -max_heap[0][0]:
+                    # Replace the farthest point with the current point
+                    heapq.heappushpop(max_heap, (-dist, point))
+
+        # Extract the points from the heap
+        return [point for _, point in max_heap]
+```
+
+#### 1167.Minimum Cost to Connect Sticks[Medium]
+
+You have some number of sticks with positive integer lengths. These lengths are given as an array sticks, where sticks[i] is the length of the ith stick.
+
+You can connect any two sticks of lengths x and y into one stick by paying a cost of x + y. You must connect all the sticks until there is only one stick remaining.
+
+Return the minimum cost of connecting all the given sticks into one stick in this way.
+
+**Solution:** Use a min heap to repeatedly find and connect the two smallest sticks, then push the combined stick back into the heap. Continue this process until only one stick remains in the heap. Throughout, keep track of the cost and update the final result accordingly.
+
+```python
+import heapq
+class Solution:
+    def connectSticks(self, sticks: List[int]) -> int:
+        heapq.heapify(sticks)
+        ans = 0
+        while (len(sticks) > 1):
+            s1 = heapq.heappop(sticks)
+            s2 = heapq.heappop(sticks)
+            ans += (s1 + s2)
+            heapq.heappush(sticks, s1 + s2)
+        return ans
+```
+
+#### 347.Top K Frequent Elements[Medium]
+
+Given an integer array nums and an integer k, return the k most frequent elements. You may return the answer in any order.
+
+**Solution:** Use a min heap to store tuples of `(freq, num)` for the top K frequent elements. If the heap exceeds size K, remove the top element to maintain the desired size.
+
+```python
+import heapq
+from collections import Counter
+
+class Solution:
+    def topKFrequent(self, nums: List[int], k: int) -> List[int]:
+        # Step 1: Count the frequency of each element
+        freq_map = Counter(nums)
+
+        # Step 2: Use a min-heap to keep track of the top k frequent elements
+        min_heap = []
+
+        for num, freq in freq_map.items():
+            heapq.heappush(min_heap, (freq, num))
+            if len(min_heap) > k:
+                heapq.heappop(min_heap)
+
+        # Step 3: Extract the elements from the heap
+        result = []
+        while min_heap:
+            result.append(heapq.heappop(min_heap)[1])
+
+        return result
+```
+
+#### 451.Sort Characters by Frequency[Medium]
+
+Given a string s, sort it in decreasing order based on the frequency of the characters. The frequency of a character is the number of times it appears in the string.
+
+Return the sorted string. If there are multiple answers, return any of them.
+
+**Solution:** Use a max heap to store tuples of `(-freq, num)` for the frequency and elements.
+
+```python
+import heapq
+from collections import Counter
+
+class Solution:
+    def frequencySort(self, s: str) -> str:
+        # Step 1: Count the frequency of each character
+        freq_map = Counter(s)
+
+        # Step 2: Use a max-heap to keep track of characters sorted by their frequencies
+        max_heap = [(-freq, char) for char, freq in freq_map.items()]
+        heapq.heapify(max_heap)
+
+        # Step 3: Construct the sorted string
+        result = ""
+        while max_heap:
+            freq, char = heapq.heappop(max_heap)
+            result += char * (-freq)
+
+        return result
+```
+
+#### 703.Kth Largest Element in a Stream[Easy]
+
+Design a class to find the kth largest element in a stream. Note that it is the kth largest element in the sorted order, not the kth distinct element.
+
+Implement KthLargest class:
+
+KthLargest(int k, int[] nums) Initializes the object with the integer k and the stream of integers nums.
+int add(int val) Appends the integer val to the stream and returns the element representing the kth largest element in the stream.
+
+**Solution:** Use a min heap to store  the top K Largest elements. If the heap exceeds size K, remove the top element to maintain the desired size.
+
+```python
+import heapq
+
+class KthLargest:
+
+    def __init__(self, k: int, nums: List[int]):
+        self.k = k
+        # min heap
+        self.heap = []
+        for num in nums:
+            heapq.heappush(self.heap, num)
+            if (len(self.heap) > self.k):
+                heapq.heappop(self.heap)
+
+    def add(self, val: int) -> int:
+        heapq.heappush(self.heap, val)
+        if (len(self.heap) > self.k):
+            heapq.heappop(self.heap)
+        return self.heap[0]
+```
+
+#### 1481.Least Number of Unique Integers after K Removals[Medium]
+
+Given an array of integers arr and an integer k. Find the least number of unique integers after removing exactly k elements.
+
+```python
+from collections import Counter
+
+class Solution:
+    def findLeastNumOfUniqueInts(self, arr: List[int], k: int) -> int:
+        # Step 1: Count the frequency of each integer
+        freq_map = Counter(arr)
+        # Step 2: Sort the integers by frequency in non-increasing order
+        sorted_integers = sorted(freq_map.keys(), key=lambda x: (freq_map[x], x))
+        # Step 3: Remove the least frequent elements
+        count_unique = len(freq_map)
+        for num in sorted_integers:
+            if k >= freq_map[num]:
+                k -= freq_map[num]
+                count_unique -= 1
+            else:
+                break
+        # Step 4: Return the number of unique integers remaining
+        return count_unique
+```
+
+#### Sum of all elements between k1’th and k2’th smallest elements
+
+https://www.geeksforgeeks.org/sum-elements-k1th-k2th-smallest-elements/
+
+#### 767.Reorganize String[Medium]
+
+Given a string s, rearrange the characters of s so that any two adjacent characters are not the same.
+
+Return any possible rearrangement of s or return "" if not possible.
+
+```python
+import heapq
+from collections import Counter
+
+class Solution:
+    def reorganizeString(self, s: str) -> str:
+        # Step 1: Count the frequency of each character
+        freq_map = Counter(s)
+        # Step 2: Use a priority queue to store characters based on their frequencies
+        max_heap = [(-freq, ch) for ch, freq in freq_map.items()]
+        heapq.heapify(max_heap)
+        # Initialize the result string
+        result = ""
+        # Step 3-6: Pop the two most frequent characters and append them to the result string
+        while len(max_heap) >= 2:
+            freq1, ch1 = heapq.heappop(max_heap)
+            freq2, ch2 = heapq.heappop(max_heap)
+            result += ch1 + ch2
+            freq1 += 1
+            freq2 += 1
+            # Push the characters back into the priority queue if their frequencies are greater than 0
+            if freq1 < 0:
+                heapq.heappush(max_heap, (freq1, ch1))
+            if freq2 < 0:
+                heapq.heappush(max_heap, (freq2, ch2))
+        # Step 7: Check if there is only one character left with a frequency greater than 1
+        if max_heap and max_heap[0][0] < -1:
+            return ""
+        # Step 8: Return the rearranged string
+        return result + (max_heap[0][1] if max_heap else "")
+```
+
+#### 358.Rearrange String k Distance Apart[Hard]
+
+Given a string s and an integer k, rearrange s such that the same characters are at least distance k from each other. If it is not possible to rearrange the string, return an empty string "".
+
+```python
+import heapq
+from collections import Counter, deque
+
+class Solution:
+    def rearrangeString(self, s: str, k: int) -> str:
+        # Step 1: Count the frequency of each character
+        freq_map = Counter(s)
+        # Step 2: Use a priority queue to store characters based on their frequencies
+        max_heap = [(-freq, ch) for ch, freq in freq_map.items()]
+        heapq.heapify(max_heap)
+        # Initialize the result string
+        result = ""
+        # Initialize a temporary list to keep track of characters that have been used recently
+        temp_list = deque()
+        # Step 4: Pop the most frequent character and append it to the result string
+        while max_heap:
+            freq, ch = heapq.heappop(max_heap)
+            result += ch
+            freq += 1
+            # Push the character into the temporary list
+            temp_list.append((freq, ch))
+            # If the temporary list exceeds k characters, push the characters back into the priority queue
+            if len(temp_list) >= k:
+                freq, ch = temp_list.popleft()
+                if freq < 0:
+                    heapq.heappush(max_heap, (freq, ch))
+        # If the result string is shorter than the input string, return an empty string
+        return "" if len(result) < len(s) else result
+```
+
+#### 621.Task Scheduler[Medium]
+
+You are given an array of CPU tasks, each represented by letters A to Z, and a cooling time, n. Each cycle or interval allows the completion of one task. Tasks can be completed in any order, but there's a constraint: identical tasks must be separated by at least n intervals due to cooling time.
+
+​Return the minimum number of intervals required to complete all tasks.
+
+```python
+import heapq
+from collections import Counter, deque
+
+class Solution:
+    def leastInterval(self, tasks: List[str], n: int) -> int:
+        if n == 0:
+            return len(tasks)
+
+        # Step 1: Count the frequency of each task
+        task_counts = Counter(tasks)
+
+        # Step 2: Create a max-heap from the task counts (using negative values for max-heap in Python)
+        max_heap = [-count for count in task_counts.values()]
+        heapq.heapify(max_heap)
+
+        # Step 3: Initialize variables for time tracking and a queue for cooling
+        time = 0
+        cooldown = deque()  # (next_available_time, task_count)
+
+        while max_heap or cooldown:
+            time += 1
+
+            if max_heap:
+                current_task_count = heapq.heappop(max_heap) + 1  # decrement the count (since it's negative)
+                if current_task_count != 0:
+                    cooldown.append((time + n, current_task_count))
+
+            if cooldown and cooldown[0][0] == time:
+                _, task_count = cooldown.popleft()
+                heapq.heappush(max_heap, task_count)
+
+        return time
+```
+
+#### 895.Maximum Frequency Stack[Hard]
+
+Design a stack-like data structure to push elements to the stack and pop the most frequent element from the stack.
+
+Implement the FreqStack class:
+
+- `FreqStack()` constructs an empty frequency stack.
+- `void push(int val)` pushes an integer val onto the top of the stack.
+- `int pop()` removes and returns the most frequent element in the stack.
+  - If there is a tie for the most frequent element, the element closest to the stack's top is removed and returned.
+
+```python
+from collections import defaultdict
+
+class FreqStack:
+    def __init__(self):
+        self.freq = defaultdict(int)      # Map to store frequency of elements
+        self.group = defaultdict(list)    # Map to store stacks of elements by frequency
+        self.maxfreq = 0                  # Variable to keep track of the current max frequency
+
+    def push(self, val: int) -> None:
+        # Increase the frequency count of the element
+        self.freq[val] += 1
+        f = self.freq[val]
+        # If this is the highest frequency so far, update maxfreq
+        if f > self.maxfreq:
+            self.maxfreq = f
+        # Add the element to the stack corresponding to its frequency
+        self.group[f].append(val)
+
+    def pop(self) -> int:
+        # Pop the most frequent element
+        val = self.group[self.maxfreq].pop()
+        # Decrease the frequency count of the element
+        self.freq[val] -= 1
+        # If no elements are left in the current max frequency stack, decrement maxfreq
+        if not self.group[self.maxfreq]:
+            self.maxfreq -= 1
+        return val
+```
+
+#### 1046. Last Stone Weight[Easy]
+
+You are given an array of integers stones where stones[i] is the weight of the ith stone.
+
+We are playing a game with the stones. On each turn, we choose the heaviest two stones and smash them together. Suppose the heaviest two stones have weights x and y with `x <= y`. The result of this smash is:
+
+If x == y, both stones are destroyed, and
+If x != y, the stone of weight x is destroyed, and the stone of weight y has new weight y - x.
+At the end of the game, there is at most one stone left.
+
+Return the weight of the last remaining stone. If there are no stones left, return 0.
+
+
+```python
+import heapq
+
+class Solution:
+    def lastStoneWeight(self, stones: List[int]) -> int:
+        heap = list(map(lambda stone: -stone, stones))
+        heapq.heapify(heap)
+        while (len(heap) > 1):
+            stone1 = heapq.heappop(heap)
+            stone2 = heapq.heappop(heap)
+            if (stone1 != stone2):
+                if (stone1 > stone2):
+                    heapq.heappush(heap, stone2 - stone1)
+                else:
+                    heapq.heappush(heap, stone1 - stone2)
+        if len(heap) == 0: return 0
+        return -heapq.heappop(heap)
+```
+
+#### 1337. The K Weakest Rows in a Matrix[Easy]
+
+You are given an m x n binary matrix mat of 1's (representing soldiers) and 0's (representing civilians). The soldiers are positioned in front of the civilians. That is, all the 1's will appear to the left of all the 0's in each row.
+
+A row i is weaker than a row j if one of the following is true:
+
+The number of soldiers in row i is less than the number of soldiers in row j.
+Both rows have the same number of soldiers and i < j.
+Return the indices of the k weakest rows in the matrix ordered from weakest to strongest.
+
+matrix[i][j] is either 0 or 1.
+
+```python
+import heapq
+
+class Solution:
+    def kWeakestRows(self, mat: List[List[int]], k: int) -> List[int]:
+        heap = []
+        n = len(mat)
+        for i in range(n):
+            j = 0
+            size = 0
+            while (j < len(mat[i]) and mat[i][j] == 1):
+                j += 1
+                size += 1
+            heapq.heappush(heap, (size, i))
+        ans = []
+        for i in range(k):
+            (size, index) = heapq.heappop(heap)
+            ans.append(index)
+        return ans
+```
+
+#### 1642. Furthest Building You Can Reach[Medium]
+
+You are given an integer array heights representing the heights of buildings, some bricks, and some ladders.
+
+You start your journey from building 0 and move to the next building by possibly using bricks or ladders.
+
+While moving from building i to building i+1 (0-indexed),
+
+If the current building's height is greater than or equal to the next building's height, you do not need a ladder or bricks.
+If the current building's height is less than the next building's height, you can either use one ladder or (h[i+1] - h[i]) bricks.
+Return the furthest building index (0-indexed) you can reach if you use the given ladders and bricks optimally.
+
+Explain:
+Use a min heap to track the positive differences between the next building and the current building. When it reaches the number of ladder, it will pop out the min value of the difference and use the bricks to solve it. Then, it breaks when the bricks run out.
+
+```python
+import heapq
+
+class Solution:
+    def furthestBuilding(self, heights: List[int], bricks: int, ladders: int) -> int:
+        n = len(heights)
+        heap = []
+        for i in range(n - 1):
+            diff = heights[i + 1] - heights[i]
+            if diff > 0:
+                heapq.heappush(heap, diff)
+            if len(heap) > ladders:
+                bricks -= heapq.heappop(heap)
+            if bricks < 0:
+                return i
+        return n - 1
+```
+
+#### 2402. Meeting Rooms III[Hard]
+
+You are given an integer n. There are n rooms numbered from 0 to n - 1.
+
+You are given a 2D integer array meetings where meetings[i] = [starti, endi] means that a meeting will be held during the half-closed time interval [starti, endi). All the values of starti are unique.
+
+Meetings are allocated to rooms in the following manner:
+
+Each meeting will take place in the unused room with the lowest number.
+If there are no available rooms, the meeting will be delayed until a room becomes free. The delayed meeting should have the same duration as the original meeting.
+When a room becomes unused, meetings that have an earlier original start time should be given the room.
+Return the number of the room that held the most meetings. If there are multiple rooms, return the room with the lowest number.
+
+A half-closed interval [a, b) is the interval between a and b including a and not including b.
+
+All the values of starti are unique.
+
+```typescript
+class Node {
+    public end: number;
+    public roomId: number;
+    constructor(end: number, roomId: number) {
+        this.end = end;
+        this.roomId = roomId;
+    }
+}
+
+function mostBooked(n: number, meetings: number[][]): number {
+    meetings.sort((a, b) => a[0] - b[0]); // sort by starting time
+    // Create a Heap which can find the earlist ending time.
+    const minHeap = new MinHeap<Node>((a, b) => {
+        if (a.end !== b.end) return a.end - b.end;
+        return a.roomId - b.roomId;
+    });
+    const roomsCount = Array(n).fill(0);
+    const roomsStatus = Array(n).fill(false);
+    meetings.forEach(meeting => {
+        const [start, end] = meeting;
+        // Remove all the meetings which have been ended before the starting of current meeting.
+        while (minHeap.size() > 0 && minHeap.peek().end <= start) {
+            const node = minHeap.extractMin();
+            roomsStatus[node.roomId] = false;
+        }
+        let roomId = -1;
+        if (minHeap.size() < n) {
+            // Find an available room
+            roomId = roomsStatus.findIndex(status => status === false);
+            minHeap.insert(new Node(end, roomId));
+        } else {
+            const node = minHeap.extractMin();
+            roomId = node.roomId;
+            const newNode = new Node(node.end + end - start, roomId);
+            minHeap.insert(newNode);
+        }
+        roomsCount[roomId] += 1;
+        roomsStatus[roomId] = true;
+    });
+    const maxValue = Math.max(...roomsCount);
+    return roomsCount.findIndex(v => v === maxValue);
+};
+```

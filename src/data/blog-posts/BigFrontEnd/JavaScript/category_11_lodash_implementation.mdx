@@ -1,0 +1,461 @@
+---
+title: BigFrontEnd Category 11 Lodash Methods Implementation Questions
+slug: category-11-lodash-implementation
+publishDate: 2024-06-08
+description: Learn about BigFrontEnd Category 11 Lodash Methods Implementation Questions.
+date: 2024-06-08
+tags: ['BigFrontEnd', 'category']
+draft: false
+---
+
+### Introduction
+
+This blog post summarizes the Lodash implementation related questions found on BigFrontEnd.Dev.
+
+<TOCInline toc={props.toc} exclude="Introduction" />
+
+### 1. Implement Deep Equal - `_.isEqual()` 2682. DeepEqual
+
+69.https://bigfrontend.dev/problem/implement-deep-equal-isEqual
+
+\_.isEqual is useful when you want to compare complex data types by value not the reference.
+
+Can you implement your own version of deep equal isEqual? The lodash version covers a lot of data types. In this problem, you are asked to support :
+
+primitives
+plain objects (object literals)
+array
+Objects are compared by their own, not inherited, enumerable properties
+
+```js
+const a = { a: 'bfe' }
+const b = { a: 'bfe' }
+
+isEqual(a, b) // true
+a === b // false
+
+const c = [1, a, '4']
+const d = [1, b, '4']
+
+isEqual(c, d) // true
+c === d // false
+```
+
+Lodash implementation has some strange behaviors. (github issue, like following code
+
+```js
+const a = {}
+a.self = a
+const b = { self: a }
+const c = {}
+c.self = c
+const d = { self: { self: a } }
+const e = { self: { self: b } }
+```
+
+lodash.isEqual gives us following result. Notice there is a case that resulting in false.
+
+```js
+// result from lodash implementation
+_.isEqual(a, b) // true
+_.isEqual(a, c) // true
+_.isEqual(a, d) // true
+_.isEqual(a, e) // true
+_.isEqual(b, c) // true
+_.isEqual(b, d) // true
+_.isEqual(b, e) // false
+_.isEqual(c, d) // true
+_.isEqual(c, e) // true
+_.isEqual(d, e) // true
+```
+
+Setting aside the performance concerns mentioned by lodash, your implement should not have above problem, which means above all returns true and call stack should not exceed the maximum.
+
+**Solution:**
+
+```javascript
+function deepEqual(obj1, obj2) {
+  // Check if both arguments are objects
+  if (typeof obj1 !== 'object' || typeof obj2 !== 'object' || obj1 === null || obj2 === null) {
+    return obj1 === obj2;
+  }
+  // {"0":1} and [1]
+  if ((Array.isArray(obj1) && !Array.isArray(obj2)) || (!Array.isArray(obj1) && Array.isArray(obj2))) {
+      return false;
+  }
+
+  // Get the keys of both objects
+  const keys1 = Object.keys(obj1);
+  const keys2 = Object.keys(obj2);
+
+  // Check if the number of keys is the same
+  if (keys1.length !== keys2.length) {
+    return false;
+  }
+
+  // Check if all keys and values are deeply equal
+  for (const key of keys1) {
+    if (!keys2.includes(key) || !deepEqual(obj1[key], obj2[key])) {
+      return false;
+    }
+  }
+
+  return true;
+}
+const obj1 = { a: 1, b: { c: 2 } };
+const obj2 = { a: 1, b: { c: 2 } };
+const obj3 = { a: 1, b: { c: 3 } };
+
+console.log(deepEqual(obj1, obj2)); // Output: true
+console.log(deepEqual(obj1, obj3)); // Output: false
+```
+
+### 2.Implement Deep Clone - `_.cloneDeep()`
+
+63.https://bigfrontend.dev/problem/create-cloneDeep
+
+Object.assign() could be used to do shallow copy, while for recursive deep copy, \_.cloneDeep could be very useful.
+
+Can you create your own \_.cloneDeep()?
+
+The lodash implementation actually covers a lot of data types, for simplicity, your code just need to cover
+
+primitive types and their wrapper Object
+Plain Objects (Object literal) with all enumerable properties
+Array
+There is built-in structuredClone() now, but don't use this to practice
+
+**Solution:**
+
+```javascript
+function cloneDeep(obj) {
+  // Check if the input is an object
+  if (typeof obj !== 'object' || obj === null) {
+    return obj;
+  }
+
+  // Initialize the result object/array
+  const result = Array.isArray(obj) ? [] : {};
+
+  // Iterate through each key in the input object
+  for (const key in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      // Recursively clone nested objects and arrays
+      result[key] = cloneDeep(obj[key]);
+    }
+  }
+
+  return result;
+}
+const obj = {
+  a: 1,
+  b: {
+    c: 2,
+    d: [3, 4, { e: 5 }]
+  }
+};
+
+const clonedObj = cloneDeep(obj);
+
+console.log(clonedObj); // Output: { a: 1, b: { c: 2, d: [ 3, 4, { e: 5 } ] } }
+console.log(clonedObj === obj); // Output: false
+```
+
+### 3.Implement `_.chunk()`
+
+131.https://bigfrontend.dev/problem/implement-lodash-chunk
+
+[\_.chunk()](https://lodash.com/docs/4.17.15#chunk) splits array into groups with the specific size.
+
+Please implement your chunk(arr: any[], size: number)
+
+```js
+chunk([1,2,3,4,5], 1)
+// [[1], [2], [3], [4], [5]]
+
+chunk([1,2,3,4,5], 2)
+// [[1, 2], [3, 4], [5]]
+
+chunk([1,2,3,4,5], 3)
+// [[1, 2, 3], [4, 5]]
+
+chunk([1,2,3,4,5], 4)
+// [[1, 2, 3, 4], [5]]
+
+chunk([1,2,3,4,5], 5)
+// [[1, 2, 3, 4, 5]]
+for size smaller than 1, return an empty array.
+```
+
+**Solution:**
+
+```typescript
+// 2677. Chunk Arra
+type JSONValue = null | boolean | number | string | JSONValue[] | { [key: string]: JSONValue };
+type Obj = Record<string, JSONValue> | Array<JSONValue>;
+
+function chunk(arr: Obj[], size: number): Obj[][] {
+    const result: Obj[][] = []
+    if (size === 0) {
+      return [];
+    }
+    arr.forEach((val: Obj, index: number) => {
+        if (index % size === 0) {
+            result.push([val]);
+        } else {
+            result.at(-1).push(val);
+        }
+    });
+    return result;
+};
+```
+
+```js
+/**
+ * @param {any[]} items
+ * @param {number} size
+ * @returns {any[][]}
+ */
+function chunk(items, size) {
+  if (size === 0) return []
+  const ans = []
+  let cur = []
+  items.forEach((item) => {
+    if (cur.length < size) {
+      cur.push(item)
+    } else {
+      ans.push(cur)
+      cur = [item]
+    }
+  })
+  if (cur.length > 0) {
+    ans.push(cur)
+  }
+  return ans
+}
+```
+
+### 4.Implement `_.once()`
+
+46.https://bigfrontend.dev/problem/implement-once
+
+[\_.once(func)](https://lodash.com/docs/4.17.15#once) is used to force a function to be called only once, later calls only returns the result of first call.
+
+Can you implement your own once()?
+
+```js
+function func(num) {
+  return num
+}
+const onced = once(func)
+onced(1)
+// 1, func called with 1
+onced(2)
+// 1, even 2 is passed, previous result is returned
+```
+
+**Solution:**
+
+```js
+function once(func) {
+  let count = 0;
+  let result;
+  return function (...args) {
+    if (count > 0) {
+      return result;
+    }
+    count += 1;
+    result = func.apply(this, args);
+    return result;
+  };
+}
+
+need to use func.apply(this, args); rather than func(...args); Otherwise, the following test will fail.
+function func(b, c){
+  return this.a + b + c
+}
+const onced = once(func)
+const obj = {
+  a: 1,
+  onced
+}
+
+expect(obj.onced(2,3)).toBe(6)
+
+```
+
+### 5.Implement `_.get()`
+
+85.https://bigfrontend.dev/problem/implement-lodash-get
+
+[\_.get(object, path, [defaultValue])](https://lodash.com/docs/4.17.15#get) is a handy method to help retrieving data from an arbitrary object. if the resolved value from path is undefined, defaultValue is returned.
+
+Please create your own get().
+
+```js
+const obj = {
+  a: {
+    b: {
+      c: [1, 2, 3],
+    },
+  },
+}
+
+get(obj, 'a.b.c') // [1,2,3]
+get(obj, 'a.b.c.0') // 1
+get(obj, 'a.b.c[1]') // 2
+get(obj, ['a', 'b', 'c', '2']) // 3
+get(obj, 'a.b.c[3]') // undefined
+get(obj, 'a.c', 'bfe') // 'bfe'
+```
+
+**Solution:**
+
+```js
+function get(source, path, defaultValue = undefined) {
+  path = Array.isArray(path) ? path : path.split(/\.|\[|\]/)
+
+  if (path[path.length - 1] === '') path.pop()
+
+  if (path.length === 0) return defaultValue
+
+  const value = path.reduce((acc, cur) => acc[cur], source)
+  return value || defaultValue
+}
+function get(source, path, defaultValue = undefined) {
+  if (typeof path === 'string') {
+    path = path.split(/\.|\[|\]/)
+  }
+  while (path.length > 0 && path.at(-1) === '') {
+    path.pop()
+  }
+  if (path.length === 0) {
+    return defaultValue
+  }
+  return path.reduce((acc, cur) => (!acc[cur] ? defaultValue : acc[cur]), source)
+}
+```
+
+### 6.Implement `_.partial()`
+
+139.https://bigfrontend.dev/problem/implement-partial
+
+[\_.partial()](https://lodash.com/docs/4.17.15#partial) works like [Function.prototype.bind()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/bind) but this is not bound.
+
+please create your own partial()
+
+```js
+const func = (...args) => args
+const func123 = partial(func, 1, 2, 3)
+func123(4)
+// [1,2,3,4]
+```
+
+It should also support placeholder.
+
+```js
+const _ = partial.placeholder
+const func1_3 = partial(func, 1, _, 3)
+func1_3(2, 4)
+// [1,2,3,4]
+```
+
+**Solution:**
+
+```js
+function partial(func, ...args) {
+  // 1, _, 3
+  const _ = partial.placeholder
+  return function (...otherArgs) {
+    // 2, 4
+    let finalArgs = []
+    args.forEach((arg) => {
+      if (arg === _) {
+        finalArgs.push(otherArgs.shift())
+      } else {
+        finalArgs.push(arg)
+      }
+    })
+    finalArgs = finalArgs.concat(otherArgs)
+    return func.apply(this, finalArgs)
+  }
+}
+
+partial.placeholder = Symbol()
+```
+
+### 7.Implement `_.set()`
+
+156.https://bigfrontend.dev/problem/lodash-set
+
+[\_.set(object, path, value)](https://lodash.com/docs/4.17.15#set) is a handy method to updating an object without checking the property existence.
+
+Can you create your own `set()`?
+
+```js
+const obj = {
+  a: {
+    b: {
+      c: [1, 2, 3],
+    },
+  },
+}
+set(obj, 'a.b.c', 'BFE')
+console.log(obj.a.b.c) // "BFE"
+set(obj, 'a.b.c.0', 'BFE')
+console.log(obj.a.b.c[0]) // "BFE"
+set(obj, 'a.b.c[1]', 'BFE')
+console.log(obj.a.b.c[1]) // "BFE"
+set(obj, ['a', 'b', 'c', '2'], 'BFE')
+console.log(obj.a.b.c[2]) // "BFE"
+set(obj, 'a.b.c[3]', 'BFE')
+console.log(obj.a.b.c[3]) // "BFE"
+set(obj, 'a.c.d[0]', 'BFE')
+// valid digits treated as array elements
+console.log(obj.a.c.d[0]) // "BFE"
+set(obj, 'a.c.d.01', 'BFE')
+// invalid digits treated as property string
+console.log(obj.a.c.d['01']) // "BFE"
+```
+
+**Solution:**
+
+```js
+/**
+ * @param {object} obj
+ * @param {string | string[]} path
+ * @param {any} value
+ */
+function set(obj, path, value) {
+  /*
+   if (typeof path === "string") {
+     // Replace [xxx] with .xxx
+     path = path.replace(/\[(\d+)\]/g, ".$1").split(".");
+   }
+   */
+  if (typeof path === 'string') {
+    path = path.split(/\.|\[|\]/)
+  }
+  while (path.length > 0 && path.at(-1) === '') {
+    path.pop()
+  }
+  if (path.length === 0) {
+    return
+  }
+  const isArrayIndex = (key) => key.match(/^\d+$/) && String(Number(key)) === key
+  let current = obj
+  for (let i = 0; i < path.length - 1; i++) {
+    curKey = path[i]
+    nextKey = path[i + 1]
+    if (!current[curKey]) {
+      if (isArrayIndex(nextKey)) {
+        current[curKey] = []
+      } else {
+        current[curKey] = {}
+      }
+    }
+    current = current[curKey]
+  }
+  current[path.at(-1)] = value
+}
+```

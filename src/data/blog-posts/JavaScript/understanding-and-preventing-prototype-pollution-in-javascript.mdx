@@ -1,0 +1,166 @@
+---
+title: Understanding and Preventing Prototype Pollution in JavaScript
+slug: understanding-and-preventing-prototype-pollution-in-javascript
+publishDate: 2024-06-27
+description: Learn about Understanding and Preventing Prototype Pollution in JavaScript.
+date: 2024-06-27
+tags: ['JavaScript']
+draft: false
+---
+
+### Introduction
+
+In the world of JavaScript security, Prototype Pollution is a critical vulnerability that every developer should be aware of. This blog post will dive deep into what Prototype Pollution is, how it can be exploited, and most importantly, how to prevent it in your JavaScript applications.
+
+<TOCInline toc={props.toc} exclude="Introduction" />
+
+## What is Prototype Pollution?
+
+Prototype Pollution is a type of vulnerability that allows an attacker to modify the prototype of base objects in JavaScript. This can lead to unexpected behavior, application crashes, and in severe cases, remote code execution.
+
+In JavaScript, almost everything is an object, and objects inherit properties and methods from their prototype. The prototype chain ends with `Object.prototype`. If an attacker can pollute `Object.prototype`, they can potentially affect every object in the application.
+
+## How Does Prototype Pollution Work?
+
+Let's look at a simple example:
+
+```javascript
+function merge(target, source) {
+  for (let key in source) {
+    if (typeof source[key] === 'object') {
+      target[key] = merge(target[key] || {}, source[key])
+    } else {
+      target[key] = source[key]
+    }
+  }
+  return target
+}
+
+const obj = {}
+const maliciousPayload = JSON.parse('{"__proto__": {"polluted": true}}')
+
+merge(obj, maliciousPayload)
+
+console.log(obj.polluted) // true
+console.log({}.polluted) // true - All objects are now polluted!
+```
+
+In this example, the `merge` function is vulnerable to prototype pollution. The malicious payload adds a `polluted` property to `Object.prototype`, affecting all objects.
+
+## The Dangers of Prototype Pollution
+
+1. **Application-wide Impact**: Since `Object.prototype` is at the root of the prototype chain, polluting it affects all objects.
+
+2. **Hard to Detect**: The effects of prototype pollution might not be immediately visible and can cause hard-to-debug issues.
+
+3. **Remote Code Execution**: In severe cases, attackers can inject malicious functions into the prototype, leading to remote code execution.
+
+4. **Bypass Security Checks**: Polluted prototypes can potentially bypass certain types of security checks in applications.
+
+## Real-World Implications
+
+Prototype pollution has been found in popular libraries and frameworks. For example:
+
+- In 2018, a prototype pollution vulnerability was discovered in the `lodash` library (CVE-2018-3721 and CVE-2018-16487).
+- jQuery before 3.4.0 was vulnerable to prototype pollution (CVE-2019-11358).
+
+These vulnerabilities could potentially affect millions of websites and applications.
+
+## How to Prevent Prototype Pollution
+
+1. **Use Object.create(null)**:
+   Create objects without a prototype to store user-controlled data:
+
+   ```javascript
+   const safeObject = Object.create(null)
+   ```
+
+2. **Freeze the Prototype**:
+   Prevent modifications to `Object.prototype`:
+
+   ```javascript
+   Object.freeze(Object.prototype)
+   ```
+
+3. **Avoid Recursive Merging and Use Safe Merge**:
+   Be cautious with functions that recursively merge objects.
+
+   ```javascript
+   function safeMerge(target, source) {
+     for (let key in source) {
+       if (key === '__proto__' || key === 'constructor') {
+         continue
+       }
+       if (typeof source[key] === 'object') {
+         target[key] = safeMerge(target[key] || {}, source[key])
+       } else {
+         target[key] = source[key]
+       }
+     }
+     return target
+   }
+   ```
+
+4. **Sanitize and Validate Input**:
+   Always sanitize and validate user input before using it in object operations.
+
+5. **Use Maps Instead of Plain Objects**:
+   For storing dynamic keys, consider using `Map` instead of plain objects:
+
+   ```javascript
+   const safeMap = new Map()
+   safeMap.set('userInput', userValue)
+   ```
+
+6. **Use JSON.parse with a Reviver Function**:
+   When parsing JSON, use a reviver function to filter out `__proto__` and `constructor`:
+
+   ```javascript
+   const safeParse = (json) => {
+     return JSON.parse(json, (key, value) => {
+       if (key === '__proto__' || key === 'constructor') {
+         return undefined
+       }
+       return value
+     })
+   }
+   ```
+
+7. **Use Object.hasOwn() or Object.hasOwnProperty()**:
+   When checking for properties, use these methods to ensure you're not accessing prototype properties:
+
+   ```javascript
+   if (Object.hasOwn(obj, 'prop')) {
+     // Safe to use obj.prop
+   }
+   ```
+
+   ```javascript
+   for (let key in obj) {
+     if (Object.prototype.hasOwnProperty.call(obj, key)) {
+       // Safe to use obj[key]
+     }
+   }
+   ```
+
+8. **Use Modern JavaScript Features**: Methods like `Object.assign()` and the spread operator `{...obj}` don't merge prototypes.
+
+9. **Keep Dependencies Updated**: Always use the latest versions of your dependencies, as they often include security patches.
+
+## Detecting Prototype Pollution
+
+To detect potential prototype pollution in your codebase:
+
+1. Use static analysis tools like ESLint with security plugins.
+2. Implement runtime checks to detect attempts to modify `__proto__`.
+3. Use security scanning tools that specifically look for prototype pollution vulnerabilities.
+
+## Conclusion
+
+Prototype Pollution is a serious security vulnerability in JavaScript that can have far-reaching consequences. As developers, it's crucial to understand how it works and implement proper safeguards in our code.
+
+By following best practices such as using `Object.create(null)`, freezing prototypes, and properly validating input, we can significantly reduce the risk of prototype pollution in our applications.
+
+Remember, security is an ongoing process. Stay informed about the latest security vulnerabilities and regularly audit your code and dependencies for potential issues.
+
+Stay safe, and happy coding!
