@@ -3,6 +3,8 @@ import svelte from '@astrojs/svelte'
 import mdx from '@astrojs/mdx'
 import remarkGfm from 'remark-gfm'
 import remarkSmartypants from 'remark-smartypants'
+import remarkMath from 'remark-math'
+import rehypeKatex from 'rehype-katex'
 import rehypeExternalLinks from 'rehype-external-links'
 
 // https://astro.build/config
@@ -10,8 +12,9 @@ export default defineConfig({
   site: 'https://yuan.fyi',
   integrations: [
     mdx({
-      remarkPlugins: [remarkGfm, remarkSmartypants],
+      remarkPlugins: [remarkGfm, remarkSmartypants, remarkMath],
       rehypePlugins: [
+        rehypeKatex,
         [
           rehypeExternalLinks,
           {
@@ -43,8 +46,9 @@ export default defineConfig({
         }
       ]
     },
-    remarkPlugins: [remarkGfm, remarkSmartypants],
+    remarkPlugins: [remarkGfm, remarkSmartypants, remarkMath],
     rehypePlugins: [
+      rehypeKatex,
       [
         rehypeExternalLinks,
         {
