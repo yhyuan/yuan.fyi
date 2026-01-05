@@ -1,0 +1,251 @@
+---
+title: Bitcoin SegWit Tutorial
+slug: bitcoin-segwit-tutorial
+publishDate: 2026-01-02
+description: deep, practical tutorial on **Bitcoin SegWit**—what it is, how it works, and its benefits for transaction efficiency and scalability.
+date: 2026-01-02
+tags: ['Bitcoin']
+draft: false
+---
+
+**SegWit** (short for **Segregated Witness**) is a major Bitcoin protocol upgrade activated in **August 2017** that **changes how transactions are structured** to fix long-standing problems and enable future improvements.
+
+At a high level:
+
+> **SegWit separates (“segregates”) the signature data (witness) from the rest of the transaction.**
+
+But that simple sentence hides several very important consequences.
+
+---
+
+## 1. The problem SegWit was designed to solve
+
+### 1.1 Transaction malleability (the big one)
+
+Before SegWit, a Bitcoin transaction ID (**txid**) was:
+
+```
+txid = SHA256(SHA256(full_transaction_bytes))
+```
+
+The **signature data** (scriptSig) was part of those bytes.
+
+🔴 Problem:
+Signatures can be **encoded in more than one valid way**, so someone could modify a transaction *without changing what it does*, yet produce a **different txid**.
+
+This caused:
+
+* Broken payment tracking
+* Difficulty building multi-transaction protocols
+* Impossibility of safe payment channels → **Lightning Network could not exist**
+
+---
+
+### 1.2 Block size limit pressure
+
+* Pre-SegWit blocks were limited to **1 MB**
+* Signatures make up ~60–70% of a typical transaction
+
+Bitcoin needed:
+
+* More throughput
+* Without a risky hard fork
+
+---
+
+## 2. What SegWit actually changes (core idea)
+
+SegWit introduces a **new transaction format**:
+
+### Old (pre-SegWit)
+
+```
+[input]
+  └─ scriptSig (signatures here)
+[output]
+```
+
+### New (SegWit)
+
+```
+[input]
+  └─ scriptSig (mostly empty)
+[witness]
+  └─ signatures & scripts
+[output]
+```
+
+➡️ Signatures move into a new structure called the **witness**.
+
+---
+
+## 3. Two transaction IDs now exist
+
+With SegWit, a transaction has **two identifiers**:
+
+### 3.1 txid (legacy ID)
+
+* Hash of the transaction **without witness data**
+* **Immutable** once created
+* Solves transaction malleability
+
+### 3.2 wtxid (witness transaction ID)
+
+* Hash of the transaction **including witness**
+* Used internally by nodes
+
+⚠️ Only `txid` is used to reference UTXOs.
+
+---
+
+## 4. Block weight: how SegWit increases capacity
+
+Instead of a hard 1 MB limit, SegWit introduces **block weight**:
+
+```
+block weight = (non-witness bytes × 4) + witness bytes
+maximum = 4,000,000 weight units
+```
+
+This means:
+
+* Non-witness data is “expensive”
+* Witness data is “cheap”
+
+### Practical result
+
+* Blocks can be ~1.7–2.3 MB in practice
+* No hard fork required
+* Old nodes still see ≤1 MB blocks
+
+✔️ Backward compatibility preserved
+
+---
+
+## 5. New script types enabled by SegWit
+
+SegWit introduces **witness programs**:
+
+### 5.1 P2WPKH (Pay to Witness PubKey Hash)
+
+* Native SegWit
+* Address starts with `bc1q...`
+* Replaces P2PKH
+
+**ScriptPubKey**
+
+```
+0 <20-byte pubkey hash>
+```
+
+### 5.2 P2WSH (Pay to Witness Script Hash)
+
+* Replaces P2SH for complex scripts
+
+**ScriptPubKey**
+
+```
+0 <32-byte script hash>
+```
+
+### 5.3 P2SH-wrapped SegWit (transition format)
+
+* Address starts with `3...`
+* Allows old wallets to pay SegWit wallets
+
+---
+
+## 6. Why SegWit fees are lower
+
+Because:
+
+* Fees are paid per **virtual byte (vB)**
+* Witness data counts as **¼ the cost**
+
+Example:
+
+* Legacy P2PKH input: ~148 vB
+* SegWit P2WPKH input: ~68 vB
+
+➡️ ~55–60% fee reduction per input
+
+---
+
+## 7. SegWit enables Lightning Network
+
+Lightning requires:
+
+* Transaction IDs that **cannot change**
+* Pre-signed transactions chained together
+
+Before SegWit:
+❌ txid malleability made this impossible
+
+After SegWit:
+✔️ Stable txids
+✔️ Off-chain payment channels
+✔️ Instant, cheap payments
+
+**SegWit is the foundation of Lightning.**
+
+---
+
+## 8. SegWit versioning: future-proof design
+
+SegWit introduces **versioned witness programs**:
+
+```
+OP_n <program>
+```
+
+* Version 0 → SegWit v0 (P2WPKH, P2WSH)
+* Version 1 → Taproot (BIP341)
+* Versions 2–16 → reserved for future upgrades
+
+This allows **soft-fork upgrades forever**.
+
+---
+
+## 9. SegWit vs Taproot (quick comparison)
+
+| Feature            | SegWit v0          | Taproot (v1) |
+| ------------------ | ------------------ | ------------ |
+| Address            | `bc1q...`          | `bc1p...`    |
+| Signatures         | ECDSA              | Schnorr      |
+| Privacy            | Good               | Better       |
+| Efficiency         | Better than legacy | Best         |
+| Script flexibility | Limited            | Very high    |
+
+Taproot is built **on top of SegWit**, not a replacement.
+
+---
+
+## 10. Common misconceptions
+
+❌ “SegWit increases block size”
+➡️ No. It changes **weight accounting**.
+
+❌ “SegWit is optional”
+➡️ For users, yes. For Bitcoin’s future, **it’s essential**.
+
+❌ “SegWit breaks old nodes”
+➡️ No. Old nodes still function correctly.
+
+---
+
+## 11. Why SegWit matters philosophically
+
+SegWit shows Bitcoin’s design principles:
+
+* **Backward compatibility**
+* **Minimal trust**
+* **Layered scaling**
+* **Long-term upgradeability**
+
+Instead of rushing to bigger blocks, Bitcoin chose **sound engineering**.
+
+---
+
+## 12. One-sentence summary
+
+> **SegWit fixes transaction malleability, lowers fees, increases capacity, and makes Lightning and Taproot possible—without breaking Bitcoin.**

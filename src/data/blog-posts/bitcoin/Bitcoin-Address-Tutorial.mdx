@@ -1,0 +1,398 @@
+---
+title: Bitcoin Address Tutorial
+slug: bitcoin-address-tutorial
+publishDate: 2026-01-02
+description: deep, practical tutorial on **Bitcoin addresses**—what they are, how they’re built, how to recognize/validate them, and how wallets derive them from keys (including modern SegWit and Taproot).
+date: 2026-01-02
+tags: ['Bitcoin']
+draft: false
+---
+
+
+## 1) What a “Bitcoin address” really is
+
+A Bitcoin address is **a human-friendly encoding of a locking condition**—i.e., “who can spend this output later, and how?”
+
+When you “send to an address,” you’re really creating an output (UTXO) with a **scriptPubKey** (locking script). The address is a convenient wrapper around that script.
+
+**Key idea:**
+
+* **Private key** → controls spending (never share)
+* **Public key** → derived from private key
+* **Address** → derived from *public key or script*, used for receiving
+
+An address **is not** a bank account or a balance container. Balances come from summing unspent outputs that pay to scripts you can unlock.
+
+---
+
+## 2) The four address families you must know
+
+### A) Legacy (Base58Check)
+
+1. **P2PKH** (Pay to Public Key Hash)
+
+   * Starts with: `1...` (mainnet), `m/n...` (testnet)
+   * Locks to: `OP_DUP OP_HASH160 <pubKeyHash> OP_EQUALVERIFY OP_CHECKSIG`
+   * Example shape: `1A1zP1...`
+
+2. **P2SH** (Pay to Script Hash)
+
+   * Starts with: `3...` (mainnet), `2...` (testnet)
+   * Locks to: `OP_HASH160 <scriptHash> OP_EQUAL`
+   * Common use: multisig, or “wrapped SegWit” (`P2SH-P2WPKH`, `P2SH-P2WSH`)
+
+### B) SegWit (Bech32)
+
+3. **Native SegWit v0**
+
+   * Starts with: `bc1q...` (mainnet), `tb1q...` (testnet)
+   * Two main types:
+
+     * **P2WPKH**: witness program length 20 (pubkey hash)
+     * **P2WSH**: witness program length 32 (script hash)
+   * Lower fees + better malleability properties.
+
+### C) Taproot (Bech32m)
+
+4. **SegWit v1 / Taproot**
+
+   * Starts with: `bc1p...` (mainnet), `tb1p...` (testnet)
+   * Locks to: a 32-byte “output key” (tweaked x-only pubkey)
+   * Even better efficiency + flexible spending paths (key path or script path).
+
+---
+
+## 3) Encodings: Base58Check vs Bech32 vs Bech32m
+
+### Base58Check (Legacy “1...” and “3...”)
+
+Used to avoid confusing characters:
+
+* No `0` (zero), `O` (capital o), `I` (capital i), `l` (lower L)
+* Includes a 4-byte checksum to catch typos.
+
+**High-level structure (Base58Check payload):**
+
+```
+version_byte || data || checksum
+checksum = first4bytes( SHA256(SHA256(version_byte || data)) )
+address = Base58Encode(version_byte || data || checksum)
+```
+
+* For mainnet:
+
+  * P2PKH version byte: `0x00`
+  * P2SH version byte: `0x05`
+* For testnet:
+
+  * P2PKH: `0x6F`
+  * P2SH: `0xC4`
+
+### Bech32 / Bech32m (SegWit)
+
+Bech32 is designed for:
+
+* Better QR efficiency
+* Stronger error detection
+* Case-insensitive (but **must not mix case**)
+
+**General form:**
+
+```
+<hrp>1<data><checksum>
+```
+
+* HRP (human readable part): `bc` (mainnet), `tb` (testnet), `bcrt` (regtest)
+* Separator: `1`
+* Data: witness version + witness program (converted to 5-bit groups)
+* Checksum: 6 chars
+
+**Important:**
+
+* SegWit v0 uses **Bech32** checksum constant
+* SegWit v1+ uses **Bech32m** (Taproot uses Bech32m)
+
+That’s why `bc1p...` is different from `bc1q...` even if lengths look similar.
+
+---
+
+## 4) What “address types” correspond to on-chain scripts
+
+Here’s the mapping between address family and actual output script:
+
+### P2PKH (starts `1...`)
+
+ScriptPubKey:
+
+```
+OP_DUP OP_HASH160 <20-byte pubKeyHash> OP_EQUALVERIFY OP_CHECKSIG
+```
+
+### P2SH (starts `3...`)
+
+ScriptPubKey:
+
+```
+OP_HASH160 <20-byte scriptHash> OP_EQUAL
+```
+
+Spending requires providing a **redeemScript** that hashes to that scriptHash (plus unlocking data).
+
+### P2WPKH (starts `bc1q...` with 20-byte program)
+
+ScriptPubKey:
+
+```
+0 <20-byte pubKeyHash>
+```
+
+Unlocking data goes into **witness** (not scriptSig).
+
+### P2WSH (starts `bc1q...` with 32-byte program)
+
+ScriptPubKey:
+
+```
+0 <32-byte scriptHash>
+```
+
+### Taproot P2TR (starts `bc1p...`)
+
+ScriptPubKey:
+
+```
+1 <32-byte outputKey>
+```
+
+Spending:
+
+* **Key path**: a Schnorr signature for the outputKey
+* **Script path**: reveal script + control block proving inclusion in Taproot tree
+
+---
+
+## 5) How addresses are derived from keys (step-by-step)
+
+### 5.1 Private key → public key (secp256k1)
+
+* Private key: 32 bytes (integer in range `[1, n-1]`)
+* Public key: elliptic curve point `K = k*G`
+
+Public keys can be encoded as:
+
+* **Compressed** (33 bytes): `0x02/0x03 || x`
+* **Uncompressed** (65 bytes): `0x04 || x || y`
+
+Modern wallets use **compressed** almost always.
+
+---
+
+### 5.2 P2PKH address derivation (legacy `1...`)
+
+Steps:
+
+1. Start with **compressed public key bytes**
+2. Compute HASH160:
+
+   * `sha = SHA256(pubkey_bytes)`
+   * `h160 = RIPEMD160(sha)` → 20 bytes
+3. Add version byte `0x00` (mainnet P2PKH)
+4. Compute checksum:
+
+   * `chk = first4bytes(SHA256(SHA256(version||h160)))`
+5. Base58 encode:
+
+   * `Base58(version||h160||chk)` → address starting with `1`
+
+---
+
+### 5.3 P2SH address derivation (legacy `3...`)
+
+Used for scripts (like multisig).
+
+1. Build a redeemScript (example 2-of-3 multisig):
+
+   ```
+   OP_2 <PubA> <PubB> <PubC> OP_3 OP_CHECKMULTISIG
+   ```
+2. Hash it: `h160 = RIPEMD160(SHA256(redeemScript))`
+3. Version byte `0x05` (mainnet P2SH)
+4. Double-SHA checksum
+5. Base58 encode → starts with `3`
+
+---
+
+### 5.4 Native SegWit v0: P2WPKH (`bc1q...`)
+
+Even though it’s SegWit, it still uses the same pubkey hash concept.
+
+1. Compute pubKeyHash = HASH160(compressed_pubkey) (20 bytes)
+2. Witness version = `0`
+3. Witness program = `<20-byte pubKeyHash>`
+4. Encode as Bech32 with HRP `bc`:
+
+   * Convert (version + program) into 5-bit “words”
+   * Compute Bech32 checksum
+   * Produce address `bc1q...`
+
+**On-chain scriptPubKey:** `0 <20-byte pubKeyHash>`
+
+---
+
+### 5.5 Taproot P2TR (`bc1p...`) (high-level)
+
+Taproot addresses are built from an **x-only public key** and an optional script tree.
+
+Common “single-sig key path” use:
+
+1. Start from an internal public key `P` (x-only, 32 bytes)
+2. Compute tweak `t = H_TapTweak(P || merkle_root?)`
+
+   * If no scripts, merkle_root is empty
+3. Output key `Q = P + t*G`
+4. Witness program: version `1` + 32-byte x-only `Q`
+5. Encode with **Bech32m** → `bc1p...`
+
+**Note:** Taproot keys use **Schnorr signatures** (BIP340).
+
+---
+
+## 6) Address lengths and quick recognition
+
+* `1...` (P2PKH): typically 26–35 chars
+* `3...` (P2SH): typically 26–35 chars
+* `bc1q...` (SegWit v0): variable length (often 42 chars for P2WPKH)
+* `bc1p...` (Taproot): often 62 chars
+
+If you see:
+
+* `bc1q` → SegWit v0 (Bech32)
+* `bc1p` → SegWit v1+ (Bech32m, typically Taproot)
+
+---
+
+## 7) How wallets derive many addresses (HD wallets)
+
+Most wallets are **Hierarchical Deterministic (HD)** (BIP32):
+
+* One seed → many keys → many addresses
+* They use **derivation paths** (BIP44/49/84/86 are common conventions)
+
+### Seed → master key
+
+* Seed from BIP39 mnemonic (+ optional passphrase)
+* BIP32 uses HMAC-SHA512 to create:
+
+  * master private key
+  * chain code
+
+### Common derivation path conventions
+
+(coin type for Bitcoin is `0`)
+
+* **BIP44 (legacy P2PKH)**
+  `m/44'/0'/account'/change/index`
+* **BIP49 (P2SH-wrapped SegWit)**
+  `m/49'/0'/account'/change/index` → addresses start with `3...`
+* **BIP84 (native SegWit v0 P2WPKH)**
+  `m/84'/0'/account'/change/index` → `bc1q...`
+* **BIP86 (Taproot P2TR)**
+  `m/86'/0'/account'/change/index` → `bc1p...`
+
+Where:
+
+* `account'`: separate logical wallets
+* `change`: `0` for receive addresses, `1` for change addresses
+* `index`: increments for each new address
+
+**Practical tip:** If you restore a wallet and “funds are missing,” it’s often because you’re using the wrong derivation scheme/address type.
+
+---
+
+## 8) Checksums and validation: how to detect typos
+
+### Base58Check validation
+
+1. Decode Base58 → bytes
+2. Split:
+
+   * payload = all but last 4 bytes
+   * checksum = last 4 bytes
+3. Recompute checksum = first4bytes(doubleSHA(payload))
+4. Compare
+
+### Bech32/Bech32m validation
+
+Bech32 has strong error detection. You validate by:
+
+* Ensuring HRP matches network (`bc`, `tb`, `bcrt`)
+* Ensuring no mixed case
+* Verifying checksum
+* Ensuring witness version/program length rules:
+
+  * v0 program length must be 20 or 32
+  * v1+ program length is 32 for Taproot (v1), others have rules too
+
+---
+
+## 9) “Sending to the wrong address type” pitfalls
+
+* Sending BTC to an address on the wrong network (e.g., testnet vs mainnet) is simply “valid but useless” because mainnet nodes won’t recognize testnet UTXOs and vice versa.
+* Sending to a valid address type is usually fine—but some old services:
+
+  * didn’t support `bc1...` (less common today)
+  * might not support Taproot (`bc1p...`) yet
+
+**Safe habit:** If you’re unsure about the receiver, use **native SegWit (`bc1q...`)**. It’s widely supported and fee-efficient.
+
+---
+
+## 10) Privacy: addresses are not identities, but reuse leaks data
+
+* Reusing an address makes it easy for observers to link payments.
+* Good wallets generate a fresh receiving address every time.
+* Taproot can improve privacy *in some cases*, but address reuse still leaks.
+
+**Rule:** One invoice → one new address.
+
+---
+
+## 11) Practical exercises (to truly learn)
+
+### Exercise A: Identify address type by prefix
+
+Take 20 random addresses and label: P2PKH / P2SH / P2WPKH / P2WSH / P2TR.
+
+### Exercise B: Build P2PKH by hand (conceptually)
+
+* Start with a known compressed pubkey
+* Compute HASH160
+* Add version byte
+* Double SHA
+* Base58 encode
+
+(If you want, I can provide a small script in TypeScript or Rust that prints each intermediate value—great for debugging and learning.)
+
+### Exercise C: Compare fees and transaction sizes
+
+Create the same “1 input, 2 outputs” payment using:
+
+* P2PKH
+* P2WPKH
+* P2TR
+  Then compare virtual bytes (vB). You’ll see why SegWit/Taproot matter.
+
+---
+
+## 12) FAQ-level clarifications
+
+**Is a Bitcoin address a hash of a public key?**
+Sometimes. P2PKH and P2WPKH are based on **HASH160(pubkey)**, but P2TR is based on a **tweaked x-only pubkey**, not HASH160.
+
+**Can two wallets generate the same address?**
+Not realistically if keys are random. But deterministic wallets can generate the same addresses if they share the same seed + derivation scheme.
+
+**What’s the difference between “address” and “script”?**
+Address is an encoding that corresponds to a standard script template. The script is what the network enforces.
+
+---

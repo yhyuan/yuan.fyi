@@ -1,0 +1,283 @@
+---
+title: byte-level comparison of SegWit v0 (P2WPKH/P2WSH) vs SegWit v1 Taproot (P2TR)
+slug: byte-level-comparison-of-segwit-v0-vs-taproot-v1
+publishDate: 2026-01-02
+description: deep, practical tutorial on **Bitcoin SegWit**—what it is, how it works, and its benefits for transaction efficiency and scalability.
+date: 2026-01-02
+tags: ['Bitcoin']
+draft: false
+---
+
+Here’s the **byte-level** comparison of **SegWit v0** (P2WPKH/P2WSH) vs **SegWit v1 Taproot** (P2TR). I’ll focus on what you actually see in **raw transaction hex**, and what changes in **witness** and **sighash**.
+
+---
+
+## 1) The outer transaction serialization is (almost) identical
+
+For both SegWit v0 and v1, the transaction on the wire is:
+
+```
+[4B version]
+[1B marker=00]
+[1B flag=01]
+[varint input_count]
+  inputs...
+[varint output_count]
+  outputs...
+witnesses...      <-- this is where v0 vs v1 differs most
+[4B locktime]
+```
+
+So: **marker+flag exist for both**.
+
+The main byte-level differences are in:
+
+* the **scriptPubKey** of outputs you create (v0 vs v1),
+* the **witness stack** when you spend them,
+* and the **signature hashing algorithm** used to produce the signature in witness.
+
+---
+
+## 2) Output scripts: v0 witness program vs v1 witness program
+
+### 2.1 P2WPKH (SegWit v0) output (address `bc1q...`)
+
+**scriptPubKey bytes**:
+
+```
+00 14 <20-byte pubKeyHash>
+```
+
+Byte-by-byte:
+
+* `00` = OP_0 (witness version 0)
+* `14` = push 0x14 = 20 bytes
+* `20 bytes` = HASH160(pubkey)
+
+Total scriptPubKey length = 22 bytes (varint `16`).
+
+---
+
+### 2.2 P2TR (Taproot v1) output (address `bc1p...`)
+
+**scriptPubKey bytes**:
+
+```
+51 20 <32-byte x-only output key>
+```
+
+Byte-by-byte:
+
+* `51` = OP_1 (witness version 1)
+* `20` = push 0x20 = 32 bytes
+* `32 bytes` = x-only pubkey (Taproot output key)
+
+Total scriptPubKey length = 34 bytes (varint `22`).
+
+**Big takeaway:**
+
+* v0 programs are typically **20 or 32 bytes** (P2WPKH/P2WSH) and start with `00`.
+* v1 (Taproot) is **32 bytes** and starts with `51`.
+
+---
+
+## 3) Spending: the witness field is where things really change
+
+Witnesses are encoded per input, each witness is:
+
+```
+[varint item_count]
+  [varint len][bytes]   item 0
+  [varint len][bytes]   item 1
+  ...
+```
+
+### 3.1 Spending P2WPKH (SegWit v0) input witness
+
+Witness stack is always **2 items**:
+
+1. **signature** (DER ECDSA + 1-byte sighash type)
+2. **compressed pubkey** (33 bytes)
+
+Bytes look like:
+
+```
+02
+  <sig_len> <DER_SIG...> <sighash_type>
+  21 <33-byte pubkey>
+```
+
+Notes:
+
+* `21` hex = 33 decimal (compressed pubkey length).
+* Signature is typically 71–73 bytes DER + 1 sighash byte (often `01`).
+
+---
+
+### 3.2 Spending Taproot (SegWit v1) has TWO possible witness shapes
+
+Taproot outputs can be spent via:
+
+#### A) Key-path spend (most common, simplest)
+
+Witness stack is usually **1 item**:
+
+1. **Schnorr signature** (64 bytes)
+   (+ optional 1-byte sighash type if not default)
+
+Byte pattern:
+
+```
+01
+  40 <64-byte schnorr sig>               (0x40 = 64)
+```
+
+If a non-default sighash is used, the signature element becomes 65 bytes:
+
+* `[64-byte sig] [1-byte sighash]`
+
+So you might see:
+
+```
+01
+  41 <64-byte sig><01-byte sighash>
+```
+
+**Compare to v0:**
+
+* v0: DER-encoded ECDSA signature (variable length) + pubkey
+* v1: fixed-size Schnorr signature (64 bytes) and **no pubkey revealed** in key-path
+
+That “no pubkey revealed” is a key efficiency/privacy win.
+
+---
+
+#### B) Script-path spend (when using Taproot scripts)
+
+Witness stack is at least **2 items**, often more:
+
+Typical structure:
+
+1. (optional) arguments for the script (stack items)
+2. **tapleaf script** (the actual script bytes)
+3. **control block** (proves the script is committed in the Taproot tree)
+
+Minimum shape (if script needs no args):
+
+```
+02
+  <script_len> <script_bytes>
+  <control_len> <control_block_bytes>
+```
+
+If script needs arguments:
+
+```
+N
+  <arg1>
+  <arg2>
+  ...
+  <script>
+  <control_block>
+```
+
+**Control block format (byte-level)**
+Control block is:
+
+```
+[1 byte: control]
+[32 bytes: internal pubkey]
+[32 bytes: merkle path node 0]   (optional)
+[32 bytes: merkle path node 1]   (optional)
+...
+```
+
+* control block length = `33 + 32*k` bytes
+* first byte (“control”):
+
+  * encodes parity of output key and leaf version bits
+
+**Compare to v0 P2WSH script spend:**
+v0 P2WSH witness is typically:
+
+* stack args
+* script
+  (there is no control block / merkle proof concept in v0)
+
+---
+
+## 4) Optional “annex” (Taproot-only quirk you might see)
+
+Taproot allows an optional **annex** element in witness (rare in the wild). If present:
+
+* It is a witness element that starts with byte `0x50`
+* It appears **after the signature** in key-path spends, before script/control in script-path spends.
+
+If you ever see a witness item whose first byte is `50`, that’s a hint of annex usage.
+
+---
+
+## 5) Signature hashing: BIP143 (v0) vs BIP341 (v1)
+
+You asked for byte-level, so here’s what changes at the “what exactly is signed” level.
+
+### 5.1 SegWit v0 uses **BIP143** digest (ECDSA)
+
+The signature commits to:
+
+* version, locktime
+* hashPrevouts, hashSequence
+* outpoint being spent
+* scriptCode (special for P2WPKH)
+* input amount
+* sequence
+* hashOutputs
+* sighash type
+
+This fixes malleability and is deterministic in how it serializes.
+
+### 5.2 Taproot v1 uses **BIP341** digest (Schnorr)
+
+Taproot’s signature hash is redesigned to support:
+
+* key-path vs script-path semantics
+* optional annex
+* “ext” fields and leaf hash for script-path
+* efficient hashing (tagged hashes)
+
+**Practical byte-level implication in raw tx:**
+
+* In v0, the witness signature’s last byte often explicitly stores a sighash type (`01` etc.).
+* In v1, sighash default is `SIGHASH_DEFAULT` (0x00) and is typically **omitted**, so many Taproot signatures are **exactly 64 bytes**.
+
+---
+
+## 6) Quick “how to identify what you’re looking at” from raw hex
+
+### Identify output type (scriptPubKey)
+
+* Starts with `00 14` → P2WPKH
+* Starts with `00 20` → P2WSH
+* Starts with `51 20` → P2TR (Taproot)
+
+### Identify spend type (witness)
+
+* Witness has **2 items**, second is `21 <33 bytes>` → very likely P2WPKH spend
+* Witness has **1 item** of length `0x40` (64 bytes) → very likely Taproot key-path spend
+* Witness ends with `[script] [control block]` where control block length is `33+32k` → Taproot script-path spend
+
+---
+
+## 7) If you want the next step: decode a specific transaction
+
+If you paste **any raw transaction hex** (or a txid + which input index you want to inspect), I can annotate it **byte-by-byte** and tell you exactly:
+
+* whether it’s v0 or v1,
+* key-path vs script-path,
+* what every varint length corresponds to,
+* and (if you want) reconstruct the scriptPubKey and address type.
+
+Just send:
+
+* the raw hex, or
+* txid + input number (e.g., “input 0”).

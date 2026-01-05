@@ -1,0 +1,391 @@
+---
+title: byte-by-byte walkthrough of a real SegWit transaction format
+slug: byte-by-byte-walkthrough-of-a-real-segwit-transaction-format
+publishDate: 2026-01-02
+description: deep, practical tutorial on **Bitcoin SegWit**—what it is, how it works, and its benefits for transaction efficiency and scalability.
+date: 2026-01-02
+tags: ['Bitcoin']
+draft: false
+---
+
+Below is a **byte-by-byte walkthrough of a real SegWit transaction format**, focusing on **SegWit v0 P2WPKH**, because it’s the most common and the cleanest to understand.
+
+I’ll show:
+
+1. **Full transaction layout**
+2. **Every field, in order, byte by byte**
+3. **What is hashed for `txid` vs `wtxid`**
+4. **How this differs from legacy**
+5. **Concrete annotated hex example**
+
+No hand-waving — this is the exact wire format Bitcoin nodes parse.
+
+---
+
+# 1. High-level SegWit transaction structure
+
+A SegWit transaction looks like this **on the wire**:
+
+```
+[version]
+[marker]
+[flag]
+[inputs]
+[outputs]
+[witnesses]
+[locktime]
+```
+
+The **marker + flag** are what tell a node:
+
+> “This transaction has witness data”
+
+---
+
+# 2. Concrete example (1-input, 1-output P2WPKH)
+
+We’ll walk through a **simple spend**:
+
+* 1 SegWit input (P2WPKH)
+* 1 output
+* Uses ECDSA (SegWit v0)
+* Mainnet
+
+I’ll show **hex bytes**, then explain each section.
+
+---
+
+## 2.1 Version (4 bytes)
+
+```
+01000000
+```
+
+* Little-endian
+* Value = `0x00000001`
+* Transaction version = **1**
+
+📌 Same as legacy.
+
+---
+
+## 2.2 Marker (1 byte) — SegWit indicator
+
+```
+00
+```
+
+* **Always 0x00**
+* Illegal as input count → legacy parsers won’t misinterpret it
+
+---
+
+## 2.3 Flag (1 byte)
+
+```
+01
+```
+
+* Indicates **witness data is present**
+* Marker + flag together = `00 01`
+
+📌 These **2 bytes do NOT exist in legacy transactions**
+
+---
+
+## 2.4 Input count (varint)
+
+```
+01
+```
+
+* 1 input
+
+---
+
+## 2.5 Input (UTXO being spent)
+
+### 2.5.1 Previous transaction ID (32 bytes, little-endian)
+
+```
+e3c0...9a12   (32 bytes total, reversed)
+```
+
+Important:
+
+* txids are displayed big-endian
+* On wire they are **little-endian**
+
+📌 This is the txid of the UTXO being spent.
+
+---
+
+### 2.5.2 Output index (4 bytes)
+
+```
+00000000
+```
+
+* Which output of the previous tx
+* Here: output index `0`
+
+---
+
+### 2.5.3 scriptSig length (varint)
+
+```
+00
+```
+
+🔥 **Critical SegWit difference**
+
+* scriptSig is **empty** for native SegWit
+* Length = 0
+
+Legacy txs store signatures here — SegWit does not.
+
+---
+
+### 2.5.4 Sequence (4 bytes)
+
+```
+ffffffff
+```
+
+* Standard “final” sequence
+* Enables RBF if `< fffffffe`
+
+---
+
+## 2.6 Output count (varint)
+
+```
+01
+```
+
+* 1 output
+
+---
+
+## 2.7 Output
+
+### 2.7.1 Amount (8 bytes, little-endian)
+
+```
+00e1f50500000000
+```
+
+* Interpreted as satoshis
+* Little-endian integer
+* Example: `100000000` sats = **1 BTC**
+
+---
+
+### 2.7.2 scriptPubKey length (varint)
+
+```
+16
+```
+
+* Decimal 22 bytes
+
+---
+
+### 2.7.3 scriptPubKey (22 bytes)
+
+```
+0014 d85c2b71d0060b09c9886aeb815e50991dda124d
+```
+
+Breakdown:
+
+```
+00        → OP_0   (SegWit version 0)
+14        → push 20 bytes
+<20-byte pubKeyHash>
+```
+
+📌 This is a **P2WPKH output**
+
+---
+
+# 3. Witness data (the “segregated” part)
+
+⚠️ Witnesses come **after outputs**, but are logically tied to inputs.
+
+Witnesses are **NOT included in txid hashing**.
+
+---
+
+## 3.1 Witness stack item count (varint)
+
+```
+02
+```
+
+Two witness items for P2WPKH:
+
+1. Signature
+2. Public key
+
+---
+
+## 3.2 Witness item #1: signature
+
+### Length (varint)
+
+```
+48
+```
+
+* 72 bytes
+
+### Signature bytes
+
+```
+3045022100...022100...01
+```
+
+Contents:
+
+* DER-encoded ECDSA signature
+* Last byte = sighash type (`01` = SIGHASH_ALL)
+
+---
+
+## 3.3 Witness item #2: public key
+
+### Length
+
+```
+21
+```
+
+* 33 bytes
+
+### Public key
+
+```
+03a34f...c9e2
+```
+
+* Compressed secp256k1 public key
+
+---
+
+# 4. Locktime (4 bytes)
+
+```
+00000000
+```
+
+* Locktime = 0
+* No timelock
+
+---
+
+# 5. Final raw SegWit transaction layout
+
+Putting it all together:
+
+```
+01000000                      ← version
+00 01                          ← marker + flag
+01                              ← input count
+  [32-byte prev txid]
+  00000000                      ← output index
+  00                            ← scriptSig length
+  ffffffff                      ← sequence
+01                              ← output count
+  [8-byte amount]
+  16
+  0014[20-byte pubKeyHash]      ← scriptPubKey
+02                              ← witness item count
+  48 [signature]
+  21 [public key]
+00000000                        ← locktime
+```
+
+---
+
+# 6. txid vs wtxid (EXTREMELY important)
+
+### txid is computed from:
+
+```
+version
+inputs
+outputs
+locktime
+```
+
+❌ **Excludes marker, flag, witness**
+
+---
+
+### wtxid is computed from:
+
+```
+version
+marker
+flag
+inputs
+outputs
+witnesses
+locktime
+```
+
+✔️ Includes everything
+
+---
+
+### Why this matters
+
+* txid is **immutable**
+* Signatures can’t change txid
+* Transaction malleability is solved
+
+This is what enabled **Lightning Network**.
+
+---
+
+# 7. Compare with legacy P2PKH (side by side)
+
+| Component         | Legacy                | SegWit     |
+| ----------------- | --------------------- | ---------- |
+| scriptSig         | Contains sig + pubkey | Empty      |
+| Witness           | ❌ none                | ✅ separate |
+| txid malleability | ❌ possible            | ✅ fixed    |
+| Fee cost          | High                  | Lower      |
+| Block weight      | 4×                    | Discounted |
+
+---
+
+# 8. Block weight math (real numbers)
+
+Example input sizes:
+
+* Legacy P2PKH input: ~148 bytes
+* SegWit P2WPKH input:
+
+  * Non-witness: ~41 bytes
+  * Witness: ~107 bytes
+  * Weight = `41×4 + 107 = 271`
+  * Virtual size ≈ **68 vB**
+
+➡️ ~55% fee savings per input.
+
+---
+
+# 9. Mental model (this makes it click)
+
+Think of SegWit as:
+
+> “Signatures are receipts — important, but they don’t define *what* you’re spending.”
+
+So Bitcoin:
+
+* Hashes **what matters for ownership**
+* Discounts **proofs used only at spend time**
+
+---
