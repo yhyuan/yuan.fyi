@@ -8,17 +8,100 @@ const permalink = `${Astro.site.href}about`;
 
 <BaseLayout title={title} description={description} permalink={permalink} current="about">
   <div class="container">
+    <section class="about-me">
     <h1>About</h1>
     <figure class="about-image">
-      <img src="/assets/about-illustration.webp" alt="Illustration of a notebook" width="330">
-      <figcaption>
-        Illustration by
-        <a href="https://icons8.com/illustrations/author/5c07e68d82bcbc0092519bb6" target="_blank" rel="noopener">Icons 8</a>
-        from
-        <a href="https://icons8.com/illustrations" target="_blank" rel="noopener">Ouch!</a>
-      </figcaption>
+      <img src="/assets/about-me.png" alt="About me" width="330">
     </figure>
-    <p>Yinhuan Yuan is a Frontend Software Engineer in Toronto.</p>
+      <p>
+        Hi 👋, I’m <strong>Yuan</strong> — a software engineer, technologist, and lifelong learner with a deep curiosity
+        about how things work, from the lowest-level hardware to high-level web applications.
+      </p>
+
+      <h2>What I Do</h2>
+      <p>
+        By profession, I’m a <strong>software engineer</strong> with extensive experience in modern web development.
+        I work a lot with:
+      </p>
+      <ul>
+        <li><strong>React / TypeScript / JavaScript</strong></li>
+        <li><strong>Frontend architecture &amp; performance</strong></li>
+        <li><strong>Design systems and component libraries</strong></li>
+        <li><strong>Testing, tooling, and developer experience</strong></li>
+        <li><strong>Modern build systems</strong> (Vite, Webpack, Storybook, CI/CD)</li>
+      </ul>
+      <p>
+        I enjoy turning complex requirements into clean, maintainable systems and care deeply about code quality,
+        clarity, and long-term sustainability.
+      </p>
+
+      <h2>Beyond the Browser</h2>
+      <p>
+        My interests go well beyond web development.
+      </p>
+      <p>
+        I’m deeply fascinated by <strong>embedded systems and hardware</strong>, especially where software meets the
+        physical world. Some areas I actively explore and build in:
+      </p>
+      <ul>
+        <li><strong>Microcontrollers</strong> (STM32, Rust, Embassy-RS)</li>
+        <li><strong>Secure hardware and cryptography</strong></li>
+        <li><strong>Bitcoin &amp; cold-wallet design</strong></li>
+        <li><strong>Electronics, PCBs, and DIY hardware projects</strong></li>
+        <li><strong>Low-level systems, protocols, and performance</strong></li>
+      </ul>
+      <p>
+        I enjoy understanding systems end-to-end — not just how to use them, but how they are designed, constrained,
+        and optimized.
+      </p>
+
+      <h2>Why This Blog Exists</h2>
+      <p>
+        I created <strong>yuan.fyi</strong> as a place to:
+      </p>
+      <ul>
+        <li>Share <strong>what I’m learning</strong>, building, or experimenting with</li>
+        <li>Write <strong>clear explanations</strong> for complex technical topics</li>
+        <li>Document <strong>design decisions</strong>, trade-offs, and failures</li>
+        <li>Think out loud about <strong>technology, engineering, and systems</strong></li>
+      </ul>
+      <p>
+        Some posts may be deep technical dives. Others may be notes, experiments, or reflections. The common theme is
+        curiosity and clarity.
+      </p>
+      <p>
+        If something here helps you think differently, solve a problem faster, or learn something new — that’s a win.
+      </p>
+
+      <h2>How I Think</h2>
+      <p>
+        A few principles that guide how I work and learn:
+      </p>
+      <ul>
+        <li><strong>Understand fundamentals first</strong></li>
+        <li><strong>Prefer simple, explicit designs</strong></li>
+        <li><strong>Question assumptions</strong></li>
+        <li><strong>Optimize for correctness before cleverness</strong></li>
+        <li><strong>Build things to truly understand them</strong></li>
+      </ul>
+      <p>
+        I believe good engineering is about judgment, not just tools.
+      </p>
+
+      <h2>A Bit More Human</h2>
+      <p>
+        Outside of work, I’m a parent, a hobbyist, and someone who enjoys teaching and learning alongside my kids.
+        I believe curiosity is contagious — and worth protecting.
+      </p>
+
+      <p>
+        Thanks for stopping by.<br />
+        If you’re interested in programming, technology, hardware, or thoughtful engineering discussions, you’re in
+        the right place.
+      </p>
+
+      <p>— <strong>Yuan</strong></p>
+    </section>
   </div>
 </BaseLayout>
 
