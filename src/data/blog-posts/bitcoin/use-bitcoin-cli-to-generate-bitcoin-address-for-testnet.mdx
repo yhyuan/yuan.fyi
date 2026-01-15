@@ -1,0 +1,244 @@
+---
+title: How to Use Bitcoin Core to Generate Bitcoin Addresses for Testnet
+slug: use-bitcoin-cli-to-generate-bitcoin-address-for-testnet
+publishDate: 2026-01-15
+description: A practical guide on using Bitcoin Core and bitcoin-cli to create testnet addresses and export extended public keys (xpub/tpub) for watch-only wallets.
+date: 2026-01-15
+tags: ['Bitcoin']
+draft: false
+---
+
+Below is a **clean, practical walkthrough** using **Bitcoin Core + `bitcoin-cli`** to:
+
+1. create a **testnet address**
+2. export the wallet’s **extended public key** (xpub / tpub)
+3. save it as an **“xpub file”** suitable for watch-only wallets or your own signer/web app
+
+I’ll show **descriptor-based (modern, correct)** methods first, then explain what the data means.
+
+---
+
+# Prerequisites
+
+* Bitcoin Core **v23+** (v24/25 fine)
+* Testnet enabled
+* A **descriptor wallet** (default in modern Core)
+
+Start bitcoind on testnet:
+
+```bash
+bitcoind -testnet
+```
+
+(or add `testnet=1` to `bitcoin.conf`)
+
+---
+
+# 1️⃣ Create a testnet wallet (descriptor wallet)
+
+```bash
+bitcoin-cli -testnet createwallet "testwallet"
+```
+
+Check it’s loaded:
+
+```bash
+bitcoin-cli -testnet listwallets
+```
+
+---
+
+# 2️⃣ Create a testnet address (bc1-style on testnet → `tb1...`)
+
+### Native SegWit (recommended)
+
+```bash
+bitcoin-cli -testnet getnewaddress "receive" bech32
+```
+
+Example output:
+
+```
+tb1q7s8m4h0u7j3x5p8k8n0d4z2...
+```
+
+This is:
+
+* **P2WPKH**
+* testnet
+* SegWit v0
+
+---
+
+# 3️⃣ Get the wallet’s extended public key (XPUB → TPUB)
+
+Bitcoin Core does **not** expose xpubs directly anymore — it uses **descriptors**.
+
+You extract the xpub **from descriptors**.
+
+---
+
+## Step 3.1 — List wallet descriptors
+
+```bash
+bitcoin-cli -testnet listdescriptors
+```
+
+You’ll see output like:
+
+```json
+{
+  "wallet_name": "testwallet",
+  "descriptors": [
+    {
+      "desc": "wpkh([d34db33f/84h/1h/0h]tpubDC5J...xyz/0/*)#abcd1234",
+      "timestamp": 1680000000,
+      "active": true,
+      "internal": false
+    },
+    {
+      "desc": "wpkh([d34db33f/84h/1h/0h]tpubDC5J...xyz/1/*)#efgh5678",
+      "internal": true
+    }
+  ]
+}
+```
+
+---
+
+## Step 3.2 — Identify the **tpub**
+
+Focus on this part:
+
+```
+[d34db33f/84h/1h/0h]tpubDC5J...xyz/0/*
+```
+
+### Meaning:
+
+| Component        | Meaning                                 |
+| ---------------- | --------------------------------------- |
+| `d34db33f`       | master fingerprint                      |
+| `84h/1h/0h`      | BIP84 path (SegWit, testnet, account 0) |
+| `tpubDC5J...xyz` | **extended public key**                 |
+| `/0/*`           | external (receive) addresses            |
+
+This `tpub...` **is the expub you want**.
+
+---
+
+# 4️⃣ Save the expub to a file (watch-only export)
+
+Create a file (example: `testnet-expub.txt`):
+
+```text
+# Bitcoin Core testnet expub
+# Wallet: testwallet
+# Script: P2WPKH (BIP84)
+# Network: testnet
+
+[d34db33f/84h/1h/0h]tpubDC5Jxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+This is exactly what:
+
+* Specter
+* Sparrow
+* your **air-gapped signer**
+* your **web PSBT generator**
+
+will consume.
+
+---
+
+# 5️⃣ (Optional) Export both receive + change branches
+
+Include both:
+
+```text
+# Receive
+[d34db33f/84h/1h/0h]tpub.../0/*
+
+# Change
+[d34db33f/84h/1h/0h]tpub.../1/*
+```
+
+Your signer should recognize `/1/*` as **change**.
+
+---
+
+# 6️⃣ (Optional) Taproot (P2TR, BIP86) expub
+
+Generate a Taproot wallet address first:
+
+```bash
+bitcoin-cli -testnet getnewaddress "taproot" bech32m
+```
+
+Then list descriptors again:
+
+```bash
+bitcoin-cli -testnet listdescriptors
+```
+
+You’ll see:
+
+```
+tr([d34db33f/86h/1h/0h]tpubXXXX/0/*)
+```
+
+Export that `tpub` as well.
+
+---
+
+# 7️⃣ Verify the expub produces the same address
+
+Use `deriveaddresses`:
+
+```bash
+bitcoin-cli -testnet deriveaddresses \
+"wpkh([d34db33f/84h/1h/0h]tpubXXXX/0/*)" "[0,5]"
+```
+
+You should see addresses matching `getnewaddress`.
+
+---
+
+# 8️⃣ Why Bitcoin Core does this (important)
+
+Bitcoin Core:
+
+* **no longer exposes xpubs directly**
+* uses **output descriptors** to avoid ambiguity and bugs
+
+Descriptors are:
+
+* safer
+* explicit
+* exactly what hardware wallets and PSBT flows expect
+
+Your signer design is aligned with this.
+
+---
+
+# 9️⃣ Summary (copy/paste checklist)
+
+```bash
+# create wallet
+bitcoin-cli -testnet createwallet "testwallet"
+
+# create address
+bitcoin-cli -testnet getnewaddress "" bech32
+
+# extract expub
+bitcoin-cli -testnet listdescriptors
+```
+
+Then save:
+
+```
+[d34db33f/84h/1h/0h]tpub.../0/*
+[d34db33f/84h/1h/0h]tpub.../1/*
+```
+
+---
