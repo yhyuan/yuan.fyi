@@ -1,0 +1,458 @@
+---
+title: Using Claude Code for KiCad PCB Design A Comprehensive Tutorial
+slug: using-claude-code-for-kicad-pcb-design
+publishDate: 2026-01-17
+description: A practical guide on using Claude Code as an AI-powered design assistant for KiCad PCB design.
+date: 2026-01-17
+tags: ['KiCad', 'PCB Design', 'AI']
+draft: false
+---
+
+# Using Claude Code for KiCad PCB Design: A Comprehensive Tutorial
+
+This tutorial will walk you through leveraging Claude Code as your AI-powered design assistant throughout the entire KiCad PCB workflow—from schematic capture to manufacturing files.
+
+## 1. Setting Up Your Environment
+
+### Prerequisites
+
+Before starting, ensure you have:
+
+- **KiCad 8.x** installed (the latest stable version as of 2025)
+- **Claude Code** CLI installed and authenticated
+- A terminal with access to your project directory
+
+### Project Initialization
+
+Create a new KiCad project directory and initialize Claude Code:
+
+```bash
+mkdir ~/projects/my-pcb-project
+cd ~/projects/my-pcb-project
+kicad-cli new my-pcb-project
+claude
+```
+
+Once inside Claude Code, you can begin describing your project requirements.
+
+## 2. Understanding What Claude Code Can and Cannot Do with KiCad
+
+### What Claude Code Excels At
+
+1. **Generating and editing schematic files (.kicad_sch)** — These are S-expression text files that Claude can read and write directly
+2. **Creating and modifying PCB files (.kicad_pcb)** — Also S-expression format, fully accessible
+3. **Writing custom footprints (.kicad_mod)** and symbols (.kicad_sym)
+4. **Creating design rule check (DRC) configurations**
+5. **Generating BOM scripts and automation**
+6. **Writing KiCad Python plugins**
+7. **Explaining circuits and suggesting improvements**
+
+### Limitations to Understand
+
+- Claude cannot *see* the graphical output—it works with the underlying text representation
+- Complex routing decisions benefit from human visual review
+- You'll need to open KiCad periodically to verify the visual layout matches your intent
+
+## 3. Phase 1: Schematic Design
+
+### Describing Your Circuit to Claude
+
+Start by describing what you want to build. Be specific about:
+
+- The main IC or microcontroller
+- Power requirements (input voltage, current draw)
+- Interfaces needed (USB, SPI, I2C, UART, etc.)
+- Special features (ESD protection, filtering, indicator LEDs)
+
+**Example prompt:**
+
+```
+I'm designing a USB-C powered STM32G0 development board. Requirements:
+- STM32G071CBT6 microcontroller
+- USB-C connector for power (5V) and data (USB 2.0 Full Speed)
+- 3.3V LDO regulator (AP2112K-3.3)
+- SWD debug header
+- One user LED on PA5
+- One user button on PC13 with hardware debounce
+- 8MHz crystal oscillator
+- Decoupling caps per ST recommendations
+
+Create the schematic file for me.
+```
+
+### How Claude Generates Schematics
+
+Claude will create a `.kicad_sch` file with proper S-expression syntax. Here's what the process looks like:
+
+```
+Claude: I'll create your schematic file. Let me structure this with proper power 
+sections, the MCU with all required passives, and clearly labeled nets.
+
+[Creates my-pcb-project.kicad_sch]
+
+The schematic includes:
+- Power input section with USB-C (USB4110-GF-A) and 5V/3.3V rails
+- STM32G071CBT6 with all decoupling capacitors (100nF on each VDD, 4.7µF bulk)
+- 8MHz crystal with 20pF load capacitors (calculated for your crystal's specs)
+- SWD header (TC2030-IDC footprint compatible)
+- LED circuit with 1K current limiting resistor
+- Button with 10K pullup and 100nF debounce capacitor
+
+Open the schematic in KiCad to verify the layout and run ERC.
+```
+
+### Iterating on the Schematic
+
+After opening in KiCad, you might notice issues or want changes:
+
+```
+The ERC shows warnings about unconnected pins on the STM32. Can you:
+1. Add explicit "no connect" flags to unused GPIO pins
+2. Add a reset circuit with the standard RC delay
+3. Add power flags to the 3.3V and GND nets
+```
+
+Claude will read your current schematic, make the modifications, and explain what changed.
+
+### Creating Custom Symbols
+
+If your project uses components not in KiCad's library:
+
+```
+I need a symbol for the TPS63020 buck-boost converter. It has these pins:
+- VIN, VINA (power input)
+- VOUT (power output)
+- FB (feedback)
+- EN (enable)
+- PS/SYNC (power save/sync)
+- PG (power good)
+- L1, L2 (inductor connections)
+- GND, PGND (grounds)
+
+Create a KiCad symbol with logical pin grouping.
+```
+
+Claude generates a `.kicad_sym` file you can add to your project library.
+
+## 4. Phase 2: Footprint Creation and Assignment
+
+### Generating Custom Footprints
+
+For components without existing footprints, provide the datasheet dimensions:
+
+```
+Create a footprint for the USB4110-GF-A USB-C connector. Key dimensions from datasheet:
+- 16 pins, mid-mount through-hole
+- Pin pitch: 0.5mm for signal pins
+- Through-hole mounting posts at corners
+- Overall body: 8.94mm x 7.30mm
+- Include courtyard and silkscreen outline
+```
+
+Claude creates a `.kicad_mod` file with:
+- Accurate pad positions and sizes
+- Proper pad types (SMD vs through-hole)
+- Silkscreen outline
+- Fabrication layer markings
+- Courtyard for DRC spacing
+
+### Footprint Assignment Automation
+
+For boards with many components, Claude can help automate footprint assignment:
+
+```
+Here are my schematic components. Assign appropriate footprints:
+- 100nF capacitors: 0402 size
+- 4.7µF capacitors: 0603 size
+- 10K resistors: 0402 size
+- STM32G071CBT6: LQFP-48
+- AP2112K-3.3: SOT-23-5
+```
+
+## 5. Phase 3: PCB Layout
+
+### Board Outline and Stackup
+
+Start by defining your board parameters:
+
+```
+Create a 2-layer PCB with these specifications:
+- Board outline: 50mm x 30mm rectangle with 3mm corner radius
+- 4 mounting holes: M2.5 at 3mm inset from corners
+- 1.6mm thickness, standard FR4
+- 1oz copper both layers
+- Minimum trace/space: 0.15mm/0.15mm
+```
+
+Claude generates the board outline in your `.kicad_pcb` file.
+
+### Component Placement Strategy
+
+Describe your placement priorities:
+
+```
+Place components with this strategy:
+1. USB-C connector on the left edge, centered vertically
+2. STM32 in the center of the board
+3. Crystal and load caps within 3mm of OSC pins
+4. LDO near USB connector with input/output caps adjacent
+5. Decoupling caps as close as possible to MCU VDD pins
+6. SWD header on right edge
+7. LED and button on top edge for user access
+
+Keep analog and digital grounds separate until star point near LDO.
+```
+
+Claude will position components and explain the rationale for each placement decision.
+
+### Critical Trace Routing
+
+For traces that need careful attention:
+
+```
+Route these critical signals first:
+1. Crystal traces: keep short, parallel, with ground guard
+2. USB D+/D- differential pair: 90 ohm impedance, length matched within 0.5mm
+3. Power traces: 0.5mm minimum for 3.3V distribution
+4. Feedback trace for LDO: keep away from switching noise
+```
+
+Claude provides the trace geometry and routing suggestions. You'll want to verify differential pair impedance with KiCad's calculator.
+
+### Ground Plane Management
+
+```
+Add copper pours for ground planes:
+- Bottom layer: solid GND pour with 0.3mm thermal relief
+- Top layer: GND pour in empty areas, 0.2mm clearance to signals
+- Add via stitching around board perimeter, 5mm spacing
+- Create a ground island under the crystal, connected with single via
+```
+
+## 6. Phase 4: Design Rule Checks and Verification
+
+### Setting Up DRC Rules
+
+```
+Create a DRC rule file for JLCPCB manufacturing with these constraints:
+- Minimum trace width: 0.127mm (5mil)
+- Minimum clearance: 0.127mm
+- Minimum via drill: 0.3mm
+- Minimum via annular ring: 0.13mm
+- Minimum hole to hole: 0.5mm
+- Silkscreen minimum width: 0.15mm
+```
+
+Claude generates a `.kicad_dru` file with your specifications.
+
+### Running DRC via Command Line
+
+```
+Can you run DRC on my board and summarize any violations?
+```
+
+Claude executes:
+```bash
+kicad-cli pcb drc --output drc-report.json my-pcb-project.kicad_pcb
+```
+
+Then parses the JSON report and explains each issue with suggested fixes.
+
+## 7. Phase 5: Manufacturing Output
+
+### Generating Gerber Files
+
+```
+Generate Gerber files for JLCPCB with their recommended settings:
+- Gerber X2 format
+- Protel filename extensions
+- Include edge cuts, all copper layers, silkscreen, mask, paste
+- Drill file in Excellon format with PTH and NPTH combined
+```
+
+Claude runs the appropriate `kicad-cli` commands:
+
+```bash
+kicad-cli pcb export gerbers \
+  --output ./gerbers/ \
+  --layers "F.Cu,B.Cu,F.Paste,B.Paste,F.Silkscreen,B.Silkscreen,F.Mask,B.Mask,Edge.Cuts" \
+  my-pcb-project.kicad_pcb
+
+kicad-cli pcb export drill \
+  --output ./gerbers/ \
+  --format excellon \
+  --excellon-separate-th \
+  my-pcb-project.kicad_pcb
+```
+
+### Bill of Materials Generation
+
+```
+Generate a BOM in CSV format with columns:
+- Reference designators (grouped)
+- Value
+- Footprint
+- Quantity
+- LCSC part number (if in symbol fields)
+```
+
+Claude can write a Python script that extracts this from your schematic or use KiCad's built-in BOM export.
+
+### Pick and Place File
+
+For assembly services:
+
+```
+Generate a pick and place file in JLCPCB format with:
+- Designator, Mid X, Mid Y, Layer, Rotation
+- Coordinates in millimeters
+- Origin at board center (or specify corner)
+```
+
+## 8. Advanced Workflows
+
+### Creating KiCad Python Plugins
+
+If you need automation that runs inside KiCad:
+
+```
+Write a KiCad action plugin that:
+1. Selects all 100nF capacitors
+2. Aligns them to a grid
+3. Rotates them to face their associated IC pin
+```
+
+Claude creates a Python plugin file you can install in KiCad's plugin directory.
+
+### Parametric Footprint Generation
+
+For component families:
+
+```
+Create a Python script that generates QFP footprints with parameters:
+- Pin count (32, 48, 64, 100)
+- Pin pitch (0.4, 0.5, 0.65, 0.8mm)
+- Body size (derived from pin count and pitch)
+- Thermal pad option
+```
+
+### Design Reuse
+
+For hierarchical designs:
+
+```
+I want to reuse my power supply circuit in multiple projects. 
+Extract the LDO section (U2 and associated components) into a 
+hierarchical sheet I can import elsewhere.
+```
+
+## 9. Practical Tips for Effective Collaboration
+
+### Be Specific About Coordinates
+
+KiCad uses millimeters with origin typically at top-left. When asking for placement:
+
+```
+Move C1 to position (25.5, 12.3) and rotate 90 degrees
+```
+
+### Request Explanations
+
+Claude can teach while designing:
+
+```
+Why did you choose 20pF load capacitors for the crystal? 
+Walk me through the calculation.
+```
+
+### Incremental Changes
+
+For complex boards, work iteratively:
+
+```
+Let's focus just on the power section first. Once we verify that works,
+we'll move to the MCU section.
+```
+
+### Version Control Integration
+
+Keep your designs under git:
+
+```
+Initialize this as a git repo and create a .gitignore appropriate 
+for KiCad projects. Commit after each major milestone.
+```
+
+### Cross-Reference Datasheets
+
+When Claude makes recommendations, verify against datasheets:
+
+```
+You suggested a 10µF input cap for the LDO. The datasheet shows a 
+stability curve—what's the minimum for stable operation across temperature?
+```
+
+## 10. Example Session Transcript
+
+Here's what a real workflow might look like:
+
+```
+You: I need to add a QSPI flash chip (W25Q128JVSIQ) to my STM32 design for 
+     storing firmware updates. Show me what needs to change.
+
+Claude: I'll add the W25Q128JVSIQ to your schematic. This is an 8-pin SOIC 
+        flash chip that connects to the STM32G071's QSPI peripheral.
+
+        Changes I'm making:
+        1. Adding U3 (W25Q128JVSIQ) with these connections:
+           - /CS → PB6 (QSPI_NCS)
+           - CLK → PB10 (QSPI_CLK)  
+           - DIO0 → PB9 (QSPI_IO0)
+           - DIO1 → PB8 (QSPI_IO1)
+           - DIO2 → PB7 (QSPI_IO2)
+           - DIO3 → PA1 (QSPI_IO3)
+           - VCC → 3.3V with 100nF decoupling
+           - GND → GND
+
+        2. Adding 33Ω series resistors on all data lines for signal integrity
+
+        3. Adding 10K pullup on /CS to keep flash deselected during boot
+
+        [Updates my-pcb-project.kicad_sch]
+
+        For the PCB layout, I recommend placing the flash chip within 15mm of 
+        the MCU and keeping all QSPI traces similar length (within 5mm) to 
+        support higher clock speeds. Want me to update the layout?
+
+You: Yes, place it and route the traces. Match lengths to within 2mm.
+
+Claude: [Updates my-pcb-project.kicad_pcb]
+        
+        Placed W25Q128 at (38.5, 15.2), 8mm from the MCU. Routed QSPI bus with:
+        - CLK: 12.3mm
+        - DIO0: 11.8mm  
+        - DIO1: 12.1mm
+        - DIO2: 11.9mm
+        - DIO3: 12.4mm
+        
+        All within your 2mm tolerance. Series resistors placed inline, 
+        directly adjacent to MCU pins. Added ground via stitching around 
+        the high-speed traces.
+
+        Open in KiCad to verify—you may want to adjust the silkscreen 
+        position for the new components.
+```
+
+---
+
+## Summary
+
+Claude Code transforms KiCad from a manual design tool into a conversational design environment. The key workflow is:
+
+1. **Describe** your requirements in natural language
+2. **Generate** schematic and PCB files programmatically
+3. **Review** in KiCad's GUI to verify visually
+4. **Iterate** by describing needed changes
+5. **Export** manufacturing files with proper settings
+
+This approach is particularly powerful for embedded systems work where you can leverage your firmware knowledge—describe what the hardware needs to *do*, and Claude helps translate that into the physical design.
