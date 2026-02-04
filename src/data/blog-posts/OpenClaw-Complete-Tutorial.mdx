@@ -1,0 +1,1128 @@
+---
+title: OpenClaw Complete Tutorial
+slug: openclaw-complete-tutorial
+publishDate: 2025-11-27
+description: A Comprehensive Guide to Your Personal AI Assistant
+date: 2025-11-27
+tags: ['TD4 4-bit CPU']
+draft: false
+---
+
+## Table of Contents
+
+1. [What is OpenClaw?](#what-is-openclaw)
+2. [Prerequisites](#prerequisites)
+3. [Installation Methods](#installation-methods)
+4. [Initial Setup & Onboarding](#initial-setup--onboarding)
+5. [Connecting Chat Channels](#connecting-chat-channels)
+6. [Model Configuration](#model-configuration)
+7. [Core Concepts](#core-concepts)
+8. [Working with Skills](#working-with-skills)
+9. [Security Best Practices](#security-best-practices)
+10. [Advanced Configuration](#advanced-configuration)
+11. [Troubleshooting](#troubleshooting)
+12. [Use Cases & Examples](#use-cases--examples)
+
+---
+
+## What is OpenClaw?
+
+OpenClaw (formerly known as Clawdbot, then Moltbot) is an open-source, self-hosted AI personal assistant that runs locally on your devices. Created by Peter Steinberger, it has rapidly become one of the fastest-growing GitHub projects, surpassing 100,000 stars within two months of release.
+
+### Key Features
+
+- **Local-first architecture**: Your data stays on your machine, not in a cloud service
+- **Multi-channel support**: Communicate via WhatsApp, Telegram, Discord, Slack, Signal, iMessage, Microsoft Teams, Google Chat, and WebChat
+- **Persistent memory**: Remembers context across conversations 24/7
+- **Browser control**: Can browse the web, fill forms, and extract data
+- **Full system access**: Read/write files, execute shell commands, run scripts
+- **Skills & plugins**: Extensible with community skills or custom-built ones
+- **Multi-model support**: Works with Anthropic Claude, OpenAI, and local models
+- **Voice capabilities**: Voice Wake + Talk Mode on macOS/iOS/Android
+
+### How It Works
+
+```
+WhatsApp / Telegram / Slack / Discord / etc.
+               │
+               ▼
+┌───────────────────────────────┐
+│            Gateway            │
+│       (control plane)         │
+│     ws://127.0.0.1:18789      │
+└──────────────┬────────────────┘
+               │
+               ├─ Pi agent (RPC)
+               ├─ CLI (openclaw …)
+               ├─ WebChat UI
+               ├─ macOS app
+               └─ iOS / Android nodes
+```
+
+---
+
+## Prerequisites
+
+### System Requirements
+
+| Requirement | Specification |
+|-------------|---------------|
+| Node.js | Version 22 or higher (required) |
+| Operating System | macOS, Linux, or Windows (via WSL2) |
+| RAM | 4GB minimum, 8GB+ recommended |
+| Storage | 1GB for installation + space for workspace |
+
+### Optional but Recommended
+
+- **pnpm**: For building from source (faster than npm)
+- **Brave Search API key**: For web search capabilities
+- **Model subscription**: Anthropic Claude Pro/Max or OpenAI API key
+
+### Windows-Specific Setup
+
+If you're on Windows, you **must** use WSL2 (Windows Subsystem for Linux):
+
+```powershell
+# Install WSL2 with Ubuntu
+wsl --install -d Ubuntu
+
+# Once installed, open Ubuntu terminal and follow Linux instructions
+```
+
+---
+
+## Installation Methods
+
+### Method 1: One-Line Installer (Recommended)
+
+The simplest way to get started:
+
+**macOS / Linux:**
+```bash
+curl -fsSL https://openclaw.ai/install.sh | bash
+```
+
+**Windows (PowerShell):**
+```powershell
+iwr -useb https://openclaw.ai/install.ps1 | iex
+```
+
+This installer handles everything: Node.js installation, dependencies, and initial setup.
+
+### Method 2: npm/pnpm Global Install
+
+If you already have Node.js 22+:
+
+```bash
+# Using npm
+npm install -g openclaw@latest
+
+# Using pnpm (recommended)
+pnpm add -g openclaw@latest
+```
+
+### Method 3: From Source (For Development)
+
+For those who want to hack on OpenClaw or need the latest development features:
+
+```bash
+# Clone the repository
+git clone https://github.com/openclaw/openclaw.git
+cd openclaw
+
+# Install dependencies
+pnpm install
+
+# Build UI assets
+pnpm ui:build
+
+# Build the project
+pnpm build
+
+# Run onboarding
+pnpm openclaw onboard --install-daemon
+```
+
+### Method 4: Docker
+
+For isolated, containerized deployment:
+
+```bash
+# Using docker-compose
+docker-compose up -d
+
+# Or pull and run directly
+docker pull openclaw/openclaw:latest
+docker run -d -p 18789:18789 openclaw/openclaw:latest
+```
+
+### Method 5: Cloud Deployment
+
+OpenClaw can be deployed on various cloud platforms:
+
+- **DigitalOcean**: One-click deploy available
+- **Railway**: `railway up` with provided config
+- **Render**: Use `render.yaml` configuration
+- **Fly.io**: Deploy using `fly.toml`
+- **Hetzner**: Manual VPS setup
+
+---
+
+## Initial Setup & Onboarding
+
+### Step 1: Run the Onboarding Wizard
+
+The onboarding wizard is the recommended way to configure OpenClaw:
+
+```bash
+openclaw onboard --install-daemon
+```
+
+The `--install-daemon` flag installs a background service (launchd on macOS, systemd on Linux) so OpenClaw runs automatically.
+
+### Step 2: Configure During Onboarding
+
+The wizard will guide you through:
+
+1. **Gateway Mode**: Local vs Remote
+   - Local: Runs on your current machine
+   - Remote: Connects to a remote OpenClaw instance
+
+2. **Authentication**: Choose your AI provider
+   - **OAuth (Recommended)**: Use existing Claude Pro/Max subscription
+   - **API Keys**: Direct API access with Anthropic or OpenAI keys
+
+3. **Channels**: Connect messaging platforms
+   - WhatsApp (QR code login)
+   - Telegram (bot token)
+   - Discord (bot token)
+   - Slack (app + bot tokens)
+   - Others as needed
+
+4. **Pairing Settings**: DM security policy
+   - `pairing` (default): Unknown senders get a code to approve
+   - `open`: Allow all DMs (not recommended)
+
+5. **Skills**: Initial skill configuration
+   - Select package manager (npm/pnpm)
+   - Enable default skills
+
+### Step 3: Verify Installation
+
+After onboarding, verify everything works:
+
+```bash
+# Check gateway status
+openclaw gateway status
+
+# Run health check
+openclaw health
+
+# Security audit
+openclaw security audit --deep
+
+# Full status report
+openclaw status --all
+```
+
+### Step 4: Access the Dashboard
+
+Open your browser to: `http://127.0.0.1:18789/`
+
+This provides a web interface for:
+- Chatting with your assistant (WebChat)
+- Viewing session status
+- Managing configuration
+- Monitoring health
+
+---
+
+## Connecting Chat Channels
+
+### WhatsApp Setup
+
+WhatsApp uses QR code pairing (similar to WhatsApp Web):
+
+```bash
+# Start the login process
+openclaw channels login
+
+# Or specifically for WhatsApp
+openclaw configure --section channels.whatsapp
+```
+
+1. A QR code will display in terminal
+2. Open WhatsApp on your phone
+3. Go to Settings → Linked Devices
+4. Scan the QR code
+
+**Configuration in `openclaw.json`:**
+```json
+{
+  "channels": {
+    "whatsapp": {
+      "allowFrom": ["+1234567890"],
+      "groups": ["*"]
+    }
+  }
+}
+```
+
+### Telegram Setup
+
+1. Create a bot via [@BotFather](https://t.me/botfather):
+   - Send `/newbot`
+   - Follow prompts to name your bot
+   - Copy the API token
+
+2. Configure OpenClaw:
+```bash
+openclaw configure --section channels.telegram
+```
+
+**Or manually in `openclaw.json`:**
+```json
+{
+  "channels": {
+    "telegram": {
+      "botToken": "123456:ABCDEF...",
+      "allowFrom": ["your_username"]
+    }
+  }
+}
+```
+
+3. Start chatting with your bot on Telegram. First message triggers pairing.
+
+### Discord Setup
+
+1. Create a Discord Application at https://discord.com/developers/applications
+2. Create a Bot and copy the token
+3. Enable required intents (Message Content, Presence, Server Members)
+4. Generate invite URL with bot + applications.commands scopes
+
+**Configuration:**
+```json
+{
+  "channels": {
+    "discord": {
+      "token": "your_bot_token",
+      "dm": {
+        "policy": "pairing",
+        "allowFrom": []
+      }
+    }
+  }
+}
+```
+
+### Slack Setup
+
+1. Create a Slack App at https://api.slack.com/apps
+2. Enable Socket Mode
+3. Add required OAuth scopes
+4. Install to workspace
+
+**Configuration:**
+```json
+{
+  "channels": {
+    "slack": {
+      "botToken": "xoxb-...",
+      "appToken": "xapp-...",
+      "dm": {
+        "policy": "pairing"
+      }
+    }
+  }
+}
+```
+
+### Signal Setup
+
+Signal requires `signal-cli` to be installed:
+
+```bash
+# Install signal-cli (varies by OS)
+# Then configure
+openclaw configure --section channels.signal
+```
+
+### iMessage Setup (macOS Only)
+
+iMessage integration requires macOS with Messages app signed in:
+
+```json
+{
+  "channels": {
+    "imessage": {
+      "allowFrom": ["+1234567890"],
+      "groups": ["*"]
+    }
+  }
+}
+```
+
+---
+
+## Model Configuration
+
+### Recommended: Anthropic Claude
+
+For best results, use Anthropic Claude (Opus 4.5 recommended for complex tasks):
+
+```json
+{
+  "agent": {
+    "model": "anthropic/claude-opus-4-5"
+  }
+}
+```
+
+**Available Claude models:**
+- `anthropic/claude-opus-4-5` - Most capable, best for complex tasks
+- `anthropic/claude-sonnet-4-5` - Balanced performance
+- `anthropic/claude-haiku-4-5` - Fastest, most economical
+
+### OpenAI Configuration
+
+```json
+{
+  "agent": {
+    "model": "openai/gpt-4"
+  }
+}
+```
+
+### Using OAuth (Subscription Auth)
+
+If you have a Claude Pro/Max subscription:
+
+```bash
+# During onboarding, select OAuth
+openclaw onboard
+
+# Or configure manually
+openclaw configure --section auth
+```
+
+OAuth credentials are stored in `~/.openclaw/credentials/oauth.json`
+
+### API Key Authentication
+
+For direct API access:
+
+```bash
+# Set environment variable
+export ANTHROPIC_API_KEY="sk-..."
+
+# Or in openclaw.json
+{
+  "auth": {
+    "anthropic": {
+      "apiKey": "sk-..."
+    }
+  }
+}
+```
+
+### Model Failover
+
+Configure backup models for reliability:
+
+```json
+{
+  "agent": {
+    "model": "anthropic/claude-opus-4-5",
+    "fallback": ["anthropic/claude-sonnet-4-5", "openai/gpt-4"]
+  }
+}
+```
+
+### Local Models
+
+OpenClaw supports local LLMs via Ollama or LM Studio:
+
+```json
+{
+  "agent": {
+    "model": "local/llama3",
+    "localProvider": {
+      "url": "http://localhost:11434"
+    }
+  }
+}
+```
+
+---
+
+## Core Concepts
+
+### Sessions
+
+Sessions are isolated conversation contexts. Each chat (DM or group) gets its own session.
+
+- **main**: Your primary direct chat session (full access by default)
+- **group sessions**: Isolated per group (can be sandboxed)
+
+**Session commands:**
+```bash
+# List active sessions
+openclaw sessions list
+
+# View session history
+openclaw sessions history <session-id>
+
+# Clear a session
+openclaw reset
+```
+
+### Memory
+
+OpenClaw maintains persistent memory across conversations:
+
+- **Workspace files**: `~/.openclaw/workspace/`
+- **Session context**: Persists between restarts
+- **User preferences**: Learned from interactions
+
+### The Gateway
+
+The Gateway is the central control plane that manages:
+- WebSocket connections
+- Session routing
+- Tool execution
+- Channel integration
+
+**Gateway commands:**
+```bash
+# Start gateway
+openclaw gateway --port 18789 --verbose
+
+# Check status
+openclaw gateway status
+
+# Restart
+openclaw gateway restart
+```
+
+### Agent Workspace
+
+Your agent's working directory at `~/.openclaw/workspace/`:
+
+```
+~/.openclaw/workspace/
+├── AGENTS.md      # Agent behavior instructions
+├── SOUL.md        # Personality/identity
+├── TOOLS.md       # Available tools documentation
+└── skills/        # Custom skills
+```
+
+### Chat Commands
+
+Use these in any connected chat:
+
+| Command | Description |
+|---------|-------------|
+| `/status` | Show session status |
+| `/new` or `/reset` | Reset the session |
+| `/compact` | Compact session context |
+| `/think <level>` | Set thinking level (off/minimal/low/medium/high/xhigh) |
+| `/verbose on\|off` | Toggle verbose output |
+| `/usage off\|tokens\|full` | Set usage display |
+| `/restart` | Restart gateway (owner only) |
+| `/activation mention\|always` | Group activation mode |
+
+---
+
+## Working with Skills
+
+Skills extend OpenClaw's capabilities. They're folders containing a `SKILL.md` file with instructions.
+
+### Skill Locations (Precedence Order)
+
+1. **Workspace skills**: `~/.openclaw/workspace/skills/` (highest)
+2. **Managed skills**: `~/.openclaw/skills/`
+3. **Bundled skills**: Included with OpenClaw (lowest)
+
+### Viewing Available Skills
+
+```bash
+# List all skills
+openclaw skills list
+
+# View skill details
+openclaw skills info <skill-name>
+```
+
+### Installing Skills from ClawHub
+
+ClawHub is the community skill marketplace:
+
+```bash
+# Search for skills
+openclaw skills search "web scraping"
+
+# Install a skill
+openclaw skills install <skill-name>
+```
+
+**Warning**: Always review skills before installing. Malicious skills have been reported on ClawHub.
+
+### Creating Custom Skills
+
+1. Create the skill folder:
+```bash
+mkdir -p ~/.openclaw/workspace/skills/my-skill
+```
+
+2. Create `SKILL.md` with YAML frontmatter:
+
+```markdown
+---
+name: my-custom-skill
+description: A custom skill that does something useful
+metadata:
+  openclaw:
+    requires:
+      bins: ["curl"]  # Required binaries
+      env: ["MY_API_KEY"]  # Required environment variables
+    primaryEnv: "MY_API_KEY"
+---
+
+# My Custom Skill
+
+## Overview
+This skill allows the agent to...
+
+## Usage
+When the user asks to [do something], use this approach:
+
+1. First, check if...
+2. Then, execute...
+3. Finally, return...
+
+## Examples
+
+### Example 1
+User: "Do the thing"
+Action: Execute `curl https://api.example.com/...`
+```
+
+3. Enable the skill in `openclaw.json`:
+```json
+{
+  "skills": {
+    "entries": {
+      "my-custom-skill": {
+        "enabled": true,
+        "env": {
+          "MY_API_KEY": "your-api-key"
+        }
+      }
+    }
+  }
+}
+```
+
+### Skill Frontmatter Options
+
+```yaml
+---
+name: skill-name
+description: What it does
+metadata:
+  openclaw:
+    requires:
+      bins: ["binary1", "binary2"]  # Required executables
+      env: ["VAR1", "VAR2"]          # Required env vars
+      config: ["browser.enabled"]    # Required config paths
+    primaryEnv: "MAIN_API_KEY"       # Primary API key variable
+    os: ["darwin", "linux"]          # OS restrictions
+    install:                         # macOS Skills UI installers
+      - type: brew
+        package: tool-name
+---
+```
+
+---
+
+## Security Best Practices
+
+### Critical Security Considerations
+
+OpenClaw is a powerful tool that can have **full system access**. Security researchers have raised significant concerns about:
+
+- **Prompt injection risks**: Malicious inputs can manipulate the agent
+- **Credential exposure**: API keys and tokens stored locally
+- **System access**: Shell commands, file access, browser control
+- **Network exposure**: When exposing the gateway externally
+
+### DM Pairing (Essential)
+
+**Always use pairing mode** for DMs:
+
+```json
+{
+  "channels": {
+    "whatsapp": {
+      "dmPolicy": "pairing"
+    },
+    "telegram": {
+      "dmPolicy": "pairing"
+    }
+  }
+}
+```
+
+When someone messages your bot:
+1. They receive a pairing code
+2. You must approve: `openclaw pairing approve <channel> <code>`
+3. Only then can they interact
+
+### Sandbox Mode for Groups
+
+Run group/channel sessions in Docker sandboxes:
+
+```json
+{
+  "agents": {
+    "defaults": {
+      "sandbox": {
+        "mode": "non-main"
+      }
+    }
+  }
+}
+```
+
+This isolates non-main sessions in containers with restricted access.
+
+### Network Security
+
+**Never expose the gateway directly to the internet.** Use:
+
+1. **Tailscale** (recommended):
+```json
+{
+  "gateway": {
+    "tailscale": {
+      "mode": "serve"  // tailnet-only
+    }
+  }
+}
+```
+
+2. **SSH tunnels**:
+```bash
+ssh -L 18789:localhost:18789 user@remote-host
+```
+
+### Credential Management
+
+- Store sensitive data in environment variables, not config files
+- Use `~/.openclaw/credentials/` for OAuth tokens (auto-managed)
+- Never commit `openclaw.json` with API keys to version control
+
+### Security Audit
+
+Run regular security checks:
+
+```bash
+openclaw security audit --deep
+```
+
+This checks for:
+- Misconfigured DM policies
+- Exposed credentials
+- Risky tool configurations
+
+### Recommended Deployment
+
+For maximum security, run OpenClaw on a **dedicated machine or VPS**, not your personal computer:
+
+1. Use a cloud VPS (DigitalOcean, Hetzner, etc.)
+2. Run in Docker with isolation
+3. Access via Tailscale or SSH tunnel
+4. Keep minimal tools enabled
+
+---
+
+## Advanced Configuration
+
+### Full Configuration File
+
+Location: `~/.openclaw/openclaw.json`
+
+```json
+{
+  "agent": {
+    "model": "anthropic/claude-opus-4-5",
+    "thinking": "medium"
+  },
+
+  "gateway": {
+    "port": 18789,
+    "bind": "loopback",
+    "auth": {
+      "mode": "token",
+      "token": "your-secure-token"
+    }
+  },
+
+  "channels": {
+    "whatsapp": {
+      "enabled": true,
+      "allowFrom": ["+1234567890"],
+      "dmPolicy": "pairing"
+    },
+    "telegram": {
+      "enabled": true,
+      "botToken": "...",
+      "dmPolicy": "pairing"
+    }
+  },
+
+  "tools": {
+    "web": {
+      "search": {
+        "apiKey": "your-brave-api-key"
+      }
+    },
+    "browser": {
+      "enabled": true
+    }
+  },
+
+  "skills": {
+    "install": {
+      "nodeManager": "pnpm"
+    },
+    "entries": {
+      "browser": { "enabled": true },
+      "web-search": { "enabled": true }
+    }
+  },
+
+  "agents": {
+    "defaults": {
+      "workspace": "~/.openclaw/workspace",
+      "sandbox": {
+        "mode": "non-main"
+      }
+    }
+  }
+}
+```
+
+### Multi-Agent Routing
+
+Route different channels/accounts to separate agents:
+
+```json
+{
+  "routing": {
+    "agents": {
+      "main": {
+        "workspace": "~/.openclaw/workspace/main",
+        "sandbox": { "mode": "off" }
+      },
+      "work": {
+        "workspace": "~/.openclaw/workspace/work",
+        "sandbox": { "mode": "always" }
+      }
+    },
+    "rules": [
+      {
+        "channel": "slack",
+        "workspace": "company-name",
+        "agent": "work"
+      }
+    ]
+  }
+}
+```
+
+### Cron Jobs & Automation
+
+Schedule recurring tasks:
+
+```json
+{
+  "cron": {
+    "jobs": [
+      {
+        "name": "morning-briefing",
+        "schedule": "0 8 * * *",
+        "message": "Give me my morning briefing",
+        "channel": "telegram"
+      }
+    ]
+  }
+}
+```
+
+### Webhooks
+
+Receive external triggers:
+
+```json
+{
+  "webhooks": {
+    "enabled": true,
+    "secret": "your-webhook-secret",
+    "endpoints": [
+      {
+        "path": "/github",
+        "action": "notify",
+        "channel": "discord"
+      }
+    ]
+  }
+}
+```
+
+### Browser Control
+
+Enable and configure browser automation:
+
+```json
+{
+  "browser": {
+    "enabled": true,
+    "headless": true,
+    "color": "#FF4500",
+    "profiles": {
+      "default": {
+        "cookies": true
+      }
+    }
+  }
+}
+```
+
+### Remote Gateway Access
+
+For accessing your gateway from mobile or remote locations:
+
+1. **Via Tailscale Serve** (recommended):
+```json
+{
+  "gateway": {
+    "bind": "loopback",
+    "tailscale": {
+      "mode": "serve"
+    }
+  }
+}
+```
+
+2. **Via Tailscale Funnel** (public access):
+```json
+{
+  "gateway": {
+    "bind": "loopback",
+    "auth": {
+      "mode": "password",
+      "password": "your-strong-password"
+    },
+    "tailscale": {
+      "mode": "funnel"
+    }
+  }
+}
+```
+
+---
+
+## Troubleshooting
+
+### Common Issues
+
+#### "No auth configured"
+
+```bash
+# Check auth status
+openclaw health
+
+# Reconfigure auth
+openclaw configure --section auth
+```
+
+#### Gateway won't start
+
+```bash
+# Check if port is in use
+lsof -i :18789
+
+# Kill existing process
+openclaw gateway stop
+
+# Start with verbose logging
+openclaw gateway --verbose
+```
+
+#### WhatsApp disconnected
+
+```bash
+# Re-authenticate
+openclaw channels login whatsapp
+
+# Check status
+openclaw channels status
+```
+
+#### Skills not loading
+
+```bash
+# List loaded skills
+openclaw skills list
+
+# Check skill eligibility
+openclaw doctor
+
+# Verify skill format
+cat ~/.openclaw/workspace/skills/my-skill/SKILL.md
+```
+
+#### Messages not being processed
+
+Check pairing status:
+```bash
+# List pending pairings
+openclaw pairing list
+
+# Approve a pairing
+openclaw pairing approve <channel> <code>
+```
+
+### Diagnostic Commands
+
+```bash
+# Full system status
+openclaw status --all
+
+# Health check
+openclaw health
+
+# Run diagnostics
+openclaw doctor
+
+# View logs
+openclaw logs --follow
+
+# Security audit
+openclaw security audit --deep
+```
+
+### Getting Help
+
+1. **Documentation**: https://docs.openclaw.ai
+2. **Discord Community**: https://discord.gg/clawd
+3. **GitHub Issues**: https://github.com/openclaw/openclaw/issues
+4. **FAQ**: https://docs.openclaw.ai/help/faq
+
+---
+
+## Use Cases & Examples
+
+### Personal Assistant
+
+Basic daily assistance:
+- "What's on my calendar today?"
+- "Remind me to call mom at 5pm"
+- "Draft an email to my team about the project update"
+
+### Development Helper
+
+Code and development tasks:
+- "Review this PR and suggest improvements"
+- "Run the tests and fix any failures"
+- "Set up a new React project with TypeScript"
+
+### Research Assistant
+
+Information gathering:
+- "Research the latest developments in AI safety"
+- "Summarize this PDF and highlight key points"
+- "Compare these three products and make a recommendation"
+
+### Home Automation
+
+Smart home integration (with appropriate skills):
+- "Turn on the living room lights"
+- "Set the thermostat to 72°F"
+- "Check the air quality in my office"
+
+### Content Creation
+
+Creative and content tasks:
+- "Write a blog post about productivity tips"
+- "Create a social media schedule for this week"
+- "Generate images for my presentation"
+
+### Example Conversation Flow
+
+```
+You: Hey, can you check my emails and summarize what needs attention?
+
+OpenClaw: I'll check your inbox now.
+
+[Agent accesses Gmail via skill]
+
+OpenClaw: Here's your email summary:
+
+📧 **Urgent (2)**
+- Client proposal deadline tomorrow - John Smith
+- Server alert needs review - IT Team
+
+📬 **Action Required (3)**
+- Meeting reschedule request - Sarah
+- Invoice approval needed - Finance
+- Document review - Legal
+
+📌 **FYI (5)**
+- Newsletter, team updates, etc.
+
+Would you like me to draft responses to any of these?
+
+You: Draft a response to John about the proposal
+
+OpenClaw: Here's a draft response:
+
+"Hi John,
+
+Thanks for the reminder about the proposal deadline. I'll have it
+completed and sent over by end of day tomorrow.
+
+If you need any preliminary information before then, please let me know.
+
+Best regards"
+
+Should I send this or would you like to modify it?
+```
+
+---
+
+## Conclusion
+
+OpenClaw represents a significant step forward in personal AI assistants—running locally, respecting privacy, and offering unprecedented control over your AI interactions. While powerful, it requires careful security consideration.
+
+**Key Takeaways:**
+
+1. Always use the onboarding wizard for initial setup
+2. Enable DM pairing to prevent unauthorized access
+3. Consider sandboxing for group sessions
+4. Run on a dedicated machine for maximum security
+5. Regularly update and audit your installation
+
+**Resources:**
+
+- Website: https://openclaw.ai
+- Documentation: https://docs.openclaw.ai
+- GitHub: https://github.com/openclaw/openclaw
+- Discord: https://discord.gg/clawd
+- ClawHub (Skills): https://clawhub.com
+
+---
+
+*This tutorial covers OpenClaw as of February 2026. The project is rapidly evolving—always check the official documentation for the latest information.*
