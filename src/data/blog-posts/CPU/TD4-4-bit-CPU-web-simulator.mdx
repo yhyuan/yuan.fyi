@@ -1,0 +1,1027 @@
+---
+title: TD4 4-Bit CPU Web Simulator — Design Document
+slug: td4-4-bit-cpu-a-complete-deep-dive-tutorial
+publishDate: 2025-11-27
+description: TD4 4-Bit CPU Web Simulator — Design Document
+date: 2026-02-28
+tags: ['TD4 4-bit CPU']
+draft: false
+---
+# TD4 4-Bit CPU Web Simulator — Design Document
+
+## 1. Project Overview
+
+### 1.1 Vision
+
+Build an interactive, visual web application that simulates the TD4 4-bit CPU at the hardware level. The simulator should make the invisible visible — showing data flowing through wires, registers latching values, the ALU computing, and control signals activating — so that a student (or a 13-year-old building the physical CPU) can develop deep intuition for how a CPU actually works.
+
+This is NOT just a register-dump text simulator. It is a **visual, animated, interactive hardware simulator** that mirrors the physical TD4 PCB.
+
+### 1.2 Goals
+
+1. **Educational clarity**: Every clock cycle should be visually traceable — where data comes from, how it flows, and where it goes
+2. **Hardware-accurate**: Simulate the actual 74HC-series ICs (161, 153, 283, 74, 540, 10), not an abstracted CPU model
+3. **Interactive**: Users can write programs, set inputs, step through execution, and observe all internal state
+4. **Beautiful**: A polished, memorable UI that makes learning feel exciting — inspired by visual6502.org and Ben Eater's style but modernized
+5. **Companion tool**: Designed to be used alongside the physical TD4 kit
+
+### 1.3 Tech Stack
+
+- **Framework**: React 18+ with TypeScript
+- **Styling**: Tailwind CSS
+- **State Management**: Zustand (lightweight, perfect for this)
+- **Animation**: Framer Motion (for data flow animations)
+- **Diagrams/Wiring**: SVG (inline, for the circuit schematic view)
+- **Code Editor**: CodeMirror 6 (for the assembler editor)
+- **Build Tool**: Vite
+- **Testing**: Vitest + React Testing Library
+
+---
+
+## 2. TD4 Architecture Reference
+
+### 2.1 Register Set
+
+| Register | Width | Description |
+|----------|-------|-------------|
+| `A` | 4-bit | General purpose register A |
+| `B` | 4-bit | General purpose register B |
+| `OUT` | 4-bit | Output register (drives LEDs) |
+| `PC` | 4-bit | Program Counter (0–15) |
+| `CF` | 1-bit | Carry Flag |
+
+### 2.2 Memory
+
+- **ROM**: 16 × 8-bit (16 instructions, each 8 bits)
+- **No RAM** — pure Harvard-ish stored-program with read-only program memory
+
+### 2.3 Instruction Format
+
+```
+Bit:  7    6    5    4    3    2    1    0
+    [OP3][OP2][OP1][OP0][IM3][IM2][IM1][IM0]
+     └── OPCODE ──┘     └── IMMEDIATE ──┘
+```
+
+**OPCODE decoding** (the key insight — bits ARE control signals):
+- `OP1:OP0` → MUX select (source): `00`=A, `01`=B, `10`=IN port, `11`=zero constant
+- `OP3:OP2` → Destination select: `00`=A, `01`=B, `10`=OUT, `11`=PC
+
+### 2.4 Complete Instruction Set
+
+| Opcode (bin) | Hex | Mnemonic | Operation | Description |
+|-------------|-----|----------|-----------|-------------|
+| `0000` | `0` | `ADD A, Im` | A ← A + Im | Add immediate to A |
+| `0001` | `1` | `MOV A, B` | A ← B + Im | Copy B to A (+ optional Im) |
+| `0010` | `2` | `IN A` | A ← IN + Im | Read input to A (+ optional Im) |
+| `0011` | `3` | `MOV A, Im` | A ← 0 + Im | Load immediate to A |
+| `0100` | `4` | `MOV B, A` | B ← A + Im | Copy A to B (+ optional Im) |
+| `0101` | `5` | `ADD B, Im` | B ← B + Im | Add immediate to B |
+| `0110` | `6` | `IN B` | B ← IN + Im | Read input to B (+ optional Im) |
+| `0111` | `7` | `MOV B, Im` | B ← 0 + Im | Load immediate to B |
+| `1000` | `8` | (unused) | — | Reserved |
+| `1001` | `9` | `OUT B` | OUT ← B + Im | Output B (+ optional Im) |
+| `1010` | `A` | (unused) | — | Reserved |
+| `1011` | `B` | `OUT Im` | OUT ← 0 + Im | Output immediate |
+| `1100` | `C` | (unused) | — | Reserved |
+| `1101` | `D` | (unused) | — | Reserved |
+| `1110` | `E` | `JNC Im` | if CF=0: PC←Im | Jump if no carry |
+| `1111` | `F` | `JMP Im` | PC ← Im | Unconditional jump |
+
+**Critical undocumented behavior**: ALL instructions always add the immediate value through the ALU. For example, `MOV A, B` is actually `A ← B + Im`. When Im=0 it behaves as a pure copy, but non-zero Im values create "hidden" add operations. The simulator MUST implement this accurately — it's how the hardware actually works.
+
+### 2.5 Execution Model
+
+**Single-cycle execution** — on each rising clock edge:
+1. ROM outputs the instruction at address `PC`
+2. Opcode bits configure the MUX (source select) and destination decoder
+3. MUX selects one of: A, B, IN, or zero
+4. ALU (74HC283 adder) computes: `result = MUX_output + Immediate`
+5. Carry flag is captured from ALU carry-out
+6. Result is loaded into the destination register (A, B, OUT, or PC)
+7. If destination ≠ PC, PC increments by 1 (wraps 15→0)
+8. If destination = PC AND (opcode=JMP OR (opcode=JNC AND CF=0)), PC loads the immediate value instead
+
+### 2.6 Hardware Components (74HC ICs)
+
+| IC | Part | Qty | Role in TD4 |
+|----|------|-----|-------------|
+| 74HC161 | 4-bit sync counter | 2 | PC register (counts + parallel load for JMP) |
+| 74HC153 | Dual 4:1 MUX | 2 | Source selector (4-bit wide, selects A/B/IN/0) |
+| 74HC283 | 4-bit adder | 1 | The entire ALU |
+| 74HC74 | Dual D flip-flop | 2 | Registers A, B, OUT + Carry flag storage |
+| 74HC540 | Octal buffer | 1 | Output port driver |
+| 74HC10 | Triple 3-NAND | 1 | Instruction decoder logic |
+
+---
+
+## 3. Application Architecture
+
+### 3.1 High-Level Structure
+
+```
+src/
+├── main.tsx                      # Entry point
+├── App.tsx                       # Root layout
+├── stores/
+│   └── cpuStore.ts               # Zustand store — ALL CPU state lives here
+├── core/
+│   ├── cpu.ts                    # Pure CPU simulation logic (no UI)
+│   ├── assembler.ts              # Assembler: text → ROM bytes
+│   ├── disassembler.ts           # Disassembler: ROM byte → mnemonic string
+│   └── types.ts                  # Type definitions
+├── components/
+│   ├── layout/
+│   │   ├── MainLayout.tsx        # Top-level 3-panel layout
+│   │   ├── Toolbar.tsx           # Play/Pause/Step/Reset/Speed controls
+│   │   └── TabBar.tsx            # Switch between views
+│   ├── schematic/
+│   │   ├── SchematicView.tsx     # Main SVG circuit diagram
+│   │   ├── WireOverlay.tsx       # Animated data flow on wires
+│   │   ├── ic/
+│   │   │   ├── IC74HC161.tsx     # Visual IC: Program Counter
+│   │   │   ├── IC74HC153.tsx     # Visual IC: MUX
+│   │   │   ├── IC74HC283.tsx     # Visual IC: ALU/Adder
+│   │   │   ├── IC74HC74.tsx      # Visual IC: D Flip-Flops
+│   │   │   ├── IC74HC540.tsx     # Visual IC: Output Buffer
+│   │   │   └── IC74HC10.tsx      # Visual IC: NAND Decoder
+│   │   └── elements/
+│   │       ├── Wire.tsx          # SVG wire with animation
+│   │       ├── Bus.tsx           # Multi-bit bus rendering
+│   │       ├── LED.tsx           # LED indicator (on/off/color)
+│   │       ├── DIPSwitch.tsx     # Interactive DIP switch
+│   │       └── ICChip.tsx        # Generic DIP IC package outline
+│   ├── registers/
+│   │   ├── RegisterPanel.tsx     # Shows all register values
+│   │   ├── RegisterDisplay.tsx   # Single register: binary, hex, decimal
+│   │   └── CarryFlag.tsx         # Carry flag display
+│   ├── memory/
+│   │   ├── ROMEditor.tsx         # 16-row ROM editor (DIP switch or hex)
+│   │   ├── ROMRow.tsx            # Single ROM address row
+│   │   └── InstructionBadge.tsx  # Shows decoded mnemonic next to hex
+│   ├── editor/
+│   │   ├── AssemblyEditor.tsx    # CodeMirror assembly editor
+│   │   ├── td4Language.ts        # CodeMirror language support for TD4 asm
+│   │   └── AssembleButton.tsx    # Compile + load into ROM
+│   ├── io/
+│   │   ├── InputPort.tsx         # 4-bit input DIP switches
+│   │   ├── OutputPort.tsx        # 4 LEDs for output
+│   │   └── IOPanel.tsx           # Combined I/O panel
+│   ├── timing/
+│   │   ├── TimingDiagram.tsx     # Optional: logic analyzer style timing view
+│   │   └── ClockVisualizer.tsx   # Clock pulse animation
+│   ├── dataflow/
+│   │   ├── DataFlowOverlay.tsx   # Animated arrows showing current data movement
+│   │   └── ExecutionNarrator.tsx # Text explanation of what's happening this cycle
+│   └── programs/
+│       ├── ProgramLibrary.tsx    # Pre-built example programs
+│       └── ProgramCard.tsx       # Single program card
+└── utils/
+    ├── binary.ts                 # Binary/hex formatting helpers
+    └── colors.ts                 # Semantic color constants
+```
+
+### 3.2 State Management (Zustand Store)
+
+```typescript
+// stores/cpuStore.ts
+
+interface TD4State {
+  // === CPU Registers ===
+  regA: number;           // 0-15
+  regB: number;           // 0-15
+  regOUT: number;         // 0-15
+  pc: number;             // 0-15
+  carryFlag: boolean;
+
+  // === Memory ===
+  rom: number[];          // 16 entries, each 0-255 (8-bit instructions)
+
+  // === I/O ===
+  inputPort: number;      // 0-15 (4-bit input switches)
+
+  // === Execution State ===
+  isRunning: boolean;
+  clockSpeed: number;     // Hz (1-20 for visual, up to 1000 for fast)
+  cycleCount: number;
+  isHalted: boolean;      // True if JMP to self detected (optional)
+
+  // === Current Cycle Trace (for visualization) ===
+  currentInstruction: number;     // Raw 8-bit instruction
+  currentOpcode: number;          // Upper 4 bits
+  currentImmediate: number;       // Lower 4 bits
+  muxSource: 'A' | 'B' | 'IN' | 'ZERO';
+  muxOutput: number;              // Value out of MUX
+  aluResult: number;              // ALU output (4-bit)
+  aluCarryOut: boolean;           // ALU carry
+  destination: 'A' | 'B' | 'OUT' | 'PC';
+  decodedMnemonic: string;        // e.g., "ADD A, 3"
+
+  // === Execution History ===
+  history: CycleSnapshot[];       // Last N cycles for timeline scrubbing
+  maxHistory: number;
+
+  // === UI State ===
+  activeView: 'schematic' | 'simplified' | 'timing';
+  highlightedWires: Set<string>;  // Which wires are active this cycle
+  animationPhase: 'fetch' | 'decode' | 'execute' | 'writeback' | 'idle';
+
+  // === Assembly ===
+  sourceCode: string;             // Assembly source text
+  assemblyErrors: AssemblyError[];
+
+  // === Actions ===
+  step: () => void;               // Execute one clock cycle
+  reset: () => void;              // Reset all registers to 0, PC to 0
+  run: () => void;                // Start continuous execution
+  pause: () => void;              // Pause execution
+  setROM: (address: number, value: number) => void;
+  loadROM: (data: number[]) => void;
+  setInputPort: (value: number) => void;
+  setClockSpeed: (hz: number) => void;
+  assemble: (source: string) => void;
+  undo: () => void;               // Step backward using history
+  loadProgram: (program: PresetProgram) => void;
+}
+
+interface CycleSnapshot {
+  cycleNumber: number;
+  regA: number;
+  regB: number;
+  regOUT: number;
+  pc: number;
+  carryFlag: boolean;
+  instruction: number;
+  mnemonic: string;
+}
+
+interface AssemblyError {
+  line: number;
+  message: string;
+}
+
+interface PresetProgram {
+  name: string;
+  description: string;
+  source: string;
+  rom: number[];
+}
+```
+
+### 3.3 Pure CPU Simulation Engine
+
+```typescript
+// core/cpu.ts
+// This is a PURE FUNCTION — no side effects, no state mutation
+// The store calls this and applies the result
+
+interface CPUInput {
+  regA: number;
+  regB: number;
+  regOUT: number;
+  pc: number;
+  carryFlag: boolean;
+  rom: number[];
+  inputPort: number;
+}
+
+interface CPUOutput {
+  regA: number;
+  regB: number;
+  regOUT: number;
+  pc: number;
+  carryFlag: boolean;
+
+  // Trace info for visualization
+  instruction: number;
+  opcode: number;
+  immediate: number;
+  muxSource: 'A' | 'B' | 'IN' | 'ZERO';
+  muxOutput: number;
+  aluResult: number;
+  aluCarryOut: boolean;
+  destination: 'A' | 'B' | 'OUT' | 'PC';
+  decodedMnemonic: string;
+}
+
+function executeCycle(input: CPUInput): CPUOutput {
+  // 1. FETCH: Read instruction from ROM at PC
+  const instruction = input.rom[input.pc] & 0xFF;
+  const opcode = (instruction >> 4) & 0x0F;
+  const immediate = instruction & 0x0F;
+
+  // 2. DECODE: Extract control signals from opcode
+  const srcSelect = opcode & 0x03;        // OP1:OP0 → MUX source
+  const dstSelect = (opcode >> 2) & 0x03; // OP3:OP2 → destination
+
+  // 3. MUX: Select source operand
+  let muxSource: 'A' | 'B' | 'IN' | 'ZERO';
+  let muxOutput: number;
+  switch (srcSelect) {
+    case 0b00: muxSource = 'A';    muxOutput = input.regA;      break;
+    case 0b01: muxSource = 'B';    muxOutput = input.regB;      break;
+    case 0b10: muxSource = 'IN';   muxOutput = input.inputPort; break;
+    case 0b11: muxSource = 'ZERO'; muxOutput = 0;               break;
+  }
+
+  // 4. ALU: Add MUX output + Immediate (74HC283)
+  const aluFullResult = muxOutput + immediate;
+  const aluResult = aluFullResult & 0x0F;       // 4-bit result
+  const aluCarryOut = (aluFullResult >> 4) !== 0; // Carry out
+
+  // 5. DESTINATION: Route ALU result
+  let destination: 'A' | 'B' | 'OUT' | 'PC';
+  let newA = input.regA;
+  let newB = input.regB;
+  let newOUT = input.regOUT;
+  let newPC = (input.pc + 1) & 0x0F; // Default: PC increments
+
+  switch (dstSelect) {
+    case 0b00: destination = 'A';   newA = aluResult;   break;
+    case 0b01: destination = 'B';   newB = aluResult;   break;
+    case 0b10: destination = 'OUT'; newOUT = aluResult;  break;
+    case 0b11: // PC (jump instructions)
+      destination = 'PC';
+      if (opcode === 0b1111) {
+        // JMP: unconditional
+        newPC = immediate;
+      } else if (opcode === 0b1110) {
+        // JNC: jump if carry flag is 0
+        if (!input.carryFlag) {
+          newPC = immediate;
+        }
+        // else: PC already incremented above
+      }
+      // Opcodes 0b1100, 0b1101 are unused — PC just increments
+      break;
+  }
+
+  // 6. CARRY: Latch new carry flag
+  //    Note: carry updates on every cycle, not just ADD instructions
+  const newCarryFlag = aluCarryOut;
+
+  return {
+    regA: newA,
+    regB: newB,
+    regOUT: newOUT,
+    pc: newPC,
+    carryFlag: newCarryFlag,
+    instruction, opcode, immediate,
+    muxSource, muxOutput,
+    aluResult, aluCarryOut,
+    destination,
+    decodedMnemonic: disassemble(instruction),
+  };
+}
+```
+
+---
+
+## 4. UI Design Specification
+
+### 4.1 Layout — Three-Panel Design
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│  ⚡ TD4 Simulator    [Schematic] [Simplified] [Timing]    🌙/☀️     │
+│  [▶ Run] [⏸ Pause] [⏭ Step] [⏮ Reset] Speed: [====●=] 5 Hz       │
+├──────────────────────┬───────────────────────┬───────────────────────┤
+│                      │                       │                       │
+│   ASSEMBLY EDITOR    │   CIRCUIT / VISUAL    │   STATE INSPECTOR     │
+│                      │                       │                       │
+│  ┌────────────────┐  │   (See §4.2 below)    │  ┌─────────────────┐  │
+│  │ MOV A, 1       │  │                       │  │ Registers       │  │
+│  │ ADD A, 1       │  │                       │  │ A:  0011  (3)   │  │
+│  │ OUT A          │  │                       │  │ B:  0000  (0)   │  │
+│  │ JMP 0          │  │                       │  │ OUT:0011  (3)   │  │
+│  │                │  │                       │  │ PC: 0010  (2)   │  │
+│  │                │  │                       │  │ CF: 0           │  │
+│  │                │  │                       │  ├─────────────────┤  │
+│  │                │  │                       │  │ Current Cycle   │  │
+│  │                │  │                       │  │ Instr: OUT A    │  │
+│  │                │  │                       │  │ Src: A (0011)   │  │
+│  │                │  │                       │  │ Im:  0000       │  │
+│  │                │  │                       │  │ ALU: 0011       │  │
+│  │                │  │                       │  │ Dst: OUT        │  │
+│  │                │  │                       │  ├─────────────────┤  │
+│  ├────────────────┤  │                       │  │ ROM (hex)       │  │
+│  │ [Assemble ▶]   │  │                       │  │ 0: 31  MOV A,1  │  │
+│  │ Errors: none   │  │                       │  │ 1: 01  ADD A,1  │  │
+│  ├────────────────┤  │                       │  │ 2: 90  OUT A ◀  │  │
+│  │ Example Pgms ▼ │  │                       │  │ 3: F0  JMP 0    │  │
+│  │ • LED Counter  │  │                       │  │ ...             │  │
+│  │ • Knight Rider │  │                       │  ├─────────────────┤  │
+│  │ • Ramp Up      │  │                       │  │ I/O             │  │
+│  │ • Carry Demo   │  │                       │  │ IN:  [■□□■] 9   │  │
+│  └────────────────┘  │                       │  │ OUT: ●●○○   12  │  │
+│                      │                       │  └─────────────────┘  │
+├──────────────────────┴───────────────────────┴───────────────────────┤
+│  Cycle: 142  │  "OUT A: Output register ← A (3) + 0 = 3"           │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+### 4.2 Center Panel — Three View Modes
+
+#### View 1: Schematic View (Default — the hero view)
+
+A stylized SVG representation of the actual TD4 circuit showing every IC as a labeled DIP package with pin numbers. Wires connect ICs with animated "data pulses" flowing along them during execution. Active wires glow, inactive ones are dim. Color-coded buses: blue for data, green for control, red for clock.
+
+```
+┌──────────────────────────────────────────────────────┐
+│                                                      │
+│  ┌─────────┐     ┌──────────┐     ┌─────────┐       │
+│  │ 74HC161 │────▶│   ROM    │────▶│ 74HC10  │       │
+│  │   PC    │     │ 16 × 8   │     │ DECODER │       │
+│  └────┬────┘     └────┬─────┘     └────┬────┘       │
+│       │  ▲            │                │             │
+│       │  │     ┌──────┴──────┐   ┌─────┴─────┐      │
+│       │  │     │ IMMEDIATE   │   │  CONTROL   │      │
+│       │  │     │  [3:0]      │   │  SIGNALS   │      │
+│       │  │     └──────┬──────┘   └─────┬─────┘      │
+│       │  │            │                │             │
+│       │  │     ┌──────▼──────┐   ┌─────▼─────┐      │
+│       │  │     │  74HC283    │◀──│ 74HC153   │      │
+│       │  │     │   ADDER     │   │   MUX     │◀─ IN │
+│       │  │     └──────┬──────┘   └───────────┘      │
+│       │  │            │              ▲    ▲          │
+│       │  │     ┌──────▼──────┐       │    │          │
+│       │  └─────│  74HC74     │───────┘    │          │
+│       │        │  REGISTERS  │────────────┘          │
+│       │        │  A / B      │                       │
+│       │        └──────┬──────┘                       │
+│       │               │                              │
+│       │        ┌──────▼──────┐                       │
+│       └────────│  74HC540    │──────▶ OUT LEDs       │
+│                │  BUFFER     │                       │
+│                └─────────────┘                       │
+│                                                      │
+└──────────────────────────────────────────────────────┘
+```
+
+**Visual features for the schematic:**
+- Each IC chip rendered as a realistic DIP package outline (dark body, pin numbers, part label)
+- Data values shown on wires as 4-bit binary labels (e.g., `0011`) that animate along the wire path
+- Active destination register pulses/glows on write
+- The current instruction row in ROM is highlighted
+- MUX shows which input is currently selected (visual selector indicator)
+- ALU shows the computation happening (A + B = result with carry)
+- Clock signal shown as a pulsing line
+
+#### View 2: Simplified Block Diagram
+
+A cleaner, more abstract view focusing on conceptual data flow rather than actual ICs. Better for understanding the architecture without hardware details.
+
+```
+┌─────────────────────────────────────────────────┐
+│                                                 │
+│    ┌───┐    ┌─────┐    ┌─────┐    ┌─────────┐  │
+│    │PC │───▶│ ROM │───▶│DECODE│───▶│CTRL SIGS│  │
+│    │ 2 │    │     │    │     │    └────┬────┘  │
+│    └─▲─┘    └──┬──┘    └─────┘         │       │
+│      │         │                       ▼       │
+│      │    ┌────▼────┐           ┌──────────┐   │
+│      │    │Immediate│           │  SELECT   │   │
+│      │    │  0001   │           │  Source   │   │
+│      │    └────┬────┘           │ [A] B IN 0│   │
+│      │         │                └────┬─────┘   │
+│      │    ┌────▼────────────────────▼────┐     │
+│      │    │         ALU (ADD)             │     │
+│      │    │    0011 + 0001 = 0100 C=0    │     │
+│      │    └────────────┬─────────────────┘     │
+│      │                 │                       │
+│      │         ┌───────▼───────┐               │
+│      │         │  DESTINATION  │               │
+│      │         │  [A]  B  OUT  PC              │
+│      └─────────│               │               │
+│                └───────────────┘               │
+│                                                 │
+│    ┌──────┐                    ┌──────────┐     │
+│    │IN    │                    │OUT  ●●○○ │     │
+│    │[□□□□]│                    │     1100  │     │
+│    └──────┘                    └──────────┘     │
+│                                                 │
+└─────────────────────────────────────────────────┘
+```
+
+#### View 3: Timing Diagram
+
+Logic-analyzer style view showing signal transitions over time (multiple clock cycles). This helps students understand signal timing relationships.
+
+```
+CLK     ─┐  ┌──┐  ┌──┐  ┌──┐  ┌──┐  ┌──
+          └──┘  └──┘  └──┘  └──┘  └──┘
+PC      ═══0══════1══════2══════3══════0════
+INSTR   ═══31═════01═════90═════F0═════31═══
+REG_A   ═══0══════1══════2══════3══════3════
+REG_B   ═══0══════0══════0══════0══════0════
+REG_OUT ═══0══════0══════0══════3══════3════
+CARRY   ───────────────────────────────────
+```
+
+### 4.3 Aesthetic Direction
+
+**Theme: "PCB Workshop"** — dark background mimicking a workbench, with the circuit rendered as if on a PCB. Think green solder mask, copper traces, warm amber LED indicators, and monospace terminal fonts for values.
+
+- **Background**: Very dark charcoal (#1a1a2e) with subtle grid pattern (mimicking PCB grid)
+- **IC Chips**: Dark grey (#2d2d3d) rectangles with rounded corners, white text labels, pin numbers in subdued color
+- **Wires (inactive)**: Dim copper color (#5c4033)
+- **Wires (active data)**: Bright amber/gold (#f0c040) with glow
+- **Wires (control signals)**: Teal/cyan (#00d4aa)
+- **Wires (clock)**: Pulsing magenta (#ff44aa)
+- **LEDs ON**: Bright green (#00ff66) or red (#ff3333) with bloom/glow effect
+- **LEDs OFF**: Dark (#1a3a1a)
+- **Register values**: Bright amber on dark, monospace font
+- **Accent**: Electric blue (#4488ff) for highlights, selections
+- **Font — Displays**: `JetBrains Mono` or `IBM Plex Mono` for values and code
+- **Font — Labels**: `Space Mono` or `IBM Plex Sans` for UI labels
+
+### 4.4 Animation Specification
+
+**Data Flow Animation** (triggers on each step):
+
+1. **FETCH phase** (~200ms): Highlight wire from PC to ROM. Show address value sliding along wire. ROM row lights up.
+2. **DECODE phase** (~200ms): Instruction splits — opcode bits flow to decoder, immediate bits flow to ALU input. Decoder outputs control signals that light up wires to MUX select and destination select.
+3. **EXECUTE phase** (~300ms): MUX highlights selected input, data flows from selected source through MUX to ALU. Immediate flows to ALU. ALU "computes" (brief pulse animation), result appears at ALU output.
+4. **WRITEBACK phase** (~200ms): Result flows from ALU to destination register. Register flashes on write. If PC destination, show jump arrow. Carry flag updates.
+5. **PC UPDATE** (~100ms): PC increments (or loads jump target). New address appears.
+
+Total animation time per cycle: ~1000ms at default speed. Phases can overlap or compress at higher speeds.
+
+**When running continuously at high speed**: Skip per-wire animations, just update values with brief flash transitions.
+
+---
+
+## 5. Component Specifications
+
+### 5.1 Assembly Editor (`AssemblyEditor.tsx`)
+
+A CodeMirror 6 editor with custom TD4 language support.
+
+**Language features:**
+- Syntax highlighting: mnemonics (blue), registers (green), immediates (amber), comments (grey)
+- Auto-complete for mnemonics: `ADD`, `MOV`, `IN`, `OUT`, `JMP`, `JNC`
+- Inline error markers (red underline with message on hover)
+- Line numbers (which map directly to ROM addresses 0–15)
+- Max 16 lines enforcement (only 16 ROM slots)
+- Comment support: lines starting with `;` or `#`
+- Labels: optional `label:` syntax that resolves to line numbers
+
+**Assembly syntax:**
+```asm
+; TD4 Assembly — comments with semicolons
+; Labels are optional, resolve to ROM address
+start:
+    MOV A, 1       ; A ← 1
+    ADD A, 1       ; A ← A + 1
+    MOV B, A       ; B ← A
+    OUT B          ; Output ← B
+    JNC start      ; Loop if no carry
+    OUT 0          ; Clear output
+    JMP start      ; Restart
+```
+
+### 5.2 Assembler (`assembler.ts`)
+
+```typescript
+interface AssembleResult {
+  success: boolean;
+  rom: number[];           // 16 bytes
+  errors: AssemblyError[];
+  labels: Map<string, number>;  // label → address
+}
+
+function assemble(source: string): AssembleResult {
+  // Pass 1: Collect labels, strip comments, parse lines
+  // Pass 2: Resolve labels, encode instructions
+  // Each instruction → 8-bit value: opcode(4) | immediate(4)
+}
+```
+
+**Supported syntax patterns:**
+```
+ADD A, <imm>         → opcode 0000 | imm
+MOV A, B             → opcode 0001 | 0000 (or with +imm: MOV A, B+imm not standard)
+IN A                 → opcode 0010 | 0000
+MOV A, <imm>         → opcode 0011 | imm
+MOV B, A             → opcode 0100 | 0000
+ADD B, <imm>         → opcode 0101 | imm
+IN B                 → opcode 0110 | 0000
+MOV B, <imm>         → opcode 0111 | imm
+OUT B                → opcode 1001 | 0000
+OUT <imm>            → opcode 1011 | imm
+JNC <imm_or_label>   → opcode 1110 | imm
+JMP <imm_or_label>   → opcode 1111 | imm
+```
+
+Immediate values: decimal `0`–`15`, or hex `0x0`–`0xF`, or binary `0b0000`–`0b1111`.
+
+### 5.3 ROM Editor (`ROMEditor.tsx`)
+
+A direct hex/binary editor as an alternative to assembly. 16 rows, each showing:
+
+```
+Addr | Binary      | Hex | Decoded Mnemonic
+-----|-------------|-----|------------------
+0x0  | 0011 0001   | 31  | MOV A, 1        ◀ (PC indicator arrow)
+0x1  | 0000 0001   | 01  | ADD A, 1
+0x2  | 1001 0000   | 90  | OUT B
+...
+```
+
+- Click any cell to edit directly in binary or hex
+- Current PC row highlighted with accent color
+- Toggle between "DIP Switch" visual mode (clickable switches like the real hardware) and "Hex table" mode
+
+### 5.4 Input/Output Panel (`IOPanel.tsx`)
+
+**Input port (4-bit):**
+- 4 toggle switches styled like DIP switches (like the physical TD4)
+- Click to toggle each bit
+- Shows binary + decimal value
+- Labeled IN3, IN2, IN1, IN0
+
+**Output port (4-bit):**
+- 4 LEDs (circular, with glow effect when ON)
+- Shows binary + decimal value
+- LED color: green (matching physical TD4 kit)
+- Labeled OUT3, OUT2, OUT1, OUT0
+
+### 5.5 Register Panel (`RegisterPanel.tsx`)
+
+Each register shows:
+```
+┌─────────────────────────────────┐
+│ Register A                      │
+│ Binary: ○ ● ● ○  (bit LEDs)    │
+│ Hex:    0x6                     │
+│ Dec:    6                       │
+│ ──────────── flash on write ──  │
+└─────────────────────────────────┘
+```
+
+- "Bit LEDs" — 4 circles, filled=1, empty=0
+- Flash/pulse animation when value changes
+- Highlight border when this register is the write destination
+
+### 5.6 Execution Narrator (`ExecutionNarrator.tsx`)
+
+A plain-English status bar at the bottom explaining what's happening:
+
+> **Cycle 14**: `ADD A, 1` — Source: Register A (value `0110`), Immediate: `0001`. ALU computes `0110 + 0001 = 0111`, carry = 0. Result `0111` (7) written to Register A. PC advances to 3.
+
+This is critical for learning — it bridges the visual animation with conceptual understanding.
+
+### 5.7 Toolbar Controls
+
+| Control | Function |
+|---------|----------|
+| ▶ Run | Start continuous execution at set clock speed |
+| ⏸ Pause | Pause execution (state preserved) |
+| ⏭ Step | Execute exactly one clock cycle |
+| ⏮ Reset | Reset all registers to 0, PC to 0, keep ROM |
+| Speed slider | 1 Hz – 20 Hz (visual mode), up to 1000 Hz (fast mode) |
+| ⏪ Undo | Step backward one cycle (from history buffer) |
+
+---
+
+## 6. Pre-Built Example Programs
+
+### 6.1 LED Counter (Simplest — start here)
+
+```asm
+; Counts 0→15 on output LEDs, then repeats
+    MOV A, 1        ; Start with 1
+loop:
+    OUT A            ; Display current value — Note: actually OUT B won't work
+                     ; We need to use register cleverly
+    ADD A, 1         ; Increment
+    JNC loop         ; Keep going until carry (A wraps 15→0)
+    JMP 0            ; Restart
+```
+
+Corrected version (since there's no `OUT A` — OUT takes from B or immediate):
+```asm
+; Count up and display on LEDs
+    MOV A, 0        ; 30 — A = 0
+    ADD A, 1        ; 01 — A = A + 1
+    MOV B, A        ; 40 — B = A
+    OUT B           ; 90 — OUT = B
+    JMP 1           ; F1 — Jump back to ADD
+```
+
+### 6.2 Knight Rider (LED Chase)
+
+```asm
+    OUT 1           ; B1 — 0001
+    OUT 2           ; B2 — 0010
+    OUT 4           ; B4 — 0100
+    OUT 8           ; B8 — 1000
+    OUT 4           ; B4 — 0100
+    OUT 2           ; B2 — 0010
+    JMP 0           ; F0 — Repeat
+```
+
+### 6.3 Input Echo
+
+```asm
+    IN A            ; Read input switches into A
+    MOV B, A        ; Copy A to B
+    OUT B           ; Display on LEDs
+    JMP 0           ; Loop
+```
+
+### 6.4 Add Two Numbers (A + B demo)
+
+```asm
+    MOV A, 3        ; A = 3
+    ADD A, 5        ; A = 3 + 5 = 8
+    MOV B, A        ; B = A = 8
+    OUT B           ; Display 8 (binary: 1000)
+    JMP 3           ; Hold on display
+```
+
+### 6.5 Carry Flag Demo
+
+```asm
+    MOV A, 14       ; A = 14 (1110)
+    ADD A, 1        ; A = 15, carry = 0
+    ADD A, 1        ; A = 0, carry = 1!
+    JNC 1           ; If no carry, go back to ADD
+    OUT 15          ; Carry happened! All LEDs on
+    JMP 4           ; Hold
+```
+
+### 6.6 Fibonacci-ish (Demonstrating register swapping)
+
+```asm
+    MOV A, 1        ; A = 1
+    MOV B, A        ; B = 1
+    OUT B           ; Show B
+    ADD A, 1        ; A = A + 1
+    MOV B, A        ; B = A
+    OUT B           ; Show B
+    JNC 3           ; Loop until overflow
+    JMP 0           ; Restart
+```
+
+---
+
+## 7. Detailed Component Interaction Flow
+
+### 7.1 Single Cycle Walkthrough (for animation engine)
+
+When `step()` is called, the following sequence drives both simulation and animation:
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                       CLOCK RISING EDGE                       │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│  ① FETCH                                                     │
+│     PC value → ROM address input                             │
+│     ROM outputs 8-bit instruction                            │
+│     Wire: PC ──[address]──▶ ROM                              │
+│     Wire: ROM ──[instruction]──▶ bus                         │
+│                                                              │
+│  ② DECODE                                                    │
+│     instruction[7:4] → opcode → decoder                     │
+│     instruction[3:0] → immediate → ALU B-input               │
+│     decoder outputs:                                         │
+│       ├─ srcSelect[1:0] → MUX select pins                   │
+│       └─ dstSelect[1:0] → register load enables             │
+│     Wire: opcode ──▶ 74HC10 decoder                          │
+│     Wire: decoder ──[control]──▶ MUX select                 │
+│     Wire: decoder ──[control]──▶ register LOAD pins         │
+│     Wire: immediate ──▶ ALU input B                          │
+│                                                              │
+│  ③ MUX SELECT                                                │
+│     srcSelect chooses one of:                                │
+│       00: Register A output                                  │
+│       01: Register B output                                  │
+│       10: Input port                                         │
+│       11: Constant 0                                         │
+│     Wire: selected_source ──[data]──▶ ALU input A            │
+│                                                              │
+│  ④ ALU COMPUTE                                               │
+│     74HC283 computes: A_input + B_input                      │
+│     Outputs: 4-bit sum + carry out                           │
+│     Wire: ALU ──[result]──▶ data bus                         │
+│     Wire: ALU ──[carry]──▶ carry flip-flop                   │
+│                                                              │
+│  ⑤ WRITE BACK                                                │
+│     dstSelect activates one register's LOAD pin:             │
+│       00: Register A latches result                          │
+│       01: Register B latches result                          │
+│       10: OUT register latches result                        │
+│       11: PC register loads result (jump)                    │
+│     Non-selected registers hold their values                 │
+│     Carry flag flip-flop latches carry out                   │
+│                                                              │
+│  ⑥ PC UPDATE                                                 │
+│     If dstSelect ≠ 11: PC ← PC + 1 (mod 16)                │
+│     If dstSelect = 11 AND (JMP or JNC with CF=0):           │
+│       PC ← immediate value                                  │
+│     If dstSelect = 11 AND JNC with CF=1:                    │
+│       PC ← PC + 1 (jump NOT taken)                          │
+│                                                              │
+└──────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 8. Keyboard Shortcuts
+
+| Key | Action |
+|-----|--------|
+| `Space` | Step (one cycle) |
+| `Enter` | Run / Pause toggle |
+| `R` | Reset |
+| `Ctrl+Z` | Undo (step backward) |
+| `1` | Switch to Schematic view |
+| `2` | Switch to Simplified view |
+| `3` | Switch to Timing view |
+| `+` / `-` | Increase / decrease clock speed |
+
+---
+
+## 9. Responsive Design
+
+- **Desktop (≥1200px)**: Three-panel layout as shown in §4.1
+- **Tablet (768–1199px)**: Two-panel — Editor and Circuit stacked, Inspector collapses to bottom drawer
+- **Mobile (< 768px)**: Single panel with tab switching between Editor, Circuit, and Inspector
+
+---
+
+## 10. Testing Strategy
+
+### 10.1 Unit Tests (Vitest)
+
+**CPU Core** (`cpu.test.ts`) — highest priority:
+```typescript
+describe('executeCycle', () => {
+  test('MOV A, Im loads immediate into A');
+  test('ADD A, Im adds immediate to A');
+  test('MOV A, B copies B to A');
+  test('MOV B, A copies A to B');
+  test('ADD B, Im adds immediate to B');
+  test('IN A reads input port');
+  test('OUT B copies B to output');
+  test('OUT Im loads immediate to output');
+  test('JMP loads immediate into PC');
+  test('JNC jumps when carry=0');
+  test('JNC does NOT jump when carry=1');
+  test('carry flag set on overflow');
+  test('carry flag cleared on no overflow');
+  test('PC wraps from 15 to 0');
+  test('undocumented: MOV A, B with nonzero Im adds Im');
+  test('all unused opcodes: PC increments normally');
+});
+```
+
+**Assembler** (`assembler.test.ts`):
+```typescript
+describe('assemble', () => {
+  test('MOV A, 1 → 0x31');
+  test('ADD A, 5 → 0x05');
+  test('JMP 0 → 0xF0');
+  test('labels resolve to addresses');
+  test('comments stripped');
+  test('error on >16 instructions');
+  test('error on invalid mnemonic');
+  test('error on immediate >15');
+  test('hex and binary immediate formats');
+});
+```
+
+### 10.2 Integration Tests
+
+- Full program execution: load LED counter program, run 20 cycles, verify OUT register sequence
+- Assembly round-trip: assemble → load ROM → disassemble → compare with original
+- History/undo: step 5 times, undo 3 times, verify state matches cycle 2
+
+### 10.3 E2E Tests (Playwright)
+
+- Load page, type assembly, click Assemble, click Step 4 times, verify register display values
+- Click Run, verify animation is playing, click Pause, verify stopped
+- Click input switches, verify IN port value updates
+
+---
+
+## 11. Performance Considerations
+
+- **SVG rendering**: Keep IC components as static SVG, only animate wire overlays and value labels
+- **Animation frame budget**: At 20Hz clock speed, each cycle gets 50ms — use `requestAnimationFrame` for wire animations
+- **History buffer**: Cap at 1000 cycles to avoid memory growth
+- **Fast mode (>20Hz)**: Disable per-wire animation, just flash register changes
+- **React memoization**: Memoize IC components that don't change between cycles (most of the schematic is static)
+
+---
+
+## 12. Future Enhancements (Post-MVP)
+
+1. **Breakpoints**: Click a ROM row to set a breakpoint, execution pauses there
+2. **Watch expressions**: Monitor specific signals across cycles
+3. **Program save/load**: LocalStorage or URL-encoded programs (shareable links)
+4. **Split ROM view**: Show DIP switches visually like the physical board
+5. **Sound**: Optional click sounds for clock pulses, register writes
+6. **Comparison mode**: Side-by-side with SAP-1 or other educational CPUs
+7. **Challenge mode**: "Write a program that outputs 1010 pattern" — gamified learning
+8. **Export**: Generate a wiring diagram or BOM from the simulation for building physical TD4
+9. **Multiplayer/classroom**: Teacher shares a program, students step through together
+10. **Mobile-first mode**: Touch-optimized schematic with pinch-zoom
+11. **Dark/light theme toggle**
+12. **Logic gate level**: Drill down into each IC to see individual gates
+
+---
+
+## 13. File-by-File Implementation Priorities
+
+### Phase 1: Core Engine (Get simulation working)
+1. `core/types.ts` — All type definitions
+2. `core/cpu.ts` — Pure CPU simulation function
+3. `core/disassembler.ts` — Instruction → mnemonic
+4. `core/assembler.ts` — Assembly text → ROM bytes
+5. `stores/cpuStore.ts` — Zustand store with all actions
+6. Tests for cpu.ts and assembler.ts
+
+### Phase 2: Basic UI (Make it usable)
+7. `App.tsx` + `MainLayout.tsx` — Three-panel layout
+8. `Toolbar.tsx` — Run/Pause/Step/Reset/Speed
+9. `RegisterPanel.tsx` + `RegisterDisplay.tsx` — Register state display
+10. `ROMEditor.tsx` — Hex ROM editor with current-row highlighting
+11. `IOPanel.tsx` — Input switches + Output LEDs
+12. `ExecutionNarrator.tsx` — Plain-English cycle description
+13. `ProgramLibrary.tsx` — Pre-built example programs
+
+### Phase 3: Assembly Editor (Make it productive)
+14. `AssemblyEditor.tsx` — CodeMirror integration
+15. `td4Language.ts` — Syntax highlighting + autocomplete
+16. `AssembleButton.tsx` — Compile and load
+
+### Phase 4: Visual Schematic (Make it beautiful)
+17. `SchematicView.tsx` — Main SVG layout
+18. Individual IC components (161, 153, 283, 74, 540, 10)
+19. `Wire.tsx` + `Bus.tsx` — Wire rendering
+20. `WireOverlay.tsx` — Data flow animations
+21. `DataFlowOverlay.tsx` — Animated arrows
+
+### Phase 5: Polish
+22. Timing diagram view
+23. Simplified block diagram view
+24. Keyboard shortcuts
+25. Responsive design
+26. Undo/history scrubbing
+27. Breakpoints
+28. Theme toggle
+
+---
+
+## 14. Critical Implementation Notes for Claude Code
+
+### 14.1 CPU Simulation Accuracy
+
+The CPU core MUST be implemented as a **pure function** (`executeCycle`). It takes a complete state snapshot and returns a new state. This enables:
+- Deterministic testing
+- Easy undo (just pop from history stack)
+- Separation from UI concerns
+
+### 14.2 The MUX+ALU Trick
+
+Every single instruction routes through the same path: `MUX → ALU(add) → destination register`. There are no special cases in the datapath. The "trick" is that different opcodes just change which MUX input is selected and which register receives the result. The ALU always adds. This uniformity is the whole design elegance of TD4 and the simulator must reflect it.
+
+### 14.3 Carry Flag Behavior
+
+The carry flag is updated on EVERY cycle (not just ADD instructions). Even `MOV A, 0` will clear the carry flag because the ALU computes `0 + 0 = 0` with carry=0. This is how the real hardware behaves.
+
+### 14.4 JNC Behavior
+
+`JNC` (Jump if No Carry) checks the carry flag from the PREVIOUS cycle, not the current one. The carry flag flip-flop is clocked on the same edge as the other registers, but the JNC decision is based on the carry flag's value BEFORE the current cycle's ALU operation updates it. In practice, this means:
+
+```
+Cycle N:   ADD A, 1  → carry is produced (let's say carry=1)
+Cycle N+1: JNC 0     → checks carry from cycle N (carry=1), so does NOT jump
+```
+
+The carry flag that JNC reads is `input.carryFlag` (the old value), not the `aluCarryOut` from the current instruction.
+
+### 14.5 Unused Opcodes
+
+Opcodes `0x8`, `0xA`, `0xC`, `0xD` are unused/undefined. In the real hardware, they still route through the datapath normally — the destination is determined by `OP3:OP2`, and the source by `OP1:OP0`. The simulator should handle these consistently (not crash), and ideally show them as `???` or `NOP` in the disassembler.
+
+### 14.6 SVG Coordinate System
+
+For the schematic view, define a fixed SVG viewBox (e.g., `0 0 1200 800`) and position all IC packages and wires in this coordinate space. Use `<g>` groups for each IC so they can be highlighted or animated as units. Wire paths should be defined as SVG `<path>` elements with `stroke-dasharray` animation for the "data flowing" effect.
+
+### 14.7 Animation Sequencing
+
+Use a state machine for animation phases:
+```
+idle → fetch → decode → execute → writeback → idle
+```
+
+Each phase highlights different wires/components. The `step()` function should:
+1. Compute the new state immediately (instant, pure function)
+2. Trigger the animation sequence asynchronously
+3. Update displayed values progressively as each animation phase completes
+
+When running at high speed, collapse all phases into a single instant update.
