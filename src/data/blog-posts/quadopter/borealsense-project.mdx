@@ -1,0 +1,289 @@
+---
+title: BorealSense A Father-Son Engineering Project
+slug: BorealSense-A-Father-Son-Engineering-Project
+publishDate: 2026-07-23
+description: BorealSense A Father-Son Engineering Project
+date: 2026-07-23
+tags: ['Drone']
+draft: false
+---
+
+# BorealSense: A Father-Son Engineering Project
+## Design Document — Learning, Awards, and University Pathway Edition
+
+**Project:** Low-cost distributed early wildfire detection for Northern communities
+**Team:** Son (project owner/researcher) + Jerry (mentor/infrastructure)
+**Horizon:** Multi-year arc (Grade 9/10 → Grade 12), adaptable to current grade
+**Related family context:** builds on the BOREAL-UAS wildfire exploration, sits
+alongside (not inside) GLOM and the FRC curriculum
+
+---
+
+## 1. Strategy First: What Actually Wins Awards and Impresses Universities
+
+Before designing the project, design *for the judges and admissions readers*.
+This section is deliberately blunt, because getting it wrong wastes years.
+
+### 1.1 The ownership rule (the one that matters most)
+
+Science fair judges and admissions readers are extremely good at detecting
+parent-driven projects — and Canada-Wide Science Fair (CWSF) explicitly requires
+disclosure of all assistance received. A project where Dad designed the PCB and
+the student presents it will lose to a cruder project the student genuinely
+owns, in both fairs and interviews. This is a feature of the plan, not a
+constraint:
+
+**Division of labor (write this down as a family contract):**
+| Son owns (and must be able to defend alone) | Dad provides |
+|---------------------------------------------|--------------|
+| The research question and hypothesis | Socratic questioning ("how would you test that?") |
+| All design decisions (and the rejected alternatives) | Exposure to what's possible; teaching sessions on request |
+| The code, the soldering, the data collection | Tool safety supervision; a lab to work in |
+| The logbook, analysis, poster, and every word he presents | Mock-judging, editing feedback (not rewriting) |
+| Failures and the pivots they force | Emotional support and pizza |
+| Budget proposals | Funding + procurement (LCSC orders) |
+
+The mentor role you should model is a university supervisor, not a co-author.
+Judges *love* well-mentored students — mentorship is disclosed, celebrated, and
+normal. What kills projects is undisclosed authorship.
+
+### 1.2 What CWSF-level judges reward (in order)
+1. **A real question with a measurable answer** — engineering fairs are won by
+   *science about the engineering* (characterized performance, ROC curves,
+   detection envelopes), not by "I built a thing that works."
+2. **Iteration visible in the logbook** — v1 failed → why → v2. A dated,
+   handwritten/committed logbook is both required practice and the single best
+   credibility artifact.
+3. **Rigor**: controls, repeated trials, error bars, honest limitations.
+4. **Impact narrative**: who needs this, what does it cost, who did you talk to.
+5. **The interview**: a student who can reason live about *why* choices were
+   made beats a more polished poster every time.
+
+### 1.3 The honest view on university admissions (Canada + US)
+- **Canadian engineering (Waterloo, U of T EngSci, McMaster Health Sci-style
+  programs):** grades are the gate — low-to-mid 90s average is the entry ticket
+  and no project substitutes for it. The differentiators are the supplemental
+  applications (Waterloo's AIF, EngSci profile): a sustained, authentic project
+  with competition results and community impact is exactly what those forms are
+  built to surface. Rule: **the project must never cost grades.** Time-box it.
+- **Major scholarships (Schulich Leaders ~$100–120k, Loran):** these explicitly
+  seek STEM entrepreneurship/innovation + leadership + community impact — a
+  multi-year project with a community deployment story is close to a template
+  match. School nomination required; cultivate that relationship early.
+- **US/UK top schools (if in scope):** narrative + national/international
+  distinction matter far more; ISEF (reachable from CWSF via Team
+  Canada-ISEF) is the recognized currency.
+- **Shad Canada** (summer program, Grade 10/11): widely respected signal,
+  application strengthened by exactly this kind of project; also a network.
+- **No guarantees, ever.** The plan below is designed so that even with zero
+  awards, the outcome is a kid who can design experiments, build hardware,
+  analyze data, and talk about it — which is the actual point, and also the
+  thing that makes awards likely as a side effect.
+
+### 1.4 Why a *new* project rather than folding into GLOM or FRC
+- GLOM is the family's shared long-arc project; FRC is team-based (great for
+  leadership narrative, weak for individual research distinction). Fairs and
+  supplementals need something with **individual ownership and a research
+  question**. The three complement each other: FRC = teamwork/leadership,
+  GLOM = family engineering culture, BorealSense = *his* research identity.
+
+---
+
+## 2. Project Selection
+
+### 2.1 Selection criteria
+A candidate project must be: (a) ownable end-to-end by a high-schooler,
+(b) a genuine research question, not a build, (c) cheap to iterate (< $100/node
+class hardware), (d) safe and legal for a minor, (e) tied to a problem Canadians
+care about, (f) rich enough for a 2–3 year arc with annual "chapters,"
+(g) adjacent to Dad's expertise for mentorship *without* Dad's fingerprints on
+the artifact.
+
+### 2.2 Candidates considered
+
+| Option | Concept | Verdict |
+|--------|---------|---------|
+| A. **BorealSense** | Network of ~$50 solar LoRa sensor nodes (gas/particulate/ temp/RH) + ML classifier for early smoldering-fire detection; characterize the detection envelope scientifically | **Selected** — hits every criterion; wildfire relevance is national; measurable science; community deployment story |
+| B. Camera smoke-detection AI | Edge CV smoke segmentation on trail-cam class hardware | Strong, but dataset-dominated (mostly software); weaker hands-on engineering arc; **folded in as a Year-2/3 extension** (sensor fusion chapter) |
+| C. Drone thermal hotspot survey | Mini version of BOREAL-UAS Tier 2 | Rejected: RPAS certification age limits and fire-zone rules are hostile to a minor operating solo; and it overlaps Dad's own project too much — ownership optics are bad |
+| D. Water-quality sensing | GLOM-adjacent | Rejected: collides with the family project's identity |
+
+### 2.3 The research question (the heart of everything)
+
+> **"How early, how far away, and how reliably can a network of sub-$50
+> environmental sensor nodes detect a smoldering fire, compared to the
+> detection methods communities actually have?"**
+
+Sub-questions that give each year its chapter:
+- Y1: Which cheap sensing modalities (PM2.5, VOC/CO via MOS gas sensors, ΔT/RH)
+  respond to smoldering combustion, at what distance, wind, and time-to-detect?
+  (Controlled experiments, single node.)
+- Y2: Does a *network* + ML classifier beat single-node thresholds on
+  false-positive rate? (Campfire ≠ wildfire ≠ BBQ ≠ diesel generator — the
+  discrimination problem is the scientifically interesting part.)
+- Y3: Field pilot with a real community (cottage association, camp, or a
+  FireSmart-engaged community) — deployment data, reliability engineering,
+  cost/coverage model.
+
+This is honest science: the answer might be "PM sensors are useless beyond
+30 m in wind" — and that's still a gold-medal-caliber result if measured well.
+
+---
+
+## 3. Technical Design (scoped for student ownership)
+
+### 3.1 The node (Year 1 target)
+
+```
+┌──────────────── BorealSense Node v1 (~$45 BOM) ────────────────┐
+│  ESP32-S3 (or ESP32-C3) module        Solar: 2 W panel +       │
+│   ├─ PMS5003 / PMSA003 (PM1/2.5/10)   TP4056-class charger +   │
+│   ├─ MOS gas sensor (CO/VOC class,    18650 Li-ion + fuel      │
+│   │   e.g. MiCS/SGP sensor)           gauge                    │
+│   ├─ BME280 (T/RH/P)                                           │
+│   └─ LoRa radio (SX1276/RFM95, 915 MHz ISM) → mesh/star to     │
+│      gateway (Raspberry Pi + LoRa hat + cell/Starlink uplink)  │
+│  Weatherproof enclosure (3D-printed + conformal coat), mast    │
+│  mount, duty-cycled sampling for solar power budget            │
+└────────────────────────────────────────────────────────────────┘
+```
+
+Deliberate choices *for the student*:
+- **ESP32 + Arduino/MicroPython first**, not STM32/Rust. He must own the code;
+  the on-ramp matters more than elegance. (If he later ports a node to
+  embedded Rust himself, that's a bonus chapter, not a requirement.)
+- **LoRa 915 MHz ISM**: license-free, kilometers of range line-of-sight, and
+  the power/range/duty-cycle trade-offs are themselves teachable physics.
+- **Through-hole/module-based v1**, custom PCB in v2 (he learns KiCad from you
+  — one evening a week — and the v2 board is his layout, reviewed not redrawn).
+- Every node logs raw data to SD + transmits — raw data is the research asset.
+
+### 3.2 The experiments (this is where medals come from)
+
+**Safety/legality first**: no wildland ignition, ever. Smoldering sources =
+charcoal/smudge pots/approved fire-pit fires within municipal bylaws, propane
+fire table for a "clean combustion" control, always with adult supervision,
+water on hand, and burn-permit rules respected. This constraint is itself
+teachable: designing valid proxies is real science.
+
+Experimental program (Y1):
+1. **Response characterization**: fixed smoldering source (mass-controlled
+   charcoal bed), nodes at 5/10/20/40/80 m in a line; measure signal vs
+   distance × wind (log anemometer data); repeated trials; time-to-threshold.
+2. **Confounder library**: BBQ, campfire, vehicle exhaust, humid morning,
+   pollen day — recorded with identical protocol → labeled dataset.
+3. **Detection statistics**: ROC curves per modality and fused; report
+   detection distance envelope with confidence intervals.
+4. Compare against baseline: "when could a human smell/see it?" (structured
+   observer protocol — fun, and judges remember it).
+
+**Y2 ML chapter**: classical ML first (logistic regression / random forest on
+engineered features — explainable in an interview), only then a small neural
+model on-device (TinyML / ESP32) as a comparison. The question is
+false-positive discrimination, measured, not "I used AI."
+
+**Y3 field chapter**: 8–12 nodes, one real site, one season. Uptime, battery
+performance through weather, false alarms in the wild, community feedback.
+Reliability engineering data is rare at fairs and reads as maturity.
+
+### 3.3 What Dad builds (openly, as infrastructure)
+- The lab itself: bench, tools, safety training, LCSC ordering pipeline.
+- A data backhaul VPS + Grafana instance ("the family server") — disclosed as
+  provided infrastructure, like a school lab.
+- Teaching modules on demand: KiCad evenings, "how PPK GPS works," statistics
+  for ROC curves — *taught*, with him doing the exercises.
+
+---
+
+## 4. Skills Curriculum Embedded in the Project
+
+| Semester | Engineering | Science | Communication |
+|----------|------------|---------|---------------|
+| 1 | Breadboard → soldered node; Arduino C++ basics; Git from day 1 | Combustion chemistry basics; sensor physics (how MOS/PM sensors work) | Logbook habit; first 5-min demo to family |
+| 2 | LoRa link budget math; enclosure design; power budget | Experimental design, controls, error analysis | Regional fair poster + interview practice |
+| 3 | Custom PCB (KiCad); gateway software | Statistics: distributions, ROC, confidence intervals | CWSF-style 10-min judging sessions (Dad + recruited adults) |
+| 4 | TinyML deployment; fleet reliability | Feature engineering; model validation without leakage | Written report in paper format |
+| 5–6 | Field deployment ops; failure analysis | Field-data science; honest limitations | Community presentation; scholarship essays draw on all of it |
+
+Meta-skills deliberately trained: estimating before measuring, reading
+datasheets, asking for help precisely, and presenting failures without shame.
+
+---
+
+## 5. Award & Milestone Calendar (Ontario pathway)
+
+> Verify current-year dates each fall — fair registration windows are rigid.
+
+| When | Milestone | Target |
+|------|-----------|--------|
+| Fall Y1 | Project starts; logbook opens; school science teacher informed (ally + future nominator) | — |
+| Jan–Feb Y1 | School science fair | Win school → regional |
+| Mar–Apr Y1 | **Regional fair** (e.g., York Region Science & Technology Fair for Richmond Hill schools) | Medal + CWSF nomination |
+| May Y1/Y2 | **Canada-Wide Science Fair** (Youth Science Canada) | Attend; medal = national credential; special awards (environment/innovation categories fit this project) |
+| Gr 10/11 | **Shad Canada** application (fall/winter) | Acceptance |
+| Ongoing | FRC continues in parallel (leadership narrative) | — |
+| Gr 11 | ISEF path via Team Canada-ISEF if CWSF result supports it; consider a preprint/短 journal for youth research (e.g., journals for student research) | Stretch |
+| Gr 12 fall | **Schulich Leaders** school nomination; Loran; university supplementals (Waterloo AIF, U of T profiles) | Applications that write themselves from the logbook |
+
+Backup framing: if a fair year misses, the same artifacts feed hackathons,
+FireSmart community recognition, and supplemental essays — nothing is wasted.
+
+---
+
+## 6. Governance: Keeping It His, Keeping It Fun
+
+1. **Weekly cadence, time-boxed**: one 2–3 h lab session + one short data/
+   planning session. Grades outrank the project always (see §1.3).
+2. **He writes the plan**: each session starts from *his* written goal; you ask
+   questions, you don't set agendas (hardest rule for an engineer-dad).
+3. **Motivation check every term**: if the spark isn't there, pivot the
+   question or pause — a resentful project produces neither learning nor awards,
+   and admissions readers can smell joylessness too.
+4. **Disclosure discipline**: assistance log maintained alongside the logbook —
+   converts directly into the fair's required declarations.
+5. **Let v1 be his level of ugly.** The gap between v1 and v3 is the story.
+
+---
+
+## 7. Budget
+
+| Item | CAD |
+|------|-----|
+| Y1: 3 prototype nodes (modules, sensors, solar, enclosures) | $250–350 |
+| Instruments he'll learn: borrowed from your bench (scope, meter) | $0 |
+| Anemometer + weather logging for experiments | $80 |
+| Y2: 6-node PCB run (JLCPCB) + gateway Pi | $300–400 |
+| Y3: field fleet to ~12 nodes + spares | $500–700 |
+| Fair travel (CWSF is billeted/subsidized via region, verify) | varies |
+| **Total, 3 years** | **≈ $1,200–1,600** |
+
+Cheap enough that *he* can also pitch part of it — a $200 sponsorship ask to a
+local business or cottage association is itself a leadership artifact.
+
+---
+
+## 8. Risks
+
+| Risk | Mitigation |
+|------|------------|
+| Dad gravity: project drifts into your hands | §1.1 contract; assistance log; quarterly self-audit ("could he defend every part alone?") |
+| Grades slip | Hard time-box; project pauses in exam months |
+| He's not into wildfire sensing | The *method* transfers: same doc works for any question he picks — his question beats your better question, every time |
+| Sensor data is boring/negative | Negative results measured well still medal; pre-plan the "what we learned" framing |
+| Fair politics / judge lottery | Multi-year, multi-venue strategy; no single point of failure |
+| Overlap optics with your BOREAL-UAS work | Different modality (ground sensors vs aircraft), his own question, disclosed family context; keep repos and branding separate |
+
+---
+
+## 9. First Four Sessions (start this month)
+
+1. **Session 1 — The pitch flows backward**: show him the wildfire problem
+   (news clips, FIRMS map of Ontario), then ask what *he* thinks could be done
+   cheaply. Steer only by questions. If he lands somewhere else entirely — his
+   project now.
+2. **Session 2 — First smoke**: breadboard ESP32 + PM sensor, hold it near a
+   blown-out candle, watch numbers move. Hook set.
+3. **Session 3 — First question**: he writes one page: question, hypothesis,
+   what Y1 success looks like. Logbook officially opens.
+4. **Session 4 — First experiment design**: distances, trials, controls, on
+   paper, before any more hardware. The habit that wins medals starts here.

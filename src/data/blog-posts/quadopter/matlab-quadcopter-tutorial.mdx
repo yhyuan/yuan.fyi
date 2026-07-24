@@ -1,0 +1,1622 @@
+---
+title: MATLAB for Quadcopter Modeling — A Complete Tutorial
+slug: MATLAB-for-Quadcopter-Modeling—A-Complete-Tutorial
+publishDate: 2026-07-23
+description: MATLAB for Quadcopter Modeling — A Complete Tutorial
+date: 2026-07-23
+tags: ['Drone']
+draft: false
+---
+
+# MATLAB for Quadcopter Modeling — A Complete Tutorial
+
+*From MATLAB fundamentals to a validated 6-DOF simulation you can tune a real flight controller against.*
+
+---
+
+## Table of Contents
+
+**Part I — MATLAB Fundamentals**
+1. Environment and Orientation
+2. Vectors, Matrices, and Indexing
+3. Scripts, Functions, and Code Organization
+4. Plotting and Visualization
+5. Solving ODEs — the Engine of Simulation
+
+**Part II — Quadcopter Theory**
+6. Frames, Notation, and Conventions
+7. Rotation Representations
+8. Rigid-Body Dynamics
+9. Rotor Aerodynamics and the Mixer
+10. Motor and ESC Dynamics
+
+**Part III — Building the Simulation**
+11. Parameter File
+12. The Dynamics Function
+13. Integrating and Animating
+14. Trimming and Linearization
+
+**Part IV — Control**
+15. Cascaded PID Architecture
+16. Rate Loop
+17. Attitude Loop
+18. Position and Velocity Loops
+19. Motor Saturation and Anti-Windup
+20. LQR as an Alternative
+
+**Part V — Realism and Validation**
+21. Sensor Models and Noise
+22. Complementary and Extended Kalman Filters
+23. Discretization and Fixed-Point Effects
+24. Monte Carlo and Robustness Testing
+25. Exporting to Embedded Code
+
+**Appendices** — Simulink track, symbolic derivations, parameter identification, common errors
+
+---
+
+# Part I — MATLAB Fundamentals
+
+## 1. Environment and Orientation
+
+### 1.1 The Interface
+
+MATLAB's window is divided into panels that matter in this order:
+
+- **Command Window** — the REPL. Type an expression, get an answer. Good for experiments, bad for anything you want to repeat.
+- **Editor** — where scripts (`.m` files) live. All real work goes here.
+- **Workspace** — every variable currently in memory, with size and type. Double-click any variable to open it in the Variable Editor, which is essentially a spreadsheet view. This is invaluable when a matrix is the wrong shape and you can't tell why.
+- **Current Folder** — MATLAB only sees files on its *path*. If a function "doesn't exist," this is usually why.
+
+### 1.2 Toolboxes You Need
+
+Check what you have:
+
+```matlab
+ver
+```
+
+For this tutorial:
+
+| Toolbox | Needed for | Workaround if missing |
+|---|---|---|
+| Base MATLAB | Everything in Parts I–III | — |
+| Control System Toolbox | `lqr`, `place`, Bode plots, `c2d` | Hand-code Riccati solver; skip §20 |
+| Symbolic Math Toolbox | Deriving equations of motion | Use the pre-derived equations given here |
+| Simulink | Block-diagram modeling (Appendix A) | Pure MATLAB track covers everything |
+| Aerospace Toolbox | Quaternion utilities, WGS84 | Hand-written quaternion functions provided |
+
+The core tutorial runs on **base MATLAB alone**. Everything else is optional enrichment. GNU Octave will run most of Parts I–III with minor syntax adjustments.
+
+### 1.3 First Commands
+
+```matlab
+clear; clc; close all;
+```
+
+Put this at the top of every script. `clear` wipes variables, `clc` clears the console, `close all` shuts figure windows. Skipping this is the single most common source of "why did my results change?" — a stale variable from a previous run silently persists.
+
+Semicolons suppress output. Omit one and MATLAB prints the result, which is a fast debugging tool but a disaster if the variable is a 10000×12 matrix.
+
+```matlab
+a = 5          % prints: a = 5
+b = 5;         % silent
+```
+
+### 1.4 Getting Help
+
+```matlab
+help ode45          % terse text summary
+doc ode45           % full documentation with examples
+which ode45         % where the file lives — catches name shadowing
+```
+
+`which` matters more than it looks. If you name a script `plot.m`, you have just broken plotting for your entire session.
+
+---
+
+## 2. Vectors, Matrices, and Indexing
+
+MATLAB is built around matrices. Everything is a matrix; a scalar is 1×1.
+
+### 2.1 Construction
+
+```matlab
+r = [1 2 3];           % row vector, 1×3
+c = [1; 2; 3];         % column vector, 3×1
+A = [1 2; 3 4];        % 2×2 matrix
+
+z = zeros(3,1);        % column of zeros
+o = ones(2,4);
+I = eye(3);            % identity
+```
+
+**Column vectors are the convention in dynamics.** State vectors, positions, velocities — all columns. Mixing rows and columns produces either a dimension error (good, you find it) or an unintended outer product via implicit expansion (bad, silent garbage).
+
+```matlab
+[1 2 3] + [1; 2; 3]    % NOT an error — gives a 3×3 matrix!
+```
+
+This is implicit expansion, and it has silently corrupted more simulations than any other MATLAB feature. Be deliberate about orientation.
+
+### 2.2 Ranges
+
+```matlab
+t = 0:0.01:10;              % 0 to 10, step 0.01 → 1×1001
+t = linspace(0, 10, 1001);  % same thing, specify count not step
+```
+
+`linspace` is safer when the endpoint matters — floating-point accumulation in the colon operator can drop the final element.
+
+### 2.3 Indexing
+
+MATLAB indexes from **1**, not 0.
+
+```matlab
+v = [10 20 30 40 50];
+
+v(1)          % 10
+v(end)        % 50
+v(2:4)        % [20 30 40]
+v([1 5])      % [10 50]
+v(v > 25)     % [30 40 50] — logical indexing
+```
+
+For matrices, `(row, column)`:
+
+```matlab
+A = magic(4);
+A(2,3)        % single element
+A(2,:)        % entire row 2
+A(:,3)        % entire column 3
+A(1:2, 3:4)   % submatrix
+A(:)          % flatten to column vector
+```
+
+The colon means "everything along this dimension." You will use `A(:,k)` constantly to pull the k-th time sample from a state history matrix.
+
+### 2.4 Element-wise vs Matrix Operations
+
+This distinction is central and trips up nearly everyone.
+
+```matlab
+A * B      % matrix multiplication — inner dimensions must agree
+A .* B     % element-wise — dimensions must match exactly
+
+A^2        % A*A (matrix power)
+A.^2       % each element squared
+
+A / B      % right division: A*inv(B)
+A ./ B     % element-wise division
+
+A'         % conjugate transpose
+A.'        % plain transpose (use this for real matrices)
+```
+
+The dot means "element-wise." In dynamics code, rotation matrix applications use `*`; scaling a vector of motor speeds uses `.*`.
+
+### 2.5 Preallocation
+
+MATLAB arrays that grow inside a loop force a full memory reallocation each iteration — O(n²) behavior.
+
+```matlab
+% Bad — grows each iteration
+for k = 1:10000
+    result(k) = k^2;
+end
+
+% Good — preallocate
+result = zeros(1, 10000);
+for k = 1:10000
+    result(k) = k^2;
+end
+```
+
+For a simulation logging 12 states over 100,000 steps, this is the difference between seconds and minutes.
+
+### 2.6 Vectorization
+
+Loops in MATLAB are slow; array operations are fast because they drop into optimized libraries.
+
+```matlab
+% Loop
+for k = 1:length(t)
+    y(k) = sin(t(k)) * exp(-0.1*t(k));
+end
+
+% Vectorized — same result, far faster
+y = sin(t) .* exp(-0.1*t);
+```
+
+Write dynamics functions to accept vectors where practical. That said: **correctness first**. A clear loop that works beats a clever vectorization that doesn't.
+
+### 2.7 Structs
+
+Structs group related data under one name. This is how you'll manage parameters.
+
+```matlab
+p.m     = 0.68;      % mass, kg
+p.g     = 9.81;
+p.Ixx   = 6.9e-3;
+p.arm   = 0.17;
+
+disp(p.m)
+fieldnames(p)
+```
+
+Passing one struct into a function beats passing fourteen loose arguments. It also means adding a parameter later doesn't require changing every function signature.
+
+---
+
+## 3. Scripts, Functions, and Code Organization
+
+### 3.1 Scripts
+
+A script is a `.m` file of commands executed top to bottom, sharing the base workspace.
+
+```matlab
+% simulate_hover.m
+clear; clc; close all;
+params = quad_params();
+x0 = zeros(12,1);
+[t, x] = ode45(@(t,x) quad_dynamics(t,x,params), [0 10], x0);
+plot(t, x(:,3));
+```
+
+### 3.2 Functions
+
+Functions have their own scope — variables inside don't leak out. This is what makes them safe.
+
+```matlab
+function xdot = quad_dynamics(t, x, params)
+%QUAD_DYNAMICS  6-DOF rigid body derivative for a quadcopter.
+%   XDOT = QUAD_DYNAMICS(T, X, PARAMS) returns the 12×1 state derivative.
+%
+%   Inputs:
+%     t      - time (s), unused in autonomous form but required by ode45
+%     x      - 12×1 state vector [pos; vel; euler; omega]
+%     params - struct from quad_params()
+%
+%   Output:
+%     xdot   - 12×1 derivative
+
+    % ... body ...
+end
+```
+
+The comment block immediately after the signature is what `help quad_dynamics` prints. Write it. Six months from now you will not remember whether element 7 was roll or pitch.
+
+### 3.3 Local and Anonymous Functions
+
+Local functions live at the bottom of a file and are visible only within it — good for helpers you don't want cluttering the namespace.
+
+```matlab
+function main()
+    y = helper(3);
+end
+
+function out = helper(x)
+    out = x^2;
+end
+```
+
+Anonymous functions capture variables at creation time:
+
+```matlab
+f = @(x) x.^2 + 3;
+f(2)                          % 7
+
+k = 5;
+g = @(x) k*x;
+k = 100;
+g(2)                          % still 10 — k was captured as 5
+```
+
+That capture behavior is exactly why `@(t,x) quad_dynamics(t,x,params)` works: `params` is frozen into the handle, letting you pass extra arguments through `ode45`, which only ever calls `f(t,x)`.
+
+### 3.4 Project Layout
+
+```
+quadsim/
+├── params/
+│   └── quad_params.m
+├── dynamics/
+│   ├── quad_dynamics.m
+│   ├── rotation_matrix.m
+│   └── mixer.m
+├── control/
+│   ├── pid_controller.m
+│   └── attitude_controller.m
+├── analysis/
+│   ├── trim_quad.m
+│   └── linearize_quad.m
+├── plotting/
+│   ├── plot_states.m
+│   └── animate_quad.m
+└── run_simulation.m
+```
+
+Add subfolders to the path at the top of your main script:
+
+```matlab
+addpath(genpath(fileparts(mfilename('fullpath'))));
+```
+
+`mfilename('fullpath')` gives the location of the currently running file, so this works regardless of where MATLAB was launched from.
+
+---
+
+## 4. Plotting and Visualization
+
+### 4.1 Basics
+
+```matlab
+t = linspace(0, 10, 500);
+y = exp(-0.3*t) .* sin(2*pi*t);
+
+figure;
+plot(t, y, 'LineWidth', 1.5);
+grid on;
+xlabel('Time (s)');
+ylabel('Amplitude');
+title('Damped Oscillation');
+```
+
+Always label axes with units. A plot without units is not evidence.
+
+### 4.2 Multiple Series
+
+```matlab
+figure; hold on;
+plot(t, x(:,1), 'r-',  'DisplayName', 'x');
+plot(t, x(:,2), 'g--', 'DisplayName', 'y');
+plot(t, x(:,3), 'b-.', 'DisplayName', 'z');
+hold off;
+legend('show', 'Location', 'best');
+grid on;
+```
+
+`hold on` prevents each new `plot` from wiping the axes. `DisplayName` plus `legend('show')` is more maintainable than passing a list of strings to `legend` — reorder your plot calls and the labels follow automatically.
+
+### 4.3 Subplots
+
+```matlab
+figure('Position', [100 100 900 700]);
+
+subplot(3,2,1);
+plot(t, x(:,1)); ylabel('x (m)'); grid on;
+
+subplot(3,2,2);
+plot(t, rad2deg(x(:,7))); ylabel('\phi (deg)'); grid on;
+% ... etc
+```
+
+`subplot(rows, cols, index)` — index runs left-to-right, top-to-bottom. LaTeX-style markup in labels (`\phi`, `\omega`) renders automatically.
+
+### 4.4 3D Trajectory
+
+```matlab
+figure;
+plot3(x(:,1), x(:,2), -x(:,3), 'LineWidth', 1.5);
+grid on; axis equal;
+xlabel('North (m)'); ylabel('East (m)'); zlabel('Up (m)');
+view(45, 25);
+```
+
+Note the `-x(:,3)`. In NED coordinates z points *down*, so negate it for an intuitive "up" axis. `axis equal` prevents the visual distortion that makes a gentle spiral look like a violent corkscrew.
+
+### 4.5 Saving Figures
+
+```matlab
+exportgraphics(gcf, 'response.png', 'Resolution', 300);
+```
+
+`exportgraphics` (R2020a+) produces tight, correctly-sized output. The older `saveas` adds enormous whitespace margins.
+
+---
+
+## 5. Solving ODEs — the Engine of Simulation
+
+Everything in Part III rests on this.
+
+### 5.1 The Standard Form
+
+MATLAB solvers require first-order form:
+
+$$\dot{\mathbf{x}} = f(t, \mathbf{x})$$
+
+A second-order system becomes first-order by introducing velocity as a state. For a mass-spring-damper $m\ddot{y} + c\dot{y} + ky = 0$, let $x_1 = y$, $x_2 = \dot{y}$:
+
+$$\dot{x}_1 = x_2, \qquad \dot{x}_2 = -\frac{c}{m}x_2 - \frac{k}{m}x_1$$
+
+```matlab
+function dx = msd(t, x)
+    m = 1; c = 0.5; k = 4;
+    dx = [ x(2);
+          -(c/m)*x(2) - (k/m)*x(1) ];
+end
+```
+
+```matlab
+[t, x] = ode45(@msd, [0 20], [1; 0]);
+plot(t, x(:,1)); grid on;
+```
+
+Your 12-state quadcopter is the same idea, just larger.
+
+### 5.2 Choosing a Solver
+
+| Solver | Use when |
+|---|---|
+| `ode45` | Default. Non-stiff, medium accuracy. Start here. |
+| `ode23` | Crude tolerance, mildly stiff. Faster, less accurate. |
+| `ode113` | Smooth problems needing tight tolerance; expensive derivative evaluations. |
+| `ode15s` | **Stiff** systems — widely separated time constants. |
+| `ode23t` | Moderately stiff, minimal numerical damping. |
+
+Quadcopter dynamics with fast motor time constants (~20 ms) alongside slow position dynamics (~2 s) are **mildly stiff**. `ode45` usually copes but may take very small steps. If your simulation crawls, try `ode15s`.
+
+### 5.3 Options
+
+```matlab
+opts = odeset('RelTol', 1e-8, ...
+              'AbsTol', 1e-10, ...
+              'MaxStep', 0.01, ...
+              'Stats',  'on');
+
+[t, x] = ode45(@(t,x) quad_dynamics(t,x,p), [0 10], x0, opts);
+```
+
+- `RelTol`/`AbsTol` — tighten these when results change with tolerance. If they do, you haven't converged.
+- `MaxStep` — force a ceiling on step size. Critical when your input changes discontinuously (a step command); otherwise the solver may step straight over the transition.
+- `Stats` — reports steps taken and failed attempts. A high failure count signals stiffness.
+
+### 5.4 Fixed-Step Integration
+
+Variable-step solvers are wrong for controller design, because a real flight controller runs at a **fixed** rate. To match reality, integrate at fixed step with the control law running at its true frequency:
+
+```matlab
+dt   = 1/400;                  % 400 Hz control loop
+T    = 10;
+N    = round(T/dt);
+x    = zeros(12, N+1);
+x(:,1) = x0;
+t    = (0:N)*dt;
+
+for k = 1:N
+    u = controller(x(:,k), setpoint, p, dt);   % runs once per step
+    x(:,k+1) = rk4_step(@quad_dynamics, t(k), x(:,k), u, dt, p);
+end
+```
+
+With RK4:
+
+```matlab
+function xn = rk4_step(f, t, x, u, dt, p)
+    k1 = f(t,        x,           u, p);
+    k2 = f(t+dt/2,   x+dt/2*k1,   u, p);
+    k3 = f(t+dt/2,   x+dt/2*k2,   u, p);
+    k4 = f(t+dt,     x+dt*k3,     u, p);
+    xn = x + dt/6*(k1 + 2*k2 + 2*k3 + k4);
+end
+```
+
+**Use `ode45` for plant validation. Use fixed-step RK4 for controller development.** The variable-step solver will happily hide discretization problems that will bite you on real hardware.
+
+### 5.5 Event Detection
+
+Stop integration on a condition — ground contact, for instance:
+
+```matlab
+function [value, isterminal, direction] = ground_event(t, x)
+    value      = x(3);    % NED down-position; zero at ground
+    isterminal = 1;       % stop integrating
+    direction  = 1;       % only when increasing (descending)
+end
+
+opts = odeset('Events', @ground_event);
+[t, x, te, xe, ie] = ode45(@(t,x) quad_dynamics(t,x,p), [0 20], x0, opts);
+```
+
+---
+
+# Part II — Quadcopter Theory
+
+## 6. Frames, Notation, and Conventions
+
+Conventions are where most quadcopter models go wrong. Choose, document, and never deviate.
+
+### 6.1 Inertial Frame — NED
+
+North-East-Down, fixed to the earth:
+- $x_I$ → North
+- $y_I$ → East
+- $z_I$ → **Down**
+
+Down-positive is standard in aerospace because it makes the frame right-handed with x forward, and gravity becomes simply $+g$ along $z$. The cost is that altitude is negative $z$. Get used to it, or use ENU consistently instead — but do not mix.
+
+### 6.2 Body Frame — FRD
+
+Front-Right-Down, fixed to the airframe, origin at the center of mass:
+- $x_B$ → forward (nose)
+- $y_B$ → right
+- $z_B$ → down through the belly
+
+Thrust acts along $-z_B$ (upward out of the top).
+
+### 6.3 State Vector
+
+Twelve states:
+
+$$\mathbf{x} = \begin{bmatrix} p_n & p_e & p_d & u & v & w & \phi & \theta & \psi & p & q & r \end{bmatrix}^T$$
+
+| Index | Symbol | Meaning | Frame | Units |
+|---|---|---|---|---|
+| 1–3 | $p_n, p_e, p_d$ | Position | Inertial | m |
+| 4–6 | $u, v, w$ | Linear velocity | **Body** | m/s |
+| 7–9 | $\phi, \theta, \psi$ | Roll, pitch, yaw | — | rad |
+| 10–12 | $p, q, r$ | Angular velocity | **Body** | rad/s |
+
+Velocity in the *body* frame is the aerodynamicist's convention and simplifies the force equations, since thrust and drag are naturally body-fixed. Some texts use inertial velocity instead; both work, but the equations differ. This tutorial uses body-frame velocity throughout.
+
+### 6.4 Rotor Numbering — X Configuration
+
+Viewed from above, x forward:
+
+```
+        x_B (front)
+           ↑
+   M4 ◯         ◯ M1
+       ＼       ／
+         ＼   ／
+           ✕           → y_B (right)
+         ／   ＼
+       ／       ＼
+   M3 ◯         ◯ M2
+```
+
+| Motor | Position | Spin direction | Reaction torque on frame |
+|---|---|---|---|
+| M1 | Front-right | CCW | +yaw (nose right) |
+| M2 | Rear-right | CW | −yaw |
+| M3 | Rear-left | CCW | +yaw |
+| M4 | Front-left | CW | −yaw |
+
+Diagonally opposite rotors spin the same direction, so that in hover the net reaction torque cancels. Differential thrust between the CW pair and the CCW pair produces yaw.
+
+Different autopilots number rotors differently — Betaflight, PX4, and ArduPilot all disagree. Pick one, write it down at the top of your parameter file, and verify against your actual hardware before you trust any mixer output.
+
+---
+
+## 7. Rotation Representations
+
+### 7.1 Rotation Matrix from Euler Angles
+
+Using the aerospace Z-Y-X (yaw-pitch-roll) sequence, the matrix rotating a **body** vector into the **inertial** frame:
+
+$$R_{IB} = R_z(\psi)R_y(\theta)R_x(\phi)$$
+
+$$R_{IB} = \begin{bmatrix}
+c\theta c\psi & s\phi s\theta c\psi - c\phi s\psi & c\phi s\theta c\psi + s\phi s\psi \\
+c\theta s\psi & s\phi s\theta s\psi + c\phi c\psi & c\phi s\theta s\psi - s\phi c\psi \\
+-s\theta      & s\phi c\theta                     & c\phi c\theta
+\end{bmatrix}$$
+
+where $c = \cos$, $s = \sin$.
+
+```matlab
+function R = rotation_matrix(phi, theta, psi)
+%ROTATION_MATRIX  Body-to-inertial DCM, Z-Y-X (yaw-pitch-roll) sequence.
+    cphi = cos(phi);   sphi = sin(phi);
+    cth  = cos(theta); sth  = sin(theta);
+    cpsi = cos(psi);   spsi = sin(psi);
+
+    R = [ cth*cpsi,  sphi*sth*cpsi - cphi*spsi,  cphi*sth*cpsi + sphi*spsi;
+          cth*spsi,  sphi*sth*spsi + cphi*cpsi,  cphi*sth*spsi - sphi*cpsi;
+         -sth,       sphi*cth,                   cphi*cth ];
+end
+```
+
+Because $R_{IB}$ is orthonormal, $R_{BI} = R_{IB}^T$ — transpose, never `inv()`. It's faster and numerically exact.
+
+Sanity check it:
+
+```matlab
+R = rotation_matrix(0.3, -0.2, 1.1);
+assert(norm(R*R' - eye(3)) < 1e-12, 'Not orthonormal');
+assert(abs(det(R) - 1)     < 1e-12, 'Not a proper rotation');
+```
+
+Run these assertions once. A transposed or mis-signed rotation matrix produces a simulation that looks plausible and is completely wrong.
+
+### 7.2 Euler Rate Kinematics
+
+Body angular rates $(p,q,r)$ are **not** the derivatives of the Euler angles. The transformation:
+
+$$\begin{bmatrix}\dot\phi \\ \dot\theta \\ \dot\psi\end{bmatrix} =
+\begin{bmatrix}
+1 & \sin\phi\tan\theta & \cos\phi\tan\theta \\
+0 & \cos\phi           & -\sin\phi \\
+0 & \sin\phi\sec\theta & \cos\phi\sec\theta
+\end{bmatrix}
+\begin{bmatrix}p \\ q \\ r\end{bmatrix}$$
+
+```matlab
+function T = euler_rate_matrix(phi, theta)
+    T = [1, sin(phi)*tan(theta),  cos(phi)*tan(theta);
+         0, cos(phi),            -sin(phi);
+         0, sin(phi)/cos(theta),  cos(phi)/cos(theta)];
+end
+```
+
+**The singularity:** at $\theta = \pm 90°$, $\tan\theta \to \infty$ and this matrix blows up. This is gimbal lock. For a quadcopter doing normal flight (pitch under ~45°) Euler angles are fine and far easier to interpret. For aerobatics, flips, or anything approaching vertical, use quaternions.
+
+### 7.3 Quaternions
+
+A unit quaternion $\mathbf{q} = [q_w, q_x, q_y, q_z]^T$ has no singularities and four states instead of nine.
+
+Kinematics:
+
+$$\dot{\mathbf{q}} = \frac{1}{2}\,\mathbf{q} \otimes \begin{bmatrix} 0 \\ \boldsymbol{\omega}_B \end{bmatrix}$$
+
+```matlab
+function qdot = quat_kinematics(q, omega)
+%QUAT_KINEMATICS  q = [qw; qx; qy; qz], omega = body rates (rad/s)
+    p = omega(1); qr = omega(2); r = omega(3);
+    Omega = [ 0, -p, -qr, -r;
+              p,  0,   r, -qr;
+             qr, -r,   0,   p;
+              r, qr,  -p,   0];
+    qdot = 0.5 * Omega * q;
+end
+
+function R = quat_to_rotmat(q)
+    q = q / norm(q);
+    qw = q(1); qx = q(2); qy = q(3); qz = q(4);
+    R = [1-2*(qy^2+qz^2),   2*(qx*qy-qw*qz),   2*(qx*qz+qw*qy);
+         2*(qx*qy+qw*qz), 1-2*(qx^2+qz^2),     2*(qy*qz-qw*qx);
+         2*(qx*qz-qw*qy),   2*(qy*qz+qw*qx), 1-2*(qx^2+qy^2)];
+end
+```
+
+Numerical integration drifts the norm away from 1. Renormalize every step:
+
+```matlab
+q = q / norm(q);
+```
+
+**Recommendation:** build your first model with Euler angles — they're readable and debuggable, and you can inspect roll/pitch/yaw directly in the workspace. Switch to quaternions once the model is validated and you need large-angle capability. Structure the code so the attitude representation is swappable.
+
+---
+
+## 8. Rigid-Body Dynamics
+
+### 8.1 Translational — Newton in the Body Frame
+
+Because the body frame rotates, Newton's law picks up a Coriolis term:
+
+$$m(\dot{\mathbf{v}}_B + \boldsymbol{\omega}_B \times \mathbf{v}_B) = \mathbf{F}_B$$
+
+Forces on the body: thrust along $-z_B$, gravity rotated in from the inertial frame, drag.
+
+$$\mathbf{F}_B = \begin{bmatrix}0\\0\\-T\end{bmatrix} + R_{IB}^T\begin{bmatrix}0\\0\\mg\end{bmatrix} + \mathbf{F}_{drag}$$
+
+Expanded component-wise:
+
+$$\dot{u} = rv - qw - g\sin\theta + \frac{F_x}{m}$$
+$$\dot{v} = pw - ru + g\cos\theta\sin\phi + \frac{F_y}{m}$$
+$$\dot{w} = qu - pv + g\cos\theta\cos\phi - \frac{T}{m} + \frac{F_z}{m}$$
+
+### 8.2 Rotational — Euler's Equations
+
+$$\mathbf{I}\dot{\boldsymbol{\omega}}_B + \boldsymbol{\omega}_B \times (\mathbf{I}\boldsymbol{\omega}_B) = \boldsymbol{\tau}_B$$
+
+For a symmetric quadcopter the inertia tensor is diagonal, $\mathbf{I} = \text{diag}(I_{xx}, I_{yy}, I_{zz})$, which reduces the equations to:
+
+$$\dot{p} = \frac{I_{yy}-I_{zz}}{I_{xx}}qr + \frac{\tau_\phi}{I_{xx}}$$
+$$\dot{q} = \frac{I_{zz}-I_{xx}}{I_{yy}}pr + \frac{\tau_\theta}{I_{yy}}$$
+$$\dot{r} = \frac{I_{xx}-I_{yy}}{I_{zz}}pq + \frac{\tau_\psi}{I_{zz}}$$
+
+The cross-coupling terms are what make a quadcopter genuinely nonlinear. In hover ($p,q,r \approx 0$) they vanish, which is why linear controllers work so well near hover and degrade during aggressive maneuvers.
+
+### 8.3 Gyroscopic Effect of the Rotors
+
+Spinning rotors resist tilting. With rotor inertia $J_r$ about its spin axis and net rotor speed $\Omega_r = \Omega_1 - \Omega_2 + \Omega_3 - \Omega_4$:
+
+$$\tau_{gyro} = \begin{bmatrix} -J_r q \Omega_r \\ \;\;\;J_r p \Omega_r \\ 0 \end{bmatrix}$$
+
+This is typically small for a hobby quadcopter (rotor inertia is on the order of $10^{-5}$ kg·m²) but grows with rotor size. Include it — the cost is three lines.
+
+### 8.4 Translational Kinematics
+
+Body velocity must be rotated into the inertial frame to update position:
+
+$$\dot{\mathbf{p}}_I = R_{IB}\,\mathbf{v}_B$$
+
+---
+
+## 9. Rotor Aerodynamics and the Mixer
+
+### 9.1 Thrust and Torque
+
+In hover, momentum theory gives thrust proportional to the square of rotor speed:
+
+$$T_i = k_T \Omega_i^2, \qquad Q_i = k_Q \Omega_i^2$$
+
+$k_T$ (N·s²/rad²) and $k_Q$ (N·m·s²/rad²) are determined by propeller geometry and air density. Measure them on a thrust stand — published values for a given prop vary widely.
+
+Typical order of magnitude for a 5-inch prop: $k_T \approx 1\text{–}3 \times 10^{-6}$, with $k_Q/k_T \approx 0.01\text{–}0.02$ m.
+
+### 9.2 Total Thrust and Torques
+
+$$T = k_T(\Omega_1^2 + \Omega_2^2 + \Omega_3^2 + \Omega_4^2)$$
+
+For an X configuration with arm length $\ell$, the moment arm about roll and pitch axes is $\ell/\sqrt{2}$:
+
+$$\tau_\phi = \frac{\ell}{\sqrt 2}k_T(-\Omega_1^2 - \Omega_2^2 + \Omega_3^2 + \Omega_4^2)$$
+$$\tau_\theta = \frac{\ell}{\sqrt 2}k_T(\Omega_1^2 - \Omega_2^2 - \Omega_3^2 + \Omega_4^2)$$
+$$\tau_\psi = k_Q(\Omega_1^2 - \Omega_2^2 + \Omega_3^2 - \Omega_4^2)$$
+
+The sign patterns follow directly from the geometry and spin directions in §6.4. **Derive them for your own numbering rather than copying** — this is the single most common source of a model that flies in simulation and flips on the bench.
+
+### 9.3 The Mixer Matrix
+
+Stack these into a linear map from squared rotor speeds to wrench:
+
+$$\begin{bmatrix} T \\ \tau_\phi \\ \tau_\theta \\ \tau_\psi \end{bmatrix} =
+\underbrace{\begin{bmatrix}
+k_T & k_T & k_T & k_T \\
+-\frac{\ell k_T}{\sqrt2} & -\frac{\ell k_T}{\sqrt2} & \frac{\ell k_T}{\sqrt2} & \frac{\ell k_T}{\sqrt2} \\
+\frac{\ell k_T}{\sqrt2} & -\frac{\ell k_T}{\sqrt2} & -\frac{\ell k_T}{\sqrt2} & \frac{\ell k_T}{\sqrt2} \\
+k_Q & -k_Q & k_Q & -k_Q
+\end{bmatrix}}_{M}
+\begin{bmatrix}\Omega_1^2\\\Omega_2^2\\\Omega_3^2\\\Omega_4^2\end{bmatrix}$$
+
+```matlab
+function M = mixer_matrix(p)
+    d = p.arm / sqrt(2);
+    M = [ p.kT,     p.kT,     p.kT,     p.kT;
+         -d*p.kT,  -d*p.kT,   d*p.kT,   d*p.kT;
+          d*p.kT,  -d*p.kT,  -d*p.kT,   d*p.kT;
+          p.kQ,    -p.kQ,     p.kQ,    -p.kQ ];
+end
+```
+
+The controller produces a desired wrench; invert to get rotor commands:
+
+```matlab
+omega_sq = M \ [T; tau_phi; tau_theta; tau_psi];
+omega_sq = max(omega_sq, 0);              % can't have negative squared speed
+omega    = sqrt(omega_sq);
+omega    = min(max(omega, p.w_min), p.w_max);
+```
+
+Use `M \ b`, not `inv(M)*b` — better conditioned and faster. The `max(omega_sq, 0)` clamp matters: an aggressive command can request a physically impossible negative thrust, and `sqrt` of a negative yields complex numbers that will propagate silently through your entire simulation.
+
+### 9.4 Effects Worth Adding Later
+
+- **Blade flapping** — rotors tilt in forward flight, producing a drag-like force roughly proportional to velocity.
+- **Ground effect** — thrust increases within about one rotor diameter of the ground.
+- **Induced drag** — $\mathbf{F}_{drag} = -k_d \mathbf{v}_B$ is a crude but useful first approximation.
+
+Start with linear drag; add complexity only when simulation and flight data disagree.
+
+---
+
+## 10. Motor and ESC Dynamics
+
+Rotors do not change speed instantaneously. A first-order lag captures most of it:
+
+$$\dot{\Omega}_i = \frac{1}{\tau_m}(\Omega_{i,cmd} - \Omega_i)$$
+
+Typical $\tau_m$ for a small brushless motor: 15–50 ms.
+
+```matlab
+omega_dot = (omega_cmd - omega) / p.tau_m;
+```
+
+This matters more than it appears. Motor lag adds phase lag to the rate loop and is often the limiting factor on how high you can push rate-loop D gain before oscillation. Omit it and your simulation will let you tune gains that scream on real hardware.
+
+To include it properly, add the four rotor speeds as states, giving a 16-state model. Alternatively, run motor dynamics in the fixed-step loop outside the ODE solver, which keeps the plant at 12 states.
+
+Also model:
+- **Command quantization** — real ESC protocols (DShot600) have finite resolution.
+- **Latency** — one or two control-loop periods of delay between command and response.
+- **Battery sag** — thrust constant drops as voltage falls.
+
+---
+
+# Part III — Building the Simulation
+
+## 11. Parameter File
+
+```matlab
+function p = quad_params()
+%QUAD_PARAMS  Physical parameters for a 5-inch class quadcopter.
+%   All SI units. Rotor numbering: X-config, M1 front-right (CCW),
+%   M2 rear-right (CW), M3 rear-left (CCW), M4 front-left (CW).
+
+    % --- Mass and geometry ---
+    p.m    = 0.68;          % total mass, kg
+    p.g    = 9.81;          % gravity, m/s^2
+    p.arm  = 0.17;          % center to rotor axis, m
+
+    % --- Inertia (diagonal, body frame), kg*m^2 ---
+    p.Ixx  = 6.9e-3;
+    p.Iyy  = 6.9e-3;
+    p.Izz  = 1.32e-2;
+    p.I    = diag([p.Ixx, p.Iyy, p.Izz]);
+    p.Iinv = inv(p.I);
+
+    % --- Rotor coefficients ---
+    p.kT   = 1.6e-6;        % thrust,  N/(rad/s)^2
+    p.kQ   = 2.4e-8;        % torque,  N*m/(rad/s)^2
+    p.Jr   = 3.4e-5;        % rotor inertia about spin axis, kg*m^2
+
+    % --- Motor limits and dynamics ---
+    p.w_min = 100;          % rad/s
+    p.w_max = 2200;         % rad/s
+    p.tau_m = 0.025;        % motor time constant, s
+
+    % --- Aerodynamic drag (linear approximation) ---
+    p.kd    = 0.10;         % N/(m/s)
+
+    % --- Derived ---
+    p.w_hover = sqrt(p.m * p.g / (4 * p.kT));
+    p.T_hover = p.m * p.g;
+    p.M       = mixer_matrix(p);
+end
+```
+
+Check that hover is achievable:
+
+```matlab
+p = quad_params();
+fprintf('Hover rotor speed: %.1f rad/s (%.1f%% of max)\n', ...
+        p.w_hover, 100*p.w_hover/p.w_max);
+```
+
+You want hover around 40–55% of maximum. Much lower and the vehicle is overpowered and twitchy; much higher and there's no control authority left for maneuvering.
+
+### Measuring Inertia
+
+Don't guess. Use a **bifilar pendulum**: suspend the frame on two parallel strings of length $L$ separated by distance $d$, twist gently, and time the oscillation period $T$:
+
+$$I = \frac{m g d^2 T^2}{16\pi^2 L}$$
+
+Repeat about each axis. Twenty minutes of measurement saves days of wondering why your simulated gains don't transfer.
+
+---
+
+## 12. The Dynamics Function
+
+```matlab
+function xdot = quad_dynamics(t, x, u, p)
+%QUAD_DYNAMICS  12-state 6-DOF quadcopter derivative.
+%   x = [pn pe pd u v w phi theta psi p q r]'
+%   u = [w1 w2 w3 w4]' rotor speeds (rad/s)
+
+    % --- Unpack ---
+    vel   = x(4:6);
+    phi   = x(7);  theta = x(8);  psi = x(9);
+    omega = x(10:12);
+    pr = omega(1); qr = omega(2); rr = omega(3);
+
+    w = u(:);
+    w = min(max(w, p.w_min), p.w_max);
+    w2 = w.^2;
+
+    % --- Forces and torques from mixer ---
+    wrench = p.M * w2;
+    T      = wrench(1);
+    tau    = wrench(2:4);
+
+    % --- Rotation ---
+    R = rotation_matrix(phi, theta, psi);
+
+    % --- Translational dynamics (body frame) ---
+    F_grav   = R' * [0; 0; p.m*p.g];
+    F_thrust = [0; 0; -T];
+    F_drag   = -p.kd * vel;
+    F_body   = F_grav + F_thrust + F_drag;
+
+    vel_dot = F_body/p.m - cross(omega, vel);
+
+    % --- Gyroscopic torque from rotors ---
+    Omega_r  = w(1) - w(2) + w(3) - w(4);
+    tau_gyro = [-p.Jr*qr*Omega_r;
+                 p.Jr*pr*Omega_r;
+                 0];
+
+    % --- Rotational dynamics ---
+    omega_dot = p.Iinv * (tau + tau_gyro - cross(omega, p.I*omega));
+
+    % --- Kinematics ---
+    pos_dot   = R * vel;
+    euler_dot = euler_rate_matrix(phi, theta) * omega;
+
+    xdot = [pos_dot; vel_dot; euler_dot; omega_dot];
+end
+```
+
+### Validation Tests
+
+Before adding any control, prove the plant is right.
+
+**Test 1 — Hover equilibrium.** Command exactly hover speed from level rest. Nothing should move.
+
+```matlab
+p  = quad_params();
+x0 = zeros(12,1);
+u  = p.w_hover * ones(4,1);
+xdot = quad_dynamics(0, x0, u, p);
+assert(norm(xdot) < 1e-9, 'Hover is not an equilibrium!');
+```
+
+**Test 2 — Free fall.** Zero thrust from rest should accelerate downward at exactly $g$.
+
+```matlab
+xdot = quad_dynamics(0, zeros(12,1), zeros(4,1), p);
+assert(abs(xdot(6) - p.g) < 1e-9, 'Free-fall acceleration wrong');
+```
+
+**Test 3 — Roll torque sign.** Speed up the left pair (M3, M4), slow the right pair. Roll rate derivative should be positive (right wing down, per FRD).
+
+```matlab
+u = p.w_hover * [0.9; 0.9; 1.1; 1.1];
+xdot = quad_dynamics(0, zeros(12,1), u, p);
+fprintf('p_dot = %.4f rad/s^2 (expect positive)\n', xdot(10));
+```
+
+**Test 4 — Energy conservation.** With drag off and no thrust, total mechanical energy must stay constant through a tumbling trajectory. Drift beyond ~1e-6 means an error in the Coriolis or Euler terms.
+
+These four tests catch the overwhelming majority of modeling bugs. Run them every time you touch the dynamics.
+
+---
+
+## 13. Integrating and Animating
+
+```matlab
+% run_simulation.m
+clear; clc; close all;
+p = quad_params();
+
+x0 = zeros(12,1);
+x0(3) = -2;                          % 2 m altitude (NED: negative up)
+x0(7) = deg2rad(5);                  % small roll disturbance
+
+dt = 1/400; T = 5;
+N  = round(T/dt);
+X  = zeros(12, N+1);  X(:,1) = x0;
+U  = zeros(4, N);
+tv = (0:N)*dt;
+
+for k = 1:N
+    u = p.w_hover * ones(4,1);       % open loop for now
+    U(:,k)   = u;
+    X(:,k+1) = rk4_step(@quad_dynamics, tv(k), X(:,k), u, dt, p);
+end
+
+plot_states(tv, X);
+```
+
+Open loop, the 5° roll will diverge — a quadcopter is inherently unstable. That divergence *is* the validation: if it stays level, something is wrong.
+
+### Plotting Helper
+
+```matlab
+function plot_states(t, X)
+    figure('Position',[100 100 1000 750]);
+    labels = {'p_n (m)','p_e (m)','p_d (m)','u (m/s)','v (m/s)','w (m/s)', ...
+              '\phi (deg)','\theta (deg)','\psi (deg)', ...
+              'p (deg/s)','q (deg/s)','r (deg/s)'};
+    for i = 1:12
+        subplot(4,3,i);
+        y = X(i,:);
+        if i >= 7, y = rad2deg(y); end
+        plot(t, y, 'LineWidth', 1.2);
+        ylabel(labels{i}); grid on;
+        if i > 9, xlabel('Time (s)'); end
+    end
+end
+```
+
+### Animation
+
+```matlab
+function animate_quad(t, X, p, speed)
+    if nargin < 4, speed = 1; end
+    figure; ax = axes; hold(ax,'on'); grid on; axis equal;
+    xlabel('N (m)'); ylabel('E (m)'); zlabel('Up (m)');
+    view(45,25);
+
+    d = p.arm/sqrt(2);
+    arms_b = [ d  d -d -d;      % rotor positions, body frame
+              -d  d  d -d;
+               0  0  0  0];
+
+    h_arms = plot3(ax, nan, nan, nan, 'k-', 'LineWidth', 2);
+    h_rot  = plot3(ax, nan, nan, nan, 'ro', 'MarkerFaceColor','r');
+    h_path = plot3(ax, nan, nan, nan, 'b-');
+
+    step = max(1, round(1/(30*mean(diff(t))*speed)));  % ~30 fps
+    for k = 1:step:length(t)
+        R  = rotation_matrix(X(7,k), X(8,k), X(9,k));
+        pI = X(1:3,k);
+        aI = R*arms_b + pI;
+
+        set(h_arms, 'XData', aI(1,[1 3 nan 2 4]), ...
+                    'YData', aI(2,[1 3 nan 2 4]), ...
+                    'ZData', -aI(3,[1 3 nan 2 4]));
+        set(h_rot,  'XData', aI(1,:), 'YData', aI(2,:), 'ZData', -aI(3,:));
+        set(h_path, 'XData', X(1,1:k), 'YData', X(2,1:k), 'ZData', -X(3,1:k));
+        drawnow limitrate;
+    end
+end
+```
+
+Animation catches sign errors that plots hide. A quadcopter that rolls the wrong way is obvious in 3D and invisible in a time series.
+
+---
+
+## 14. Trimming and Linearization
+
+### 14.1 Trim
+
+Find the equilibrium numerically rather than assuming it:
+
+```matlab
+p = quad_params();
+x_guess = zeros(12,1);
+u_guess = p.w_hover*ones(4,1);
+
+cost = @(z) norm(quad_dynamics(0, z(1:12), z(13:16), p));
+z0   = [x_guess; u_guess];
+opts = optimoptions('fminunc','Display','off','OptimalityTolerance',1e-12);
+z_trim = fminunc(cost, z0, opts);
+
+x_trim = z_trim(1:12);
+u_trim = z_trim(13:16);
+fprintf('Residual: %.3e\n', cost(z_trim));
+```
+
+### 14.2 Numerical Jacobian
+
+Linearize about trim to get $\dot{\mathbf{x}} \approx A\Delta\mathbf{x} + B\Delta\mathbf{u}$:
+
+```matlab
+function [A, B] = linearize_quad(x0, u0, p)
+    n = numel(x0); m = numel(u0);
+    A = zeros(n,n); B = zeros(n,m);
+    h = 1e-6;
+
+    for i = 1:n
+        dx = zeros(n,1); dx(i) = h;
+        A(:,i) = (quad_dynamics(0, x0+dx, u0, p) - ...
+                  quad_dynamics(0, x0-dx, u0, p)) / (2*h);
+    end
+    for i = 1:m
+        du = zeros(m,1); du(i) = h;
+        B(:,i) = (quad_dynamics(0, x0, u0+du, p) - ...
+                  quad_dynamics(0, x0, u0-du, p)) / (2*h);
+    end
+end
+```
+
+Central differences (the $\pm h$ form) are second-order accurate — noticeably better than forward differences for the same cost.
+
+### 14.3 Reading the Result
+
+```matlab
+[A, B] = linearize_quad(x_trim, u_trim, p);
+eig(A)
+```
+
+You'll find eigenvalues at the origin (position and yaw are integrators — no restoring force) and unstable modes from the pendulum-like tilt dynamics. This confirms analytically what the open-loop simulation showed: the vehicle requires active stabilization.
+
+With Control System Toolbox:
+
+```matlab
+sys = ss(A, B, eye(12), 0);
+rank(ctrb(A,B))     % should be 12 — fully controllable
+```
+
+---
+
+# Part IV — Control
+
+## 15. Cascaded PID Architecture
+
+Standard multirotor control is a nested cascade, fastest loop innermost:
+
+```
+position setpoint
+      ↓
+ [Position P] → velocity setpoint      ~50 Hz
+      ↓
+ [Velocity PID] → acceleration → tilt  ~50 Hz
+      ↓
+ [Attitude P] → rate setpoint          ~250 Hz
+      ↓
+ [Rate PID] → torque                   ~1000 Hz
+      ↓
+ [Mixer] → motor commands
+```
+
+Each loop should be roughly 3–5× faster than the one enclosing it. This separation is what makes independent tuning possible — the inner loop looks like an instantaneous, ideal actuator to the outer one.
+
+**Tune from the inside out.** Rate loop first, always. An outer loop wrapped around a badly tuned inner loop cannot be fixed by adjusting the outer gains.
+
+---
+
+## 16. Rate Loop
+
+```matlab
+function [tau, state] = rate_controller(omega, omega_sp, state, p, dt)
+    e = omega_sp - omega;
+
+    state.integ = state.integ + e*dt;
+    state.integ = min(max(state.integ, -p.rate_i_lim), p.rate_i_lim);
+
+    % Derivative on measurement, low-pass filtered
+    d_raw     = -(omega - state.omega_prev)/dt;
+    alpha     = dt/(dt + 1/(2*pi*p.rate_d_cutoff));
+    state.d_f = state.d_f + alpha*(d_raw - state.d_f);
+
+    tau = p.rate_kp.*e + p.rate_ki.*state.integ + p.rate_kd.*state.d_f;
+
+    state.omega_prev = omega;
+end
+```
+
+Two details matter here:
+
+**Derivative on measurement, not error.** Differentiating the error term produces a huge spike whenever the setpoint steps. Using $-\dot{y}$ instead of $\dot{e}$ eliminates derivative kick while retaining identical damping behavior.
+
+**Low-pass the derivative.** Gyro noise is broadband; differentiating amplifies it directly. A 60–80 Hz first-order filter is typical. Without it, D gain amplifies noise into motor commands and you get hot motors and audible whine.
+
+### Tuning
+
+1. Set $K_i = K_d = 0$.
+2. Raise $K_p$ until sustained oscillation, then back off to ~50%.
+3. Add $K_d$ to damp the residual overshoot. Stop as soon as motor commands look noisy.
+4. Add $K_i$ last, just enough to eliminate steady-state error — typically $K_i \approx K_p/2$ to $K_p$.
+
+Test with a step command:
+
+```matlab
+omega_sp = [deg2rad(100); 0; 0];    % 100 deg/s roll rate step
+```
+
+Target: rise time under ~50 ms, overshoot under 10%, no sustained oscillation.
+
+---
+
+## 17. Attitude Loop
+
+Attitude control is proportional-only — the rate loop's integrator handles steady-state error, and adding a second integrator invites oscillation.
+
+```matlab
+function omega_sp = attitude_controller(eul, eul_sp, p)
+    e = eul_sp - eul;
+    e(3) = wrapToPi(e(3));                  % shortest yaw path
+    omega_sp = p.att_kp .* e;
+    omega_sp = min(max(omega_sp, -p.rate_max), p.rate_max);
+end
+```
+
+`wrapToPi` is essential. Without it, commanding a heading change from 179° to −179° produces a 358° rotation instead of 2°. Hand-rolled if you lack the toolbox:
+
+```matlab
+function a = wrapToPi(a)
+    a = mod(a + pi, 2*pi) - pi;
+end
+```
+
+For large-angle maneuvers, quaternion attitude control avoids Euler singularities entirely:
+
+```matlab
+function omega_sp = quat_attitude_controller(q, q_sp, kp)
+    q_err = quat_multiply(quat_conj(q), q_sp);
+    if q_err(1) < 0, q_err = -q_err; end     % shortest rotation
+    omega_sp = 2 * kp .* q_err(2:4);
+end
+```
+
+The sign flip picks the shorter of the two equivalent rotations — without it the vehicle occasionally takes the long way around.
+
+---
+
+## 18. Position and Velocity Loops
+
+Position P produces a velocity setpoint; velocity PID produces a desired acceleration; that acceleration converts to a tilt command.
+
+```matlab
+function [T, phi_sp, theta_sp, state] = position_controller(x, pos_sp, psi, state, p, dt)
+    pos = x(1:3);
+    vel_I = rotation_matrix(x(7),x(8),x(9)) * x(4:6);
+
+    % Outer: position → velocity setpoint
+    vel_sp = p.pos_kp .* (pos_sp - pos);
+    vel_sp = min(max(vel_sp, -p.vel_max), p.vel_max);
+
+    % Inner: velocity → acceleration
+    ev = vel_sp - vel_I;
+    state.vi = state.vi + ev*dt;
+    state.vi = min(max(state.vi, -p.vel_i_lim), p.vel_i_lim);
+    acc_sp = p.vel_kp.*ev + p.vel_ki.*state.vi;
+
+    % Thrust magnitude (z is down-positive)
+    T = p.m * (p.g - acc_sp(3));
+    T = min(max(T, 0.2*p.T_hover), 0.9*4*p.kT*p.w_max^2);
+
+    % Acceleration → tilt, rotated into the yaw-aligned frame
+    ax =  acc_sp(1)*cos(psi) + acc_sp(2)*sin(psi);
+    ay =  acc_sp(1)*sin(psi) - acc_sp(2)*cos(psi);
+
+    theta_sp =  atan2(ax, p.g);
+    phi_sp   =  atan2(ay, p.g);
+
+    tilt_max = deg2rad(30);
+    phi_sp   = min(max(phi_sp,   -tilt_max), tilt_max);
+    theta_sp = min(max(theta_sp, -tilt_max), tilt_max);
+end
+```
+
+The yaw rotation is what makes the vehicle move in the commanded *inertial* direction regardless of which way it's facing. The tilt limit is a safety constraint: beyond ~35°, the vertical thrust component drops enough that altitude control degrades sharply.
+
+---
+
+## 19. Motor Saturation and Anti-Windup
+
+When the commanded wrench is unachievable, prioritize. Attitude control matters more than altitude — a level vehicle descending is recoverable; a tumbling one is not.
+
+```matlab
+function w = saturating_mixer(T, tau, p)
+    w2 = p.M \ [T; tau];
+
+    if any(w2 < 0) || any(w2 > p.w_max^2)
+        % Reduce collective thrust, preserve differential (attitude) terms
+        w2_t = p.M \ [T; 0; 0; 0];
+        w2_d = w2 - w2_t;
+
+        scale = 1;
+        for i = 1:4
+            if w2_t(i) + w2_d(i) > p.w_max^2
+                scale = min(scale, (p.w_max^2 - w2_d(i))/max(w2_t(i),eps));
+            end
+        end
+        w2 = max(scale*w2_t + w2_d, 0);
+    end
+
+    w = sqrt(min(max(w2, 0), p.w_max^2));
+    w = max(w, p.w_min);
+end
+```
+
+### Anti-Windup
+
+If the actuator is saturated, the integrator must stop accumulating — otherwise it winds up to an enormous value and the vehicle overshoots wildly when saturation clears.
+
+Clamping (shown in the controllers above) is the simplest approach. Back-calculation is better:
+
+```matlab
+u_unsat = kp*e + ki*integ + kd*d;
+u_sat   = min(max(u_unsat, u_min), u_max);
+integ   = integ + (e + (1/Tt)*(u_sat - u_unsat))*dt;
+```
+
+$T_t \approx \sqrt{T_i T_d}$ is a reasonable starting point. The correction term drives the integrator back toward a value consistent with the achievable output.
+
+---
+
+## 20. LQR as an Alternative
+
+With a linearized model, LQR gives an optimal full-state feedback gain in one line.
+
+```matlab
+[A, B] = linearize_quad(x_trim, u_trim, p);
+
+Q = diag([10 10 10, 1 1 1, 5 5 5, 0.1 0.1 0.1]);   % state penalties
+R = 0.01 * eye(4);                                  % effort penalty
+
+K = lqr(A, B, Q, R);
+
+u = u_trim - K*(x - x_ref);
+```
+
+Tuning is now about relative weights rather than individual gains. Raise the position entries in `Q` for tighter tracking; raise `R` for gentler, less aggressive control.
+
+LQR handles the multi-input coupling naturally, which cascaded PID does not. Its weakness is that it's built on a linear model, so it degrades far from trim — and it needs full state feedback, meaning a good estimator. Most production autopilots still use cascaded PID for exactly these reasons, but LQR is an excellent benchmark: if your PID can't approach LQR performance near hover, your PID isn't tuned.
+
+---
+
+# Part V — Realism and Validation
+
+## 21. Sensor Models and Noise
+
+A controller tested on perfect state feedback is not tested at all.
+
+```matlab
+function meas = sensor_model(x, xdot, p, state)
+    % Gyroscope: bias + random walk + white noise
+    state.gyro_bias = state.gyro_bias + p.gyro_rw*sqrt(p.dt)*randn(3,1);
+    meas.gyro = x(10:12) + state.gyro_bias + p.gyro_noise*randn(3,1);
+
+    % Accelerometer: specific force (gravity is NOT measured in free fall)
+    R = rotation_matrix(x(7),x(8),x(9));
+    a_body = xdot(4:6) + cross(x(10:12), x(4:6)) - R'*[0;0;p.g];
+    meas.accel = a_body + state.accel_bias + p.accel_noise*randn(3,1);
+
+    % Barometer: slow, noisy, drifting
+    meas.baro = -x(3) + p.baro_noise*randn + state.baro_drift;
+
+    % GPS: low rate, larger error
+    meas.gps = x(1:3) + p.gps_noise*randn(3,1);
+end
+```
+
+The accelerometer detail is important and frequently botched: an accelerometer measures **specific force**, not acceleration. In free fall it reads zero. In hover it reads $+g$ upward. Getting this wrong breaks every attitude estimator built on top of it.
+
+Representative noise values for a consumer MEMS IMU:
+
+| Sensor | Noise density | Bias stability |
+|---|---|---|
+| Gyro | 0.005 °/s/√Hz | 10 °/hr |
+| Accel | 100 µg/√Hz | 0.05 mg |
+| Baro | 0.1 m RMS | 0.5 m/hr drift |
+| GPS | 1.5 m horizontal | — |
+
+Also model **update rates**: gyro at 8 kHz, accel at 1 kHz, baro at 50 Hz, GPS at 5–10 Hz. Rate mismatch is a real engineering constraint, not an inconvenience.
+
+---
+
+## 22. Complementary and Extended Kalman Filters
+
+### 22.1 Complementary Filter
+
+Fuse a fast, drifting gyro with a slow, noisy accelerometer:
+
+```matlab
+function [phi, theta] = complementary_filter(gyro, accel, phi, theta, dt, alpha)
+    % Gyro integration — accurate short-term, drifts long-term
+    phi_g   = phi   + gyro(1)*dt;
+    theta_g = theta + gyro(2)*dt;
+
+    % Accelerometer tilt — noisy short-term, no drift
+    phi_a   = atan2(accel(2), accel(3));
+    theta_a = atan2(-accel(1), sqrt(accel(2)^2 + accel(3)^2));
+
+    phi   = alpha*phi_g   + (1-alpha)*phi_a;
+    theta = alpha*theta_g + (1-alpha)*theta_a;
+end
+```
+
+$\alpha \approx 0.98$ at 400 Hz gives roughly a 1-second crossover. Twenty lines, runs on anything, and good enough for the great majority of multirotor applications.
+
+### 22.2 EKF Sketch
+
+```matlab
+function [xh, P] = ekf_step(xh, P, u, z, Q, R, dt, p)
+    % Predict
+    xh_pred = rk4_step(@quad_dynamics, 0, xh, u, dt, p);
+    F = eye(numel(xh)) + linearize_quad(xh, u, p)*dt;
+    P = F*P*F' + Q;
+
+    % Update
+    H = measurement_jacobian(xh_pred);
+    y = z - measurement_model(xh_pred);
+    S = H*P*H' + R;
+    K = P*H'/S;
+    xh = xh_pred + K*y;
+    P  = (eye(numel(xh)) - K*H)*P;
+    P  = 0.5*(P + P');           % enforce symmetry
+end
+```
+
+The symmetrization on the last line prevents numerical asymmetry from accumulating and eventually making $P$ non-positive-definite — a common cause of EKF divergence after long runs.
+
+Tuning $Q$ and $R$ is the real work. Start from actual measured sensor variance for $R$, then adjust $Q$ until the innovation sequence looks white.
+
+---
+
+## 23. Discretization and Fixed-Point Effects
+
+Real firmware runs at fixed rate on finite-precision hardware. Simulate that.
+
+```matlab
+% Discretize a continuous controller
+sysc = ss(Ac, Bc, Cc, Dc);
+sysd = c2d(sysc, dt, 'tustin');    % bilinear preserves stability margins
+```
+
+Effects to include as you approach hardware:
+
+```matlab
+% Sensor quantization (16-bit gyro, ±2000 deg/s)
+lsb  = deg2rad(4000)/65536;
+gyro = round(gyro/lsb)*lsb;
+
+% Control latency — one loop period
+u_applied = u_history(k-1);
+
+% Motor command quantization (DShot600, 2048 levels)
+throttle = round(throttle*2047)/2047;
+```
+
+Then compute the phase margin your loop actually has. A controller with 60° of phase margin in continuous time can drop to 30° once you account for a 2.5 ms sample delay plus filter lag — and 30° is where things start ringing.
+
+---
+
+## 24. Monte Carlo and Robustness Testing
+
+Your parameters are estimates. Test whether the controller survives being wrong about them.
+
+```matlab
+n_trials = 500;
+results  = zeros(n_trials, 3);
+
+for i = 1:n_trials
+    p = quad_params();
+    p.m   = p.m   * (1 + 0.15*randn);
+    p.Ixx = p.Ixx * (1 + 0.25*randn);
+    p.Iyy = p.Iyy * (1 + 0.25*randn);
+    p.kT  = p.kT  * (1 + 0.20*randn);
+    p.I    = diag([p.Ixx p.Iyy p.Izz]);
+    p.Iinv = inv(p.I);
+
+    [t, X] = run_closed_loop(p);
+
+    results(i,1) = max(abs(X(7,:)));            % peak roll
+    results(i,2) = rms(X(3,:) - z_ref);          % altitude tracking
+    results(i,3) = double(any(isnan(X(:))));     % divergence flag
+end
+
+fprintf('Failures: %d / %d\n', sum(results(:,3)), n_trials);
+histogram(rad2deg(results(:,1))); xlabel('Peak roll (deg)');
+```
+
+A controller that works only at nominal parameters will not survive contact with hardware. 25% inertia error is realistic if you estimated rather than measured.
+
+Also test:
+- **Wind gusts** — Dryden turbulence model, or step disturbance forces
+- **Motor failure** — set one rotor to zero mid-flight
+- **Sensor dropout** — GPS loss for 3 seconds
+- **Initial condition sweep** — recovery from 60° attitude errors
+
+---
+
+## 25. Exporting to Embedded Code
+
+The simulation's purpose is producing gains and structure you can trust on hardware.
+
+### What Transfers
+
+- **Gains** — but only if your model is well-identified. Expect to retune by 20–50%.
+- **Structure** — loop rates, filter cutoffs, saturation limits, anti-windup scheme.
+- **Test cases** — record simulated input/output traces and use them as unit tests for your firmware. This is the highest-value output of the entire exercise.
+
+### Generating Test Vectors
+
+```matlab
+% Export controller I/O for firmware regression tests
+test_data = struct();
+test_data.gyro     = gyro_log';
+test_data.setpoint = sp_log';
+test_data.output   = tau_log';
+test_data.dt       = dt;
+
+writematrix([gyro_log' sp_log' tau_log'], 'controller_vectors.csv');
+```
+
+Run the same inputs through your embedded PID implementation and diff the outputs. Any discrepancy is a bug — in one implementation or the other — found on the bench rather than in the air.
+
+### Code Generation
+
+With MATLAB Coder:
+
+```matlab
+cfg = coder.config('lib');
+cfg.TargetLang = 'C';
+codegen rate_controller -config cfg -args {zeros(3,1), zeros(3,1), state, p, 0}
+```
+
+Generated C is usually more portable than fast. For most projects, hand-writing the controller from the validated MATLAB reference produces cleaner, more maintainable firmware — and you already have the test vectors to prove it matches.
+
+---
+
+# Appendices
+
+## Appendix A — Simulink Track
+
+If you prefer block diagrams:
+
+1. **MATLAB Function block** — paste `quad_dynamics` directly in. Fastest path from the code above to a Simulink model.
+2. **Integrator chain** — feed `xdot` into an Integrator with `x0` as initial condition; feed the output back.
+3. **Bus objects** — group the 12 states into a named bus so signal lines stay readable.
+4. **Subsystems** — one per control loop, matching §15's cascade.
+5. **Simulink 3D Animation / `plot3` from a Level-2 S-function** — for visualization.
+
+Simulink is genuinely better for: multi-rate sampling, hardware-in-the-loop, and communicating architecture to other people. It's worse for: version control, scripted parameter sweeps, and rapid iteration. Many teams use MATLAB scripts for design and Simulink for final verification and code generation.
+
+## Appendix B — Symbolic Derivation
+
+Derive the equations of motion yourself rather than trusting a textbook:
+
+```matlab
+syms phi theta psi p q r u v w real
+syms m g Ixx Iyy Izz real
+syms T tphi tth tpsi real
+
+R = simplify(Rz(psi)*Ry(theta)*Rx(phi));
+omega = [p; q; r];
+vel   = [u; v; w];
+
+F = R.'*[0;0;m*g] + [0;0;-T];
+vel_dot = simplify(F/m - cross(omega, vel));
+
+I = diag([Ixx Iyy Izz]);
+omega_dot = simplify(I \ ([tphi;tth;tpsi] - cross(omega, I*omega)));
+
+matlabFunction(vel_dot, omega_dot, 'File', 'eom_generated.m');
+```
+
+`matlabFunction` writes optimized MATLAB directly from the symbolic result, eliminating transcription errors.
+
+## Appendix C — Parameter Identification from Flight Data
+
+Fit model parameters to real logs:
+
+```matlab
+function err = fit_cost(theta, log_data)
+    p = quad_params();
+    p.kT = theta(1); p.kQ = theta(2); p.kd = theta(3);
+    X_sim = simulate_with_inputs(log_data.u, log_data.t, p, log_data.x0);
+    err   = norm(X_sim(10:12,:) - log_data.gyro, 'fro');
+end
+
+theta_opt = fminsearch(@(th) fit_cost(th, log_data), theta0);
+```
+
+Excite the vehicle properly first: chirp or multisine inputs on each axis, well above the frequencies you care about. Steady hover data contains almost no information about your dynamics.
+
+## Appendix D — Common Errors
+
+| Symptom | Likely cause |
+|---|---|
+| Simulation diverges immediately | Sign error in mixer or rotation matrix; run §12 validation tests |
+| Vehicle drifts sideways in hover | Coriolis term missing or wrong sign in `vel_dot` |
+| Complex numbers appear | `sqrt` of negative in mixer; clamp `omega_sq` at zero |
+| Altitude wrong sign | NED confusion — down is positive |
+| Yaw jumps 360° | Missing `wrapToPi` |
+| Gains work in sim, oscillate on hardware | Motor dynamics or control latency not modeled |
+| `ode45` extremely slow | Stiffness from fast motor dynamics; use `ode15s` or fixed-step RK4 |
+| Attitude estimate drifts | Accelerometer modeled as measuring acceleration rather than specific force |
+| Results change with solver tolerance | Not converged — tighten `RelTol`/`AbsTol` |
+| Everything worked yesterday | Stale workspace variable; add `clear` at the top |
+
+## Appendix E — References
+
+- Beard & McLain, *Small Unmanned Aircraft: Theory and Practice* — the standard reference; excellent on frames and estimation
+- Mahony, Kumar & Corke, "Multirotor Aerial Vehicles" (*IEEE RAM*, 2012) — the best single-paper overview
+- Stevens, Lewis & Johnson, *Aircraft Control and Simulation* — rigorous on 6-DOF modeling and trim
+- Bouabdallah, "Design and Control of Quadrotors" (EPFL thesis, 2007) — foundational
+- PX4 and Betaflight source — real production controller implementations worth reading
+
+---
+
+## Suggested Path Through This Material
+
+**Week 1** — Part I. Build the mass-spring-damper. Get comfortable with `ode45` and plotting.
+
+**Week 2** — Parts II–III. Write `quad_dynamics`, pass all four validation tests, watch it tumble open-loop.
+
+**Week 3** — Part IV, rate loop only. Tune it. Step responses until they look right.
+
+**Week 4** — Attitude, then position. Fly a square waypoint pattern in simulation.
+
+**Week 5** — Part V. Add noise, add motor lag, retune, run Monte Carlo.
+
+**Week 6** — Export test vectors and port to firmware.
+
+The single most valuable habit: **validate the plant before writing any controller.** Every hour spent on the four tests in §12 saves a day of chasing a control bug that was actually a modeling bug.

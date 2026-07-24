@@ -1,0 +1,548 @@
+---
+title: Quadcopter Flight Controller — Complete Design Document
+slug: Quadcopter-Flight-Controller—Complete-Design-Document
+publishDate: 2026-07-23
+description: Quadcopter Flight Controller — Complete Design Document
+date: 2026-07-23
+tags: ['Drone']
+draft: false
+---
+
+# Quadcopter Flight Controller — Complete Design Document
+
+**Project codename:** RH-FC1 (rev A)
+**Target stack:** STM32H743 · Rust + Embassy · KiCad · JLCPCB/LCSC assembly
+**Author:** Jerry
+**Status:** Design phase
+
+---
+
+## 1. Project Overview & Goals
+
+Build a from-scratch quadcopter flight controller: custom 4-layer PCB and a complete
+`no_std` Rust firmware on Embassy. The design intentionally follows the proven
+Betaflight-class hardware architecture (so you can cross-check behavior against a
+known-good reference) while the firmware is a clean-room Rust implementation.
+
+### Goals
+- G1: Stable acro (rate) mode flight on a 5" quad, 4S–6S
+- G2: Angle (self-level) mode via attitude estimation
+- G3: Bidirectional DShot with RPM notch filtering (modern flight performance)
+- G4: Blackbox logging to SPI NOR flash, decodable for tuning
+- G5: ELRS/CRSF receiver support with telemetry back to the radio
+- G6: USB configurator link (CLI over USB-CDC) — no proprietary GUI needed for v1
+- G7: All parts LCSC-sourceable; JLCPCB 4-layer assembled
+
+### Non-goals (v1)
+- GPS rescue / position hold (pads provisioned, firmware later)
+- HD VTX OSD beyond MSP DisplayPort passthrough
+- Betaflight configurator compatibility (MSP subset only if time permits)
+
+### Success criteria
+- 8 kHz gyro sampling, 4 kHz PID loop, jitter < 10 µs on the control path
+- Prop-off bench: step response matches simulated PID within tolerance
+- Maiden flight in acro with no oscillation at default filter config
+- Failsafe verified: RX loss → stage-1 hold 300 ms → disarm/drop
+
+---
+
+## 2. Requirements
+
+### 2.1 Functional
+| ID | Requirement |
+|----|-------------|
+| FR1 | Sample IMU gyro at 8 kHz via SPI, data-ready interrupt driven |
+| FR2 | Run rate-mode PID at 4 kHz (every 2nd gyro sample) |
+| FR3 | Output DShot600 to 4 ESCs; bidirectional DShot for eRPM telemetry |
+| FR4 | Parse CRSF at 420 kbaud; channels → setpoints at ≥ 250 Hz |
+| FR5 | Attitude estimate (Mahony filter) at 1 kHz for angle mode |
+| FR6 | Arming state machine with pre-arm checks (gyro calibrated, throttle low, RX valid, USB not forced-disarm) |
+| FR7 | Failsafe: detect RX loss ≤ 100 ms, stage-1 (hold attitude, reduce throttle) 300 ms, then disarm |
+| FR8 | Blackbox: log loop state at ≥ 1 kHz to W25Q128, downloadable over USB |
+| FR9 | Battery voltage + current monitoring, low-voltage warning via beeper/LED/OSD telemetry |
+| FR10 | CRSF telemetry uplink: battery, attitude, flight mode, link stats |
+| FR11 | USB-CDC CLI: dump/set config, calibrate, motor test (props-off interlock), blackbox download |
+| FR12 | Config persisted to internal flash with CRC + versioned schema |
+
+### 2.2 Non-functional
+| ID | Requirement |
+|----|-------------|
+| NFR1 | Control-path WCET < 125 µs (half the 4 kHz budget) |
+| NFR2 | No heap allocation on control path; `heapless` everywhere hot |
+| NFR3 | Watchdog (IWDG) fed only by the control loop; any hang → reset → disarmed boot |
+| NFR4 | Motors provably off in: boot, panic, HardFault, watchdog reset, USB connected + not explicitly test-armed |
+| NFR5 | Gyro power rail noise < 10 mVpp; mechanical soft-mount for IMU |
+| NFR6 | Board: 30.5 × 30.5 mm M3 mount pattern, ≤ 37 × 37 mm outline |
+| NFR7 | defmt-rtt logging in dev builds; zero logging cost on control path in release |
+
+### 2.3 Electrical envelope
+- Input: 2S–6S LiPo (6 V – 25.2 V, transients to 35 V)
+- 5 V rail: 2 A buck (RX, GPS, LEDs, VTX aux)
+- 3.3 V MCU rail: 500 mA LDO from 5 V
+- 3.3 V gyro rail: separate low-noise LDO (clean analog-ish rail)
+- Current sense: 90 A continuous via shunt + amplifier → ADC
+
+---
+
+## 3. System Architecture
+
+```
+                 ┌──────────────────────────────────────────────┐
+                 │              STM32H743VIT6 @ 480 MHz          │
+                 │                                              │
+ ICM-42688-P ────┤ SPI1 + EXTI (DRDY)     TIM3/TIM4 (DMA) ──────┼──► 4× DShot600 (bidir)
+ (gyro/accel)    │                                              │
+ DPS310 baro ────┤ I2C1                   UART2 ◄───────────────┼──► CRSF RX (ELRS)
+                 │                        UART1 ◄───────────────┼──► GPS (provisioned)
+ W25Q128 ────────┤ SPI2 (blackbox)        UART3 ◄───────────────┼──► VTX / MSP DisplayPort
+                 │                                              │
+ VBAT divider ───┤ ADC1                   USB-C (FS, CDC+DFU) ──┼──► Configurator/CLI
+ I-sense amp ────┤ ADC1                   SWD pads ─────────────┼──► Debug probe
+                 │                        TIM (PWM) ────────────┼──► WS2812 LED, beeper
+                 └──────────────────────────────────────────────┘
+```
+
+### 3.1 Why these parts
+
+| Block | Part | Rationale |
+|-------|------|-----------|
+| MCU | STM32H743VIT6 (LQFP100) | 480 MHz CM7 + FPU, huge timer/DMA fabric, first-class Embassy support, the de-facto high-end FC MCU (same as H743 Betaflight targets → known-good reference designs exist). LCSC stocked. |
+| IMU | ICM-42688-P | Current FC standard (MPU6000 is EOL). 32 kHz-capable gyro, low noise, SPI up to 24 MHz, well-documented DRDY behavior. LCSC stocked. |
+| Baro | DPS310 (or BMP390) | Cheap, I2C, adequate for alt-hold later. |
+| Blackbox | W25Q128JVSIQ | 16 MB SPI NOR, the exact chip Betaflight targets use; you've done SPI flash before. |
+| 5 V buck | MP2338 / TPS54331 class, 30 V+ rated | Survives 6S + spikes; 2 A budget. |
+| Gyro LDO | Separate 3.3 V LDO (e.g. ME6231/XC6206-class low-noise, or LP5907) | Isolates gyro from digital rail noise — this measurably affects filter tuning. |
+| Current sense | Shunt (0.5 mΩ) + INA180/INA139 → ADC | Standard FC approach. |
+| USB | USB-C, FS device | CDC for CLI, ST DFU bootloader for recovery (BOOT0 button). |
+
+Fallback MCU if H743 availability/price is bad: STM32F405RGT6 (F4 Betaflight
+classic; halves the compute headroom, still fine for 4 kHz).
+
+### 3.2 Pin allocation strategy (constraint list for schematic capture)
+
+Hard constraints — resolve these first in STM32CubeMX pinout mode before schematic:
+1. **Motor pins**: all 4 on timer channels that support DMA burst *and* input capture
+   on the same pin (bidirectional DShot needs TX then RX on one wire). Cleanest:
+   TIM3 CH1-CH4 or TIM4 CH1-CH4, one timer for all four motors → one DMA stream
+   for output, per-channel capture for telemetry. Verify DMA request mapping (DMAMUX
+   on H7 makes this flexible).
+2. **IMU**: SPI1 pins + a dedicated EXTI line for DRDY (pick a pin whose EXTI line
+   doesn't collide with other interrupts you need).
+3. **USB**: PA11/PA12 fixed.
+4. **ADC**: VBAT and current on ADC1 channels, away from switching node.
+5. **UARTs**: CRSF needs a UART that supports full duplex; keep UART pins on one
+   board edge for solder pads.
+6. **SWD**: PA13/PA14 — never reuse.
+7. **BOOT0**: pulled low, button to 3.3 V for DFU.
+
+Deliverable: a pin map table (net name → pin → AF number → peripheral) committed to
+the repo as `docs/pinmap.md` — single source of truth for both KiCad and firmware.
+
+---
+
+## 4. Hardware Design (KiCad)
+
+### 4.1 Board stackup & layout rules
+- **4-layer**: L1 signal/components (top) · L2 solid GND · L3 power (5 V / 3V3 / VBAT pours) · L4 signal + pads (bottom)
+- JLCPCB JLC04161H-7628 stackup, 1 oz outer / 0.5 oz inner
+- **Gyro placement**: board center, away from the buck converter and motor pads.
+  Keep a quiet GND island under it (still connected — no split planes, just distance
+  from switching currents). Plan for gel/foam soft-mount of the whole board via
+  M3 grommets.
+- **Buck converter**: corner of the board; tight hot loop (input cap → switch →
+  diode/sync FET → back); switching node copper minimized; no signals routed under
+  it on L1/L4.
+- **VBAT entry**: large pads for XT30/XT60 pigtail + 470 µF low-ESR electrolytic
+  (or 2× 220 µF) for ESC-induced spikes, plus TVS (SMBJ33A for 6S).
+- **Current shunt**: in the battery negative or positive path near pads; Kelvin
+  connections to the sense amp.
+- **Motor pads**: 4 corners, ≥ 2 mm pads, thermals relieved for hand soldering.
+- **ADC dividers**: VBAT 1/21 divider (6S 25.2 V → 1.2 V), RC filter at the ADC pin.
+- **Crystal**: 8 MHz + load caps close to MCU, guard ring GND (H7 can also run HSI
+  but USB wants HSE accuracy — use the crystal).
+- **Decoupling**: 100 nF per VDD pin + 4.7 µF bulk per rail side; VDDA gets ferrite
+  bead + 1 µF/100 nF; gyro LDO output gets 1 µF + 100 nF at the IMU.
+- Solder-pad rows on board edges: UARTs, 5 V/GND, LED, beeper, VTX.
+
+### 4.2 Schematic sheet organization
+1. `mcu.kicad_sch` — MCU, decoupling, crystal, boot/reset, SWD, USB
+2. `power.kicad_sch` — VBAT input, TVS, buck 5 V, LDOs, current sense
+3. `sensors.kicad_sch` — IMU + DRDY, baro, blackbox flash
+4. `io.kicad_sch` — motor outputs, UART pad rows, LED, beeper, ADC dividers
+
+### 4.3 BOM policy
+- Every part gets an `LCSC#` field in KiCad; prefer JLCPCB "Basic" parts where
+  possible to avoid extended-part fees.
+- Export BOM + CPL with `kicad-cli` in CI; a script validates every part has an
+  LCSC number and flags extended parts.
+
+### 4.4 Hardware risk register
+| Risk | Mitigation |
+|------|------------|
+| Bidir DShot pin/timer choice wrong | Prove the pin map in firmware on a Nucleo-H743 **before** ordering boards |
+| Buck noise couples into gyro | Separate gyro LDO, distance, L2 solid GND; scope the rail on rev A |
+| USB DFU inaccessible after bad flash | BOOT0 button + SWD pads always populated |
+| ESC voltage spikes kill 5 V reg | 35 V-rated buck + TVS + bulk capacitance |
+| LQFP100 hand-rework difficulty | JLCPCB assembly for MCU side; only connectors/pads hand-soldered |
+
+---
+
+## 5. Firmware Architecture (Rust + Embassy)
+
+### 5.1 Crate layout (Cargo workspace)
+
+```
+fc/
+├─ crates/
+│  ├─ fc-core/        # no_std, hardware-independent: PID, filters, mixer,
+│  │                  # estimator, arming SM, failsafe SM, config schema.
+│  │                  # 100% unit-testable on host (std tests).
+│  ├─ fc-protocols/   # no_std: CRSF parser/encoder, DShot frame encoding,
+│  │                  # blackbox record format, MSP subset. Host-testable.
+│  ├─ fc-firmware/    # embassy-stm32 binary: drivers, tasks, glue.
+│  └─ fc-sim/         # std host binary: runs fc-core against a simple quad
+│                     # dynamics model for step-response/regression tests.
+├─ tools/
+│  ├─ bbdecode/       # blackbox → CSV decoder (host, std)
+│  └─ cli/            # host-side serial CLI helper (optional)
+└─ docs/
+```
+
+**Design rule:** everything with control logic lives in `fc-core`/`fc-protocols`
+behind traits; `fc-firmware` only implements drivers and wires tasks. This is what
+makes Claude Code effective here — most of the hard logic is host-testable.
+
+### 5.2 Task & priority model
+
+Embassy with **three executors**:
+
+| Executor | Priority | Tasks |
+|----------|----------|-------|
+| InterruptExecutor (highest) | e.g. prio 2 IRQ | `control_loop` — gyro read → filter → PID → mixer → DShot |
+| InterruptExecutor (mid) | prio 4 IRQ | `crsf_rx`, `failsafe_supervisor`, `estimator` (1 kHz) |
+| Thread-mode executor (low) | main | `blackbox_writer`, `telemetry_tx`, `usb_cli`, `battery_monitor`, `baro`, `led_beeper` |
+
+Control-path data flow (lock-free):
+```
+IMU DRDY (EXTI) ─► control_loop:
+   read gyro/accel over SPI (DMA)
+   gyro filters: PT1 LPF → dyn notch (SDFT) → RPM notches (from eRPM)
+   every 2nd sample: PID(rate setpoints, filtered gyro) → mixer → clamp
+   encode DShot frames → TIM DMA burst
+   push snapshot into SPSC ring (heapless) → blackbox_writer drains it
+```
+Cross-task sharing: `embassy_sync` watch/channel types; setpoints and attitude in
+`Watch` cells (latest-value semantics); blackbox via SPSC ring; **no mutexes on the
+control path**.
+
+### 5.3 Control pipeline detail
+
+**Rates:** Actual-rates style mapping stick → deg/s (center rate + max rate + expo).
+
+**PID (per axis):**
+- P on error; I with anti-windup (clamp + inhibit while motors saturated);
+  D on filtered gyro derivative (not error — avoids setpoint spikes);
+  optional feed-forward from setpoint derivative (boosts stick response).
+- D-term lowpass: PT1 ~90–100 Hz default.
+- iterm_relax on fast stick moves (v1.1; keep hook in place).
+
+**Filters:**
+- Gyro LPF1: PT1 @ ~250 Hz (8 kHz sample domain)
+- Dynamic notch: sliding DFT over gyro, track 1–3 peaks 80–500 Hz, Q≈300/center
+- RPM notch: per-motor eRPM from bidir DShot → notch at 1× (and optional 2×)
+  motor frequency per axis; this is the single biggest flight-quality feature.
+
+**Mixer:** standard X-quad map, airmode (mix range preserved by shifting throttle),
+motor output clamped [idle, max], idle ≈ 5.5 %.
+
+**Estimator:** Mahony complementary filter at 1 kHz (accel-corrected quaternion),
+gain scheduling: cut accel correction when |accel| far from 1 g or high rotation.
+Angle mode: outer P loop (angle error → rate setpoint, ~ level strength 50 deg/s
+per deg cap).
+
+### 5.4 State machines
+
+**Arming SM:** `Disarmed → PreArmChecks → Armed → (Failsafe | Disarmed)`
+Pre-arm gates: gyro calibrated & still, throttle < 1 %, valid RX for > 500 ms,
+no USB-CLI lock, VBAT sane, IMU healthy (self-test/WHO_AM_I). Arm/disarm via AUX
+channel with 250 ms debounce. Disarm always honored immediately.
+
+**Failsafe SM:** `Ok → SignalLoss(t) → Stage1(hold, 300 ms) → Stage2(disarm)`
+CRSF frame gap > 100 ms ⇒ SignalLoss; link-quality telemetry feeds pre-warning.
+
+**Panic/fault policy:** custom panic handler + HardFault handler both: force all
+motor timer outputs low (registers directly, no abstractions), then reset. IWDG
+2 0 ms window fed only at the end of a healthy control-loop iteration.
+
+### 5.5 Config & persistence
+- `fc-core::config::Config` — plain struct, `serde`-free on target; serialized as
+  versioned packed bytes + CRC32 into the last internal flash sector, A/B slots.
+- CLI `get/set/save/defaults/diff`; unknown-version → load defaults, keep old blob.
+
+### 5.6 Blackbox format
+- Frame: loop counter, gyro (3), setpoint (3), PID terms (9), motor (4), eRPM (4),
+  vbat/amps, flags — delta-encoded, ~40 B/frame @ 1 kHz ⇒ ~2.4 MB/min, 16 MB ≈ 6 min.
+- `bbdecode` tool emits CSV; later: emulate Betaflight BBL header so Blackbox
+  Explorer opens it (stretch goal).
+
+### 5.7 Testing strategy
+| Layer | How |
+|-------|-----|
+| fc-core units | `cargo test` on host: PID step responses, filter frequency response (feed synthetic sines, assert attenuation), mixer saturation cases, SM transition tables |
+| fc-protocols | Golden-vector tests: recorded CRSF byte streams, DShot frame bit patterns vs hand-computed, CRC cases |
+| fc-sim | Rigid-body quad model (inertia, motor lag T≈30 ms, thrust curve); closed-loop step/disturbance tests with pass/fail envelopes; regression on every PR |
+| HIL bench | Nucleo-H743 first, then rev A board: logic analyzer on DShot, scope on gyro rail, defmt timing spans asserting loop WCET |
+| Prop-off | Motor test via CLI interlock; verify motor order/direction, eRPM readback |
+| Tethered → maiden | Acro, default filters, blackbox on; review logs before tuning |
+
+---
+
+## 6. Claude Code Prompt Pack
+
+How to use: one phase per session (or per git worktree — phases 2/3/4 are
+parallelizable since they touch disjoint crates/modules). Paste the **Project
+Context Preamble** at the top of `CLAUDE.md` in the repo once; then feed each
+phase prompt as the task. Every prompt ends with acceptance criteria — tell Claude
+Code it is not done until they pass.
+
+### 6.0 CLAUDE.md — Project Context Preamble (put in repo root)
+
+```
+# Project: RH-FC1 quadcopter flight controller firmware
+
+Rust workspace, no_std on target. Crates:
+- fc-core: hardware-independent control logic (PID, filters, mixer, Mahony
+  estimator, arming & failsafe state machines, config). MUST compile with
+  no_std AND build+test on host with std. No allocation. f32 math (libm).
+- fc-protocols: CRSF parse/encode, DShot frame encode (incl. bidir GCR decode),
+  blackbox record codec. Same no_std+host-test rule.
+- fc-firmware: embassy-stm32 (STM32H743VIT6) binary. Drivers + task wiring only;
+  no control logic here.
+- fc-sim: host binary, quad dynamics model, closed-loop regression tests.
+
+Rules:
+- No heap on control path. Use heapless. No mutex/blocking on control path;
+  embassy_sync Watch/Channel/SPSC only.
+- Every public function in fc-core/fc-protocols gets unit tests. Golden vectors
+  for protocol code. Property tests (proptest) where sensible.
+- defmt for target logging; no logging inside the 4 kHz loop in release.
+- SAFETY: any code path that can leave motors spinning is a bug of the highest
+  severity. Motor outputs must default low on boot/panic/fault/watchdog.
+- Style: no unwrap on target except provably-infallible; deny(warnings) in CI.
+- Pin map source of truth: docs/pinmap.md. Never invent pins.
+- Run: cargo test -p fc-core -p fc-protocols -p fc-sim (host) and
+  cargo build --release -p fc-firmware --target thumbv7em-none-eabihf.
+```
+
+### Phase 0 — Workspace scaffold
+```
+Create the Cargo workspace per CLAUDE.md: fc-core, fc-protocols, fc-firmware,
+fc-sim, tools/bbdecode. fc-firmware targets STM32H743VIT6 with embassy-stm32
+(latest), embassy-executor with InterruptExecutor support, defmt + defmt-rtt,
+panic-probe for dev / custom panic handler stub for release. Set up
+.cargo/config.toml (thumbv7em-none-eabihf, probe-rs runner), memory.x for H743
+(2 MB flash dual-bank, DTCM 128K for stacks, AXI SRAM), CI workflow: host tests +
+target release build + clippy deny(warnings) + fmt check.
+Acceptance: `cargo test` green on host crates; firmware builds; a blinky main
+with defmt "boot" runs (document the probe-rs command).
+```
+
+### Phase 1 — Board bring-up layer
+```
+In fc-firmware, implement bringup: clock tree to 480 MHz (HSE 8 MHz, PLL, verify
+USB 48 MHz clock), IWDG wrapper (armed but with a long timeout until control loop
+exists), a `motors_force_low()` function that drives the 4 motor pins as GPIO
+low BEFORE any timer init, called first thing in main, from the panic handler,
+and from the HardFault handler. Add a startup safety test checklist comment.
+Read pins from docs/pinmap.md (create it with placeholder pins marked TODO-VERIFY).
+Acceptance: firmware boots with defmt log of clock frequencies; deliberately
+panicking build shows motor pins low on a logic analyzer (document the test);
+watchdog reset path verified.
+```
+
+### Phase 2 — IMU driver (ICM-42688-P)
+```
+Implement an async SPI driver for ICM-42688-P in fc-firmware (driver module),
+with a trait `ImuSource` defined in fc-core (fn latest(&self) -> ImuSample{gyro:
+[f32;3] rad/s, accel:[f32;3] m/s², timestamp}).
+- Init sequence: soft reset, WHO_AM_I check, gyro 2000 dps @ 8 kHz ODR, accel
+  16 g @ 1 kHz, gyro UI filter minimal (we filter in software), DRDY interrupt
+  push-pull active high, SPI mode 0/3 per datasheet at 24 MHz for data reads,
+  ≤1 MHz for config writes.
+- EXTI on DRDY wakes the control task; read via DMA burst of the sensor data
+  registers; convert to SI units.
+- Gyro bias calibration routine: 2 s still-detection (variance threshold),
+  average, store offsets; expose recalibrate().
+- Unit-test register encode/decode + unit conversion on host with a mock SPI.
+Acceptance: defmt prints WHO_AM_I ok; a debug task logs 1 Hz summaries showing
+~9.81 m/s² at rest and ~0 rad/s after cal; measured DRDY rate 8 kHz ±0.1%.
+```
+
+### Phase 3 — DShot600 driver with bidirectional telemetry
+```
+Implement DShot600 output for 4 motors on ONE timer (TIM3 or TIM4 per
+docs/pinmap.md) using DMA burst writes to CCR registers; frame encode (11-bit
+value, telemetry bit, 4-bit CRC) lives in fc-protocols with exhaustive unit
+tests (golden bit patterns).
+Then bidirectional DShot: after each frame, switch pins to input capture, decode
+the 21-bit GCR eRPM response per the DShot bidir spec (fc-protocols: GCR decode
++ checksum + eRPM period → Hz conversion with pole-pair config; property-test
+round trips).
+API: `Dshot::write(&[u16;4])` async, and `erpm() -> [Option<f32>;4]`.
+Include a motor-test mode function gated by an explicit `PropsOffToken` type
+that can only be constructed via the CLI interlock.
+Acceptance: protocol unit tests green incl. known-vector frames; on hardware,
+logic-analyzer capture matches DShot600 timing (bit 1.67 µs); with one ESC+motor
+props off, eRPM readback within 2% of ESC-reported value; document captures.
+```
+
+### Phase 4 — CRSF receiver + telemetry
+```
+fc-protocols: CRSF frame parser (sync, len, type, payload, CRC8 DVB-S2) as a
+sans-io push parser: feed bytes, iterate events. Support RC_CHANNELS_PACKED
+(16×11-bit), LINK_STATISTICS; encoder for telemetry frames: BATTERY_SENSOR,
+ATTITUDE, FLIGHT_MODE. Golden-vector tests from real captured CRSF bytes
+(generate captures from the spec; mark TODO to replace with real RX capture).
+fc-firmware: UART task at 420 kbaud feeding the parser; publish ChannelData +
+LinkStats via Watch; stale-detection timestamp for failsafe. Telemetry task
+sends frames at the CRSF schedule rate.
+fc-core: channel mapping (AETR + AUX), µs-style scaling, arm switch debounce.
+Acceptance: host tests green; on hardware with an ELRS RX bound to a radio,
+defmt shows live channel values matching stick positions; radio displays
+battery telemetry.
+```
+
+### Phase 5 — Filters + estimator (fc-core)
+```
+Implement in fc-core with full host tests:
+1. PT1 and biquad (notch, lowpass) f32 filters; test: feed sine sweeps, assert
+   magnitude response within 1 dB of analytic at key frequencies.
+2. Sliding-DFT dynamic notch: 8 kHz in, analysis window ~256, track up to 3
+   peaks in 80–500 Hz, hysteresis on peak movement; output biquad notch coeffs.
+   Test: synthetic gyro = flight-like noise + injected 180 Hz peak → notch
+   converges to 180 ±5 Hz within 200 ms.
+3. RPM notch bank: given [Option<f32>;4] motor Hz, maintain per-axis notches at
+   1× (Q=500) with min-Hz cutoff; smooth coefficient updates.
+4. Mahony estimator: quaternion, kp/ki, accel-magnitude gating (reject when
+   |a| outside 0.9–1.1 g), yaw drift acceptable (no mag). Test: rotate synthetic
+   IMU truth trajectories, assert attitude error < 2° after convergence,
+   and immunity to 2 g linear acceleration transients.
+All no_std-compatible, no alloc; document the math in module docs.
+Acceptance: cargo test -p fc-core green; add criterion bench on host for the
+full filter chain per-sample cost (informational).
+```
+
+### Phase 6 — PID, mixer, rates (fc-core) + fc-sim closed loop
+```
+1. Rates: Actual-rates stick mapping (center sensitivity, max rate, expo) with
+   unit tests at anchor points.
+2. PID per axis per §5.3 of the design doc: D on filtered gyro, anti-windup
+   (clamp + saturation inhibit), optional FF from setpoint derivative; fixed
+   dt = 250 µs. Table-driven tests: step setpoint → assert rise/overshoot for
+   canonical gains on a modeled first-order plant.
+3. Mixer: X-quad, airmode range-preservation, idle floor, saturation handling;
+   exhaustive edge tests (full yaw + full throttle etc. — outputs always in
+   [idle,1], differential preserved best-effort).
+4. fc-sim: rigid-body quad (configurable inertia, motor first-order lag 30 ms,
+   thrust ∝ ω², drag torque), sensor noise models. Closed-loop tests: rate-mode
+   step 200 deg/s roll → settle < 150 ms, overshoot < 15%; disturbance impulse
+   rejection; angle-mode: 30° step → no oscillation. These become CI regression
+   gates with tolerance envelopes.
+Acceptance: all host tests green; fc-sim produces a CSV + a plot script
+(python/matplotlib) for manual inspection of step responses.
+```
+
+### Phase 7 — Arming, failsafe, control loop integration
+```
+1. fc-core: arming SM and failsafe SM exactly per design doc §5.4 as pure
+   transition functions with exhaustive table tests (every state × every event).
+2. fc-firmware: the real 8 kHz control task on the high-priority
+   InterruptExecutor: DRDY → IMU read → filter chain → (every 2nd) rates+PID →
+   mixer → DShot write → blackbox snapshot push → IWDG feed. Watch-subscribe
+   setpoints/arming; NO awaits on anything but DRDY and SPI DMA.
+3. Wire failsafe: CRSF staleness → SM events; Stage1 hold uses estimator.
+4. Timing instrumentation: DWT cycle counter spans, defmt-report min/avg/max
+   loop time over 10 s windows (dev builds only).
+Acceptance: bench (props off): arm via radio switch → motors idle; sticks move
+motor outputs sensibly (log verified); RX power-off → stage1 then disarm at
+specified times (defmt timestamps); loop max time < 125 µs reported.
+```
+
+### Phase 8 — Blackbox + config persistence
+```
+1. fc-protocols: delta-encoded blackbox codec per design doc §5.6 with
+   round-trip property tests (encode→decode == input).
+2. fc-firmware: W25Q128 async SPI driver (JEDEC id, 256 B page program, 4 K
+   erase, busy poll), ring-structured log region with erase-ahead; writer task
+   drains the SPSC ring; drop-count telemetry if producer overruns.
+3. tools/bbdecode: host CLI, flash dump → CSV.
+4. Config: versioned packed struct + CRC32, A/B sectors in internal flash bank 2;
+   load-or-defaults on boot; save via CLI command only while disarmed.
+Acceptance: log a 60 s props-off session, download over USB (temporary: via
+defmt or the Phase 9 CLI), bbdecode produces plausible CSV; config survives
+power cycle; corrupted-CRC slot falls back correctly (test by intentional
+corruption).
+```
+
+### Phase 9 — USB-CDC CLI
+```
+embassy-usb CDC-ACM. Line-based CLI (heapless line buffer):
+status, get/set/diff/save/defaults, calibrate gyro, motor N <value> (requires
+`propsoff confirm` interlock first, auto-disarm on any error/timeout, refuses
+if armed), bb download (base64 or raw with length header), bb erase, reboot,
+reboot dfu (jump to system bootloader). CLI locks arming while connected unless
+`allow_arm` is issued (bench safety).
+Acceptance: manual test script in docs/ walking every command; motor test only
+works after interlock; DFU jump verified.
+```
+
+### Phase 10 — Hardware design support (run alongside Phases 1–3)
+```
+Tasks for Claude Code in the hardware repo (KiCad 9 project):
+1. From docs/pinmap.md, generate a pin-assignment verification report: for each
+   motor pin, confirm timer/channel/DMA-capability claims against the STM32H743
+   datasheet/refman (cite table numbers); flag conflicts (EXTI collisions,
+   ADC channel overlaps). THIS GATES THE PCB ORDER.
+2. Write a schematic review checklist specific to this design (power sequencing,
+   pull directions on BOOT0/NRST, USB termination, gyro decoupling, TVS rating,
+   shunt Kelvin routing) and review my exported schematic PDF against it.
+3. BOM tooling: script (kicad-cli sch export bom) that validates every part has
+   LCSC#, flags extended parts, estimates assembly cost.
+4. Layout review checklist per design doc §4.1; review my layout screenshots.
+Acceptance: pin report with datasheet citations; checklists as markdown in
+docs/hw/; BOM script runs in CI of the hardware repo.
+```
+
+---
+
+## 7. Build & Flight Test Plan
+
+1. **Nucleo-H743ZI2 first** (~$35): Phases 0–7 run entirely on the Nucleo with the
+   IMU on a breakout + one ESC on a bench PSU. De-risks everything before PCB spend.
+2. **Rev A board**: JLCPCB 4-layer assembled, qty 5. Expect a rev B; budget for it.
+3. **Bench**: motor order/direction via CLI, eRPM sanity, filter check by strapping
+   the board to a running-motor rig and inspecting blackbox FFT.
+4. **Tethered hover** (line through the quad, no people nearby), acro, defaults.
+5. **Maiden**: acro, open field, blackbox on; tune from logs (P until oscillation
+   backoff, D-term noise check, then rates to taste).
+6. **Angle mode** after acro is solid.
+
+Safety rules throughout: props off for ALL development; props on only outdoors,
+battery connected last, arming switch guarded; the `PropsOffToken` interlock in
+firmware is not optional.
+
+---
+
+## 8. Milestone Summary
+
+| M | Deliverable | Gate |
+|---|-------------|------|
+| M0 | Workspace + blinky on Nucleo | CI green |
+| M1 | IMU @ 8 kHz + DShot out + eRPM back | Logic analyzer evidence |
+| M2 | CRSF channels + telemetry | Radio shows battery |
+| M3 | fc-core complete, fc-sim regression suite | Sim envelopes pass |
+| M4 | Integrated control loop, arming, failsafe on Nucleo | Bench script pass |
+| M5 | Pin map verified → order rev A PCB | Phase 10 report clean |
+| M6 | Rev A bring-up, blackbox, CLI | 60 s log decoded |
+| M7 | Tethered hover | No oscillation |
+| M8 | Maiden + tuned | Blackbox reviewed |

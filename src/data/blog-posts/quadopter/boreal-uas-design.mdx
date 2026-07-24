@@ -1,0 +1,517 @@
+---
+title: Drones for Forest Fire Management in Northern Ontario
+slug: Drones-for-Forest-Fire-Management-in-Northern-Ontario
+publishDate: 2026-07-23
+description: Drones for Forest Fire Management in Northern Ontario
+date: 2026-07-23
+tags: ['Drone']
+draft: false
+---
+
+# Drones for Forest Fire Management in Northern Ontario
+## System Design & Feasibility Document
+
+**Project codename:** BOREAL-UAS
+**Author:** Jerry
+**Status:** Concept exploration / feasibility design
+**Related projects:** RH-FC1 flight controller (technology feeder)
+
+---
+
+## 1. Executive Summary
+
+Northern Ontario's boreal forest presents one of the world's hardest wildfire
+management problems: an area larger than France, mostly roadless, sparse
+population, lightning-dominated ignition, and a fire season that is lengthening
+and intensifying. Ontario's Aviation, Forest Fire and Emergency Services (AFFES)
+fights this with a fleet of manned aircraft (CL-415 waterbombers, bird dogs,
+helicopters), ground crews, and increasingly satellite/AI detection.
+
+**The honest thesis of this document:** drones will not replace waterbombers —
+the physics of direct suppression at scale is unfavorable — but there are four
+missions where uncrewed systems are decisively better than the status quo, and
+Northern Ontario's geography is *ideal* for them under Canada's new (2025/2026)
+BVLOS regulations:
+
+1. **Night-time IR fire mapping** — manned aircraft largely stand down at night;
+   fires don't. This is the highest-value, most achievable mission.
+2. **Post-lightning early detection patrol** — persistent, cheap surveillance of
+   lightning strike corridors before smoke columns are visible from far away.
+3. **Mop-up hotspot verification** — replacing crews walking fire perimeters with
+   hand-held IR, one of the most labor-intensive phases.
+4. **Cargo resupply & comms relay** for remote fire crews.
+
+Direct suppression is treated separately (§4) with a physics reality check: it
+is viable only for *spot-fire and structure-protection niches*, not fire fronts.
+
+The document defines a three-tier system architecture, the regulatory pathway
+(Level 1 Complex BVLOS + SFOC for fire-zone ops), the technical design of each
+tier, and a build/validation roadmap that starts from your existing flight
+controller and embedded Rust work.
+
+---
+
+## 2. Problem Context: Northern Ontario's Fire Regime
+
+### 2.1 The operating environment
+- **Scale**: Ontario's fire region spans ~90 M ha; the Northwest and Northeast
+  fire regions are overwhelmingly roadless boreal forest (spruce, jack pine —
+  high-intensity crown fire fuels).
+- **Ignition**: roughly half of fires (and most burned area) are lightning-caused,
+  arriving in spatial clusters after convective storms — often dozens of new
+  starts in a 24–72 h window across areas the size of European countries.
+- **Detection today**: public reports near communities; aerial detection patrols;
+  lightning detection networks driving patrol routing; satellites (NASA FIRMS
+  MODIS/VIIRS ~375 m resolution, several passes/day; Canada's WildFireSat program
+  purpose-built for afternoon fire monitoring, launching later this decade).
+- **Suppression doctrine**: full response near communities/values; monitored
+  ("appropriate response") fires in the remote north. Initial attack speed is
+  everything — a fire hit at 0.1 ha with a helicopter crew is trivial; the same
+  fire at 1,000 ha two days later may be unstoppable until rain.
+- **AFFES assets**: a fleet of 28 aircraft (20 fixed-wing including CL-415s, 8
+  helicopters), positioned dynamically on forecast fire hazard.
+
+### 2.2 The capability gaps drones can actually fill
+
+| Gap | Why it exists | Drone fit |
+|-----|---------------|-----------|
+| **Night operations** | Manned fire aviation is largely day-VFR; IR-equipped manned night mapping is scarce and expensive | Excellent — night is when IR mapping is *best* (cold background, no solar reflection) and airspace is empty |
+| **Detection latency after lightning** | Patrol aircraft are finite; satellite revisit/resolution misses small cool starts under canopy | Good — persistent cheap patrol of strike clusters |
+| **Perimeter intel cadence** | Incident commanders may get 1–2 perimeter updates/day | Excellent — hourly IR perimeters change tactical decisions |
+| **Mop-up verification** | Crews grid-walk with hand IR for days | Excellent — drone IR grid at 60 m AGL finds residual heat faster |
+| **Crew resupply** | Helicopter hours are the scarcest resource on a fire | Moderate — heavy-lift drones offload small cargo missions (pumps, hose, food, fuel) |
+| **Comms** | No cell coverage; VHF terrain-limited | Moderate — tethered or orbiting relay nodes |
+
+### 2.3 Constraints unique to this environment (design drivers)
+- **No cellular coverage** across most of the operating area → C2 link cannot
+  assume LTE. Satellite (Starlink-class) or long-range point-to-point RF required.
+- **Smoke**: EO cameras degrade badly; LWIR thermal sees through most smoke —
+  thermal is the primary sensor, not the secondary.
+- **Fire-generated weather**: convection columns produce severe turbulence,
+  downdrafts, and embers to high altitude; standoff and altitude discipline are
+  flight-safety requirements, not preferences.
+- **Airspace deconfliction is THE safety issue**: an unauthorized drone near a
+  fire grounds all manned aircraft (this has repeatedly halted waterbomber ops
+  in Canada). Flying near a forest fire is prohibited airspace by regulation
+  (CARs restrict aircraft near forest fire areas / NOTAM'd fire zones). Any
+  system here operates *inside* the fire organization with AFFES air attack
+  coordination, or it operates far away from active incidents (detection patrol
+  in pre-fire areas). There is no third mode.
+- **Cold starts, icing shoulder seasons, hot summer density altitude**, dust and
+  ember ingestion, chargingin the field from generators.
+- **Distances**: a "nearby" fire can be 150 km from the nearest road. Endurance
+  and range dominate the airframe trade space — this pushes Tier 1 away from
+  multirotors toward fixed-wing VTOL.
+
+---
+
+## 3. Mission Analysis & Value Ranking
+
+Scoring: value to fire management × technical feasibility × regulatory
+feasibility (1–5 each).
+
+| # | Mission | Value | Tech | Reg | Total | Notes |
+|---|---------|-------|------|-----|-------|-------|
+| M1 | Night IR perimeter mapping on active incidents | 5 | 4 | 3 | 60 | Needs SFOC + AFFES integration; proven internationally (US agencies fly this mission routinely) |
+| M2 | Post-lightning detection patrol (BVLOS, remote) | 5 | 3 | 4 | 60 | New BVLOS rules fit remote Ontario almost perfectly |
+| M3 | Mop-up hotspot survey | 4 | 5 | 4 | 80* | *Easiest entry point: small area, VLOS/EVLOS possible, immediate labor savings |
+| M4 | Crew cargo resupply (≤ 20 kg) | 3 | 3 | 3 | 27 | Heavy-lift platforms exist; economics vs helicopter marginal today |
+| M5 | Comms relay (tethered/orbiting) | 3 | 4 | 4 | 48 | Simple payload; tethered = no endurance problem |
+| M6 | Aerial ignition (prescribed burn / backburn) | 4 | 4 | 2 | 32 | Proven tech (ignition-sphere dispensers used by US/CA agencies); highest regulatory bar |
+| M7 | Direct suppression — spot fires/structure protection | 2 | 2 | 2 | 8 | See §4 physics; niche only |
+
+**Program strategy that falls out of this table:** enter through M3 (mop-up),
+build trust and flight hours, expand to M1 (night mapping), then M2 (BVLOS
+detection network) as the flagship. M4–M6 are options once the operator
+certificate, safety case, and AFFES relationship exist. M7 is research, not a
+product.
+
+---
+
+## 4. Direct Suppression: Physics Reality Check
+
+This section exists because "firefighting drones" usually means "drones dropping
+water," and the numbers must be faced before designing anything.
+
+**Energy scale.** A modest 100 ha crown fire releases heat on the order of
+10^13–10^14 J over its burn period; fireline intensity in boreal crown fire
+reaches 10,000–100,000 kW per meter of front. Suppressing flame front with
+water requires roughly 1–4 L/s per meter of active front (classic fireline
+figures) delivered *continuously*.
+
+**Delivery comparison:**
+
+| Platform | Payload/drop | Cycle time (nearby water) | Sustained delivery |
+|----------|--------------|---------------------------|--------------------|
+| CL-415 waterbomber | 6,137 L | ~5–10 min (scooping) | ~600–1,200 L/min |
+| Medium helicopter + bucket | 1,000–2,500 L | ~3–6 min | ~300–800 L/min |
+| Large uncrewed helo (e.g., 250 kg class payload) | ~250 L | ~4–8 min | ~40–60 L/min |
+| Heavy multirotor (30–50 kg payload) | 30–50 L | ~5–10 min incl. battery/water | ~5–10 L/min |
+
+A heavy multirotor delivers **two orders of magnitude** less water than one
+CL-415. Ten of them still deliver an order of magnitude less, with far more
+airspace complexity. Against an active boreal fire front, multirotor water drops
+are irrelevant.
+
+**Where the physics DOES close:**
+1. **Incipient spot fires** (< a few m²): tens of liters of water/retardant or
+   suppressant balls genuinely can extinguish an ember-ignition, *if* you arrive
+   within minutes. This couples naturally with M2 detection — the interceptor
+   concept: detect a lightning holdover or ember spot at < 1 m² and kill it
+   before it grows. High-risk R&D, potentially transformative, unproven at
+   operational scale.
+2. **Structure protection**: pre-wetting/gel application on cabins and remote
+   values ahead of a front, where a 50 L drone making repeated trips from a lake
+   over hours is doing a job crews can't safely stay for.
+3. **Night suppression support**: uncrewed aircraft (uncrewed helicopters in the
+   250+ kg class) can keep dropping when manned aviation stands down — this is
+   the serious end of suppression UAS and is a fleet-scale investment, out of
+   scope for a small program but worth tracking.
+
+**Design decision:** BOREAL-UAS treats suppression as M7 research payload on the
+Tier 3 platform only; the program's value case never depends on it.
+
+---
+
+## 5. System Architecture: Three Tiers
+
+```
+┌────────────────────────────────────────────────────────────────────┐
+│                      BOREAL-UAS SYSTEM OF SYSTEMS                  │
+│                                                                    │
+│  TIER 1 "SENTINEL"        TIER 2 "MAPPER"        TIER 3 "MULE"     │
+│  Fixed-wing VTOL          Quad/hex multirotor    Heavy-lift        │
+│  detection patrol         tactical IR mapping    multirotor        │
+│  25 kg class, 4–8 h       7–15 kg, 45–60 min     ~150 kg MTOW      │
+│  BVLOS remote patrol      on-incident, night     cargo/ignition/   │
+│                           perimeter + mop-up     research payloads │
+│         │                        │                      │          │
+│         └──────────┬─────────────┴──────────────────────┘          │
+│                    ▼                                               │
+│           GROUND SEGMENT: mobile GCS (truck/trailer),              │
+│           Starlink backhaul, edge compute (detection AI),          │
+│           charging/generator, ADS-B in + FLARM/RemoteID            │
+│                    ▼                                               │
+│           DATA SEGMENT: georeferenced IR/EO products →             │
+│           GIS layers (GeoTIFF perimeters, hotspot points) →        │
+│           fire management systems / incident command               │
+└────────────────────────────────────────────────────────────────────┘
+```
+
+### 5.1 Tier 2 "MAPPER" — build this first
+
+The tactical multirotor is the entry product (missions M3, M1). It is also the
+platform your RH-FC1 flight controller work feeds directly.
+
+**Airframe**
+- Configuration: quad (7") for mop-up variant; X8 coax octo (15") for the night
+  mapping variant (redundancy over an incident matters — motor-out capability).
+- MTOW 7–15 kg, weather-sealed (IP54 target), operating range −10 °C to +45 °C.
+- Endurance: 45–60 min with payload (Li-ion packs, not LiPo, for energy density;
+  heated battery compartment for shoulder-season ops).
+
+**Sensor payload (the heart of the system)**
+- **LWIR radiometric thermal**: 640×512 radiometric core (FLIR Boson+ class or
+  equivalent), calibrated temperature output — *radiometric* is non-negotiable:
+  you need actual temperatures to classify residual heat vs sun-warmed rock.
+- **EO camera**: 20 MP+ mapping camera, mechanical/global shutter preferred for
+  photogrammetry.
+- 3-axis gyro-stabilized gimbal; nadir mapping mode + operator-steerable mode.
+- **Georeferencing**: PPK GNSS (u-blox ZED-F9P class) + camera trigger
+  timestamping → hotspot coordinates good to < 2 m without ground control points.
+  A hotspot report a crew can't navigate to is worthless; this drives the
+  precision requirement.
+- Laser rangefinder (optional v2) for target geolocation from oblique angles.
+
+**Autonomy & software**
+- Grid/corridor survey planning with terrain following (SRTM/HRDEM elevation).
+- Onboard hotspot detection: threshold + blob detection on radiometric frames
+  in real time; hotspots streamed to GCS as points with temp + confidence while
+  the flight continues (crews get actionable data before landing).
+- Products auto-generated on landing: orthomosaic (EO), thermal ortho, hotspot
+  shapefile/KML, perimeter polygon (isotherm extraction from thermal ortho).
+- Flight stack: PX4 or ArduPilot for the operational aircraft (certification
+  and interlock maturity), with RH-FC1/Rust stack on the R&D airframe — dogfood
+  your own FC where the risk is acceptable, fly the proven stack over incidents.
+
+**Fire-environment hardening**
+- Ember/dust filtration on cooling paths; no open ESC heatsinks facing down.
+- Thermal ceiling logic: abort/climb on sustained ambient > limit (fire column
+  proximity indicator via rate-of-climb anomaly + air temp sensor).
+- Return-to-home logic that accounts for wind drift and *never* transits the
+  fire column; geofenced "no-fly volumes" over active fire set by the operator.
+
+### 5.2 Tier 1 "SENTINEL" — BVLOS detection patrol
+
+**Mission profile**: after a lightning event, patrol assigned strike-cluster
+corridors at 100–120 m AGL (regulatory ceiling for lower-risk BVLOS), 300–500 km
+per sortie, dual EO/IR, detect smoke plumes and thermal anomalies, report
+detections with coordinates + imagery over satellite backhaul in near-real-time.
+
+**Airframe**: fixed-wing VTOL (quad-plane) — vertical launch/recovery from
+clearings/barge/truck, wing-borne cruise for endurance. ~25 kg MTOW class,
+4–8 h endurance, cruise 70–90 km/h. (Build vs buy analysis in §8 — likely
+*buy/partner* for Tier 1 airframe, build the payload + autonomy.)
+
+**Detection stack**:
+- Wide-FOV EO for smoke plume detection (CV model: smoke segmentation — plumes
+  are visible far beyond thermal range in daytime).
+- Nadir/forward LWIR for sub-canopy thermal anomalies on close passes.
+- Edge inference onboard (Orin-class module): only detections + thumbnails go
+  over the constrained satellite link; full data offloaded on landing.
+- Fusion with tasking inputs: lightning network strike locations, FIRMS/CWFIS
+  hotspots, fire weather indices → patrol routes auto-generated to maximize
+  probability of detection per flight hour.
+
+**C2 & links**: primary RF C2 (900 MHz/2.4 GHz long-range) within ~40 km of GCS;
+Starlink Mini (or equivalent) onboard for over-the-horizon telemetry/detection
+reporting; full lost-link behavior tree (loiter → climb-in-place NO (fire
+column risk) → preplanned lost-link route home at survey altitude → flight
+termination zones).
+
+**Airspace**: ADS-B in (detect and avoid input), conspicuity out per whatever
+the operation's authorization requires; strict NOTAM/fire-restriction geofencing
+compiled into the mission before launch; operations coordinated with the
+provincial fire center so patrol areas never overlap active air operations.
+
+### 5.3 Tier 3 "MULE" — heavy lift (later phase)
+
+- ~150 kg MTOW multirotor or uncrewed helo, 30–50 kg payload.
+- Payloads: cargo pod (pumps/hose/fuel/food to crews), aerial ignition sphere
+  dispenser (M6, with agency partnership only), water/gel module for M7 research.
+- Almost certainly *procure* the platform; the program's IP is the mission
+  system, not a heavy airframe. Revisit at Phase 3.
+
+### 5.4 Ground & data segment
+
+- **Mobile GCS**: pickup/trailer — mast antennas, Starlink, 5 kW generator +
+  charge station, rugged workstation with edge GPU, weather station.
+- **Data pipeline**: flights → products (GeoTIFF/KML/shapefile) → synced to a
+  simple web map (self-hosted, offline-capable) → export in whatever format the
+  incident/AFFES wants. Don't build a platform; build clean layers that drop
+  into their existing GIS. Interop beats features.
+- **Fleet ops software**: mission logs, airworthiness/maintenance tracking,
+  pilot currency records — required for the RPOC operator certificate anyway;
+  build it as boring structured data from day 1.
+
+---
+
+## 6. Regulatory & Airspace Pathway (Canada, 2026)
+
+This is the section that determines whether the program is real. The regulatory
+landscape shifted materially in 2025–2026 and it now *favors* exactly this use
+case — but fire-zone operations remain the hard part.
+
+### 6.1 The new BVLOS framework
+- Canada introduced a Level 1 Complex Operations pilot certificate for
+  lower-risk BVLOS: age 18+, the advanced online exam, at least 20 hours of
+  ground school, and a flight review; certification doesn't expire but requires
+  recurrent training every two years. [TC amendments]
+- Lower-risk BVLOS is confined to uncontrolled airspace, below 122 m (400 ft),
+  at least 1 km from populated areas, with pilots required to verify population
+  density of the operating area in advance — and organizations conducting BVLOS
+  need an RPAS Operator Certificate (RPOC) demonstrating policies and procedures
+  matched to their operation.
+- The second phase of the new rules came into force November 4, 2025, enabling
+  the lower-risk BVLOS operations plus EVLOS with a visual observer and
+  medium-drone VLOS in controlled airspace, without case-by-case SFOCs.
+- Higher-risk operations (dense areas, complex airspace, and categories outside
+  the lower-risk definitions) still require an SFOC-RPAS.
+- Note for platform selection: L1C-category operations require the manufacturer
+  to hold a Pre-Validated Declaration against Standard 922 — meaning **Tier 1
+  BVLOS aircraft must be a platform whose manufacturer has made the required
+  declaration** (or you become the "manufacturer" and carry that burden —
+  a strong argument for buy-over-build on the Tier 1 airframe).
+
+**Implication:** M2 (remote detection patrol over unpopulated boreal forest,
+under 122 m, uncontrolled airspace) is almost the canonical case the lower-risk
+BVLOS category was written for. Remote Northern Ontario population density is
+effectively zero over vast areas.
+
+### 6.2 Fire-zone operations (the hard part)
+- Airspace over/near active forest fires is restricted to fire-suppression
+  aircraft (CARs forest-fire restriction + NOTAM'd zones). Unauthorized drones
+  near fires have repeatedly grounded suppression aircraft in Canada; this is
+  the single fastest way to make the program radioactive.
+- Therefore M1/M3 on active incidents require: authorization tied to the
+  incident (SFOC and/or operations under the fire agency's umbrella), named
+  coordination procedures with air attack supervision, defined altitude blocks
+  and time windows (e.g., drone IR mapping block at night when manned aircraft
+  are down — which is also when the mission is most valuable), and positive
+  check-in/check-out with the fire's air ops.
+- Practical path: **don't be an outsider requesting access — be a contracted
+  service provider inside AFFES's aviation plan**, the way helicopter and bird
+  dog contractors are. That means: RPOC, insurance, SMS (safety management
+  system), trained pilots, and a services agreement or participation in a
+  provincial innovation/pilot program.
+- Bill C-15 (royal assent March 2026) tightened the security framework around
+  drones — including prohibitions on interfering with lawful drone operations
+  and counter-drone authorities — underscoring that operating near emergency
+  ops without authorization is treated severely.
+
+### 6.3 Certification & organization checklist
+| Item | For |
+|------|-----|
+| Advanced RPAS pilot certificate (all pilots) | Baseline |
+| Level 1 Complex certificate (BVLOS pilots) | M2 |
+| RPOC (organization) | Any BVLOS; also credibility for agency work |
+| SFOC-RPAS | Fire-zone ops, night waivers if needed, anything outside lower-risk envelope |
+| Pre-Validated-Declaration platform (Tier 1) | L1C BVLOS aircraft eligibility |
+| Aviation liability insurance | Contract prerequisite |
+| SMS + ops manual + maintenance program | RPOC + agency credibility |
+| NAV Drone airspace workflows | Every flight |
+
+### 6.4 Stakeholders
+- **AFFES / MNRF**: the customer and the airspace gatekeeper. Early engagement
+  (innovation office / fire science staff) before building anything bespoke.
+- **Transport Canada**: certificates above.
+- **CIFFC / Natural Resources Canada**: national coordination, fire-science
+  programs (WildFireSat era = appetite for detection-layer innovation).
+- **First Nations communities**: much of the operating area; FireSmart and
+  community-protection programs are both a duty to engage and a real early
+  market (community-perimeter detection patrols, structure-protection mapping).
+- **Federal wildfire funding**: Ottawa is investing in early-warning technology
+  explicitly combining satellites, cameras, drones, thermal imaging and AI for
+  near-real-time detection — a live funding channel for exactly this program.
+
+---
+
+## 7. Key Technical Design Problems (deep dives)
+
+### 7.1 Detecting a small fire under canopy
+The hardest sensing problem. A smoldering lightning holdover under closed
+canopy has: little visible smoke initially, thermal signature occluded by crown
+cover, and sub-pixel size for satellites. Approach:
+- Fly lower (100–120 m AGL BVLOS ceiling is actually *good* here — small ground
+  sample distance: a 640-px LWIR with 32° HFOV at 120 m gives ~9 cm/px).
+- Off-nadir look angles catch canopy gaps; plan crossing grid patterns.
+- Detection = radiometric anomaly (ΔT vs local background, not absolute
+  threshold — sun-heated rock defeats absolute thresholds) + persistence across
+  frames + EO smoke segmentation as independent channel.
+- Train/validate the smoke model on boreal-specific imagery (public wildfire
+  smoke datasets exist but are biased to US fuels/terrain; plan a data
+  collection season).
+- False-positive economics: every false detection can trigger a costly patrol
+  or crew dispatch. Design the reporting UI around confidence + evidence
+  (thumbnail chips, revisit-confirmation pass) rather than binary alarms.
+
+### 7.2 Geolocation accuracy without ground control
+Hotspot coordinates must be crew-navigable (< 5 m). Chain: PPK GNSS (cm-level
+trajectory) + hardware camera sync (µs timestamping) + gimbal encoder angles +
+terrain model intersection. Radiometric LWIR optics have distortion; calibrate.
+Budget error stack and verify against surveyed heat sources (charcoal beds) in
+testing. This is a solvable engineering problem but only if designed in — it's
+the difference between a science demo and an operational tool.
+
+### 7.3 C2 and data over no-infrastructure terrain
+- ≤ 40 km from GCS: long-range RF (900 MHz mesh; terrain-shadow planning with
+  viewshed analysis in mission planner).
+- Beyond: satellite onboard (Starlink-class flat panel on Tier 1; mass/power
+  budget ~1.5 kg / 40–60 W — significant but feasible on a 25 kg VTOL).
+- Design rule: the aircraft must complete its mission autonomously with ZERO
+  link — links are for tasking updates and detection reporting, never for
+  flight-critical control. Lost-link trees rehearsed and geofenced.
+
+### 7.4 Cold/hot weather energy
+- Li-ion packs: heated enclosures (self-heat pre-takeoff), insulation, state-of
+  -charge derating below 0 °C; charging doctrine off generators with proper BMS
+  telemetry logged to fleet software.
+- Summer: density altitude + high ambient derate multirotor hover margins;
+  require ≥ 30% hover thrust margin at 35 °C for Tier 2.
+
+### 7.5 Airworthiness of the flight stack
+Over an incident with manned aircraft nearby, the FC must be boring and proven:
+PX4/ArduPilot with parameter discipline, redundant EKF sources, dual GNSS on
+Tier 1. The RH-FC1 Rust stack earns its way on via the R&D airframe →
+mop-up-only variant → (long-term) a certified-by-declaration pathway if it ever
+makes commercial sense. Keep the boundary honest: safety case first, pride of
+authorship second.
+
+---
+
+## 8. Build vs Buy Analysis
+
+| Element | Build | Buy | Recommendation |
+|---------|-------|-----|----------------|
+| Tier 2 airframe | Feasible (your wheelhouse) | Enterprise platforms exist w/ thermal | **Hybrid**: buy one proven thermal platform for early paid work + credibility; build the custom mapper in parallel where the payload/PPK/product pipeline differentiates |
+| Tier 1 VTOL airframe | 2+ yr effort, PVD burden | Several PVD-track vendors | **Buy/partner**; build payload + autonomy + detection stack (the actual IP) |
+| Radiometric IR payload + PPK georef | Core IP | Off-shelf gimbals exist but integration is the value | **Build** (integrate cores) |
+| Detection AI + tasking optimizer | Core IP | Nothing fits boreal/lightning workflow | **Build** |
+| Data products pipeline | Core IP | GIS tools exist as components | **Build** (thin, interoperable) |
+| Fleet/ops/compliance software | Commodity | SaaS exists | Buy/simple internal |
+| Tier 3 heavy platform | No | Yes | **Buy later** |
+
+**The defensible IP is the mission system**: boreal-tuned detection, lightning-
+cluster tasking, radiometric products crews can navigate to, and an operator
+organization certified to fly it BVLOS. The airframes are commodities.
+
+---
+
+## 9. Program Roadmap
+
+### Phase 0 — Groundwork (3–4 months, low cost)
+- Advanced RPAS cert; begin Level 1 Complex ground school; scope RPOC.
+- Meet AFFES fire-science/innovation contacts + 1–2 Northern municipalities /
+  First Nations FireSmart programs; find where a pilot project could attach.
+- Buy one thermal-equipped enterprise drone; fly practice hotspot surveys on
+  legal proxies (campfire beds, controlled burns with permits, biomass piles).
+- Deliverable: capability demo package — sample thermal ortho + hotspot layer
+  from a controlled burn, accuracy report.
+
+### Phase 1 — Mop-up service (fire season 1)
+- Tier 2 v1 (bought platform + custom pipeline): PPK georef, hotspot autodetect,
+  standard product formats. Target: contracted/piloted mop-up surveys on real
+  incidents in the mop-up phase (lowest airspace risk — fire is mostly out,
+  manned traffic light).
+- Measure: hotspots found vs ground-truth crew sweep; hours saved.
+
+### Phase 2 — Night mapping (season 2)
+- SFOC + incident-integration procedures; night ops training; X8 mapper build.
+- Fly night IR perimeters on assigned incidents during manned-aviation
+  stand-down windows; deliver morning perimeter products to incident command.
+
+### Phase 3 — BVLOS detection pilot (season 2–3)
+- RPOC + L1C pilots + PVD Tier 1 platform; integrate payload + Starlink +
+  edge detection; lightning-tasking software.
+- Pilot: one patrol corridor near a value-protection zone; measure detection
+  latency vs existing methods; publish results (credibility flywheel).
+
+### Phase 4 — Scale decisions (season 3+)
+- Expand corridors / add Tier 3 cargo / ignition partnership / interceptor
+  research (M7) depending on Phase 1–3 evidence and funding.
+
+### Cost order-of-magnitude (CAD)
+| Phase | Range |
+|-------|-------|
+| 0 | $15–30 k (certs, one platform, travel) |
+| 1 | $40–80 k (custom payload, PPK, software time) |
+| 2 | $60–120 k (X8 build, SFOC process, night kit) |
+| 3 | $250–500 k (Tier 1 aircraft, satellite comms, compute, staff) — grant/contract funded, not bootstrapped |
+
+---
+
+## 10. Risk Register
+
+| Risk | L | I | Mitigation |
+|------|---|---|------------|
+| Airspace incident near manned aircraft | L | Catastrophic (program-ending) | Operate only inside agency coordination; hard geofences; night windows; culture of standing down |
+| AFFES has no procurement path for this | M | H | Enter via mop-up (low friction), municipal/First Nations contracts, federal innovation funding; don't bet on one buyer |
+| Detection false-positive rate erodes trust | M | H | Confidence-scored reporting, confirmation passes, honest metrics from day 1 |
+| Tier 1 platform PVD landscape shifts | M | M | Buy decision deferred to Phase 3; track vendor declarations |
+| Seasonal revenue concentration | H | M | Off-season: infrastructure inspection with same kit (your consulting base) |
+| Smoke/turbulence loss of aircraft | M | M | Standoff doctrine, expendability mindset on Tier 2 (insure, spare airframes), no-fly volumes over columns |
+| Regulatory drift | L | M | Rules moved *toward* this use case in 2025–26; monitor TC Drone Zone updates |
+
+---
+
+## 11. What This Program Is, In One Paragraph
+
+A Northern-Ontario-specific uncrewed sensing service that gives fire managers
+three things they don't reliably have today — night perimeters, fast
+post-lightning detection, and cheap mop-up verification — built on commodity
+airframes, differentiated by a boreal-tuned radiometric detection stack and
+crew-navigable data products, operated by a certified BVLOS organization that
+lives inside the fire agency's airspace rules rather than around them.
+Suppression is a research payload, not the pitch. The 2025–26 regulatory
+changes made the flagship mission (remote BVLOS detection) routinely legal for
+the first time; the window to build operating history is now.
