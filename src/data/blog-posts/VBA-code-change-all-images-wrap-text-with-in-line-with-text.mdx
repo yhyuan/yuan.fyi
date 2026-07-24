@@ -48,3 +48,24 @@ What this does:
 * Inline images are, by definition, **In line with text**.
 
 > ⚠️ Before running a macro, make a backup copy of your document, just in case.
+
+removes the Keep lines together setting from every paragraph in the document
+   ```vb
+   Sub RemoveKeepLinesTogether()
+   
+       Dim para As Paragraph
+       Dim count As Long
+   
+       count = 0
+   
+       For Each para In ActiveDocument.Paragraphs
+           If para.Format.KeepTogether = True Then
+               para.Format.KeepTogether = False
+               count = count + 1
+           End If
+       Next para
+   
+       MsgBox count & " paragraph(s) updated.", vbInformation
+   
+   End Sub
+   ```
