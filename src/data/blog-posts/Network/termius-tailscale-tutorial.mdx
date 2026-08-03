@@ -1,0 +1,231 @@
+---
+title: Termius + Tailscale Secure SSH From Anywhere
+slug: termius-tailscale-secure-ssh-from-anywhere
+publishDate: 2026-08-03
+description: A complete guide to reaching your servers over SSH from any device — laptop, phone, tablet — without opening a single port on your router.
+date: 2026-08-03
+tags: ['Network']
+draft: false
+---
+
+# Termius + Tailscale: Secure SSH From Anywhere
+
+A complete guide to reaching your servers over SSH from any device — laptop, phone, tablet — without opening a single port on your router. Tailscale builds the private network; Termius is the polished SSH client that rides on top of it.
+
+---
+
+## Why This Combo
+
+**The problem with plain SSH over the internet:** to reach a home server from outside, you normally forward port 22 (or some alternate) on your router to the machine. That exposes an SSH endpoint to the entire internet, where it gets hammered by bots within minutes. You manage fail2ban, key-only auth, non-standard ports, and still worry.
+
+**What Tailscale does:** it creates a private mesh VPN (a "tailnet") between your devices using WireGuard. Every device gets a stable `100.x.y.z` IP and a MagicDNS name. Traffic is end-to-end encrypted and NAT-traversed automatically. Your server is reachable *only* by devices you've authorized into your tailnet — nothing is exposed publicly.
+
+**What Termius adds:** a first-class SSH/SFTP client with synced hosts, saved keys, SSH agent, port forwarding, snippets, and a genuinely good mobile app. You point it at Tailscale IPs/names instead of public ones.
+
+Net result: SSH into your home lab from a coffee shop with zero attack surface on your router.
+
+---
+
+## Prerequisites
+
+- A server or device you want to reach (Linux box, Raspberry Pi, VM, etc.) with an SSH daemon running.
+- A client device (laptop, phone) with Termius installed.
+- A Tailscale account (free tier is generous — up to 100 devices, 3 users).
+- Admin/sudo on the server for the initial Tailscale install.
+
+---
+
+## Part 1 — Install Tailscale on the Server
+
+### Linux (Debian/Ubuntu/most distros)
+
+The official install script handles repo setup and package install:
+
+```bash
+curl -fsSL https://tailscale.com/install.sh | sh
+```
+
+Then bring the daemon up and authenticate:
+
+```bash
+sudo tailscale up
+```
+
+This prints a URL. Open it in a browser, log in, and the machine joins your tailnet. Confirm it worked:
+
+```bash
+tailscale ip -4      # shows the 100.x.y.z address
+tailscale status     # lists all devices on your tailnet
+```
+
+### macOS
+
+Install via the Mac App Store or `brew install --cask tailscale`, then sign in through the menu-bar app.
+
+### Raspberry Pi / ARM
+
+The same `install.sh` script auto-detects the architecture. Works on Pi OS out of the box.
+
+### Key server flags worth knowing
+
+```bash
+# Let this node route traffic for your whole LAN (subnet router)
+sudo tailscale up --advertise-routes=192.168.1.0/24
+
+# Keep the connection up without re-auth on reboot (default on most installs)
+sudo tailscale up --ssh          # optional: enable Tailscale SSH (see Part 5)
+```
+
+---
+
+## Part 2 — Install Tailscale on Your Client Device
+
+Install the Tailscale app on the machine running Termius and sign in with the **same account**.
+
+- **iOS / Android:** App Store / Play Store → Tailscale → sign in → toggle the VPN on.
+- **Windows / macOS / Linux:** download from tailscale.com/download, sign in, connect.
+
+Once connected, run `tailscale status` (desktop) or check the app — you should see your server listed. Try a ping to confirm reachability:
+
+```bash
+ping 100.x.y.z          # the server's Tailscale IP
+```
+
+**MagicDNS** (enabled by default in the admin console under DNS settings) lets you use hostnames instead of IPs. Your server becomes reachable as `servername` or the fully-qualified `servername.your-tailnet.ts.net`. This is far nicer than memorizing `100.x.y.z` addresses.
+
+---
+
+## Part 3 — Configure the Host in Termius
+
+### Add SSH keys first (recommended)
+
+In Termius, go to **Keychain** and either:
+
+- **Import** an existing private key (`~/.ssh/id_ed25519`), or
+- **Generate** a new keypair inside Termius, then copy the public key to the server:
+
+```bash
+# On the server, append your public key
+echo "ssh-ed25519 AAAA...yourkey user@host" >> ~/.ssh/authorized_keys
+chmod 600 ~/.ssh/authorized_keys
+```
+
+Termius has an SSH agent that holds unlocked keys for the session, so you authenticate once.
+
+### Create the host
+
+Go to **Hosts → New Host** and fill in:
+
+| Field | Value |
+|-------|-------|
+| **Label** | Anything memorable, e.g. `home-server (tailscale)` |
+| **Address** | The Tailscale IP `100.x.y.z` **or** MagicDNS name `servername` |
+| **Port** | `22` (unless you changed it) |
+| **Username** | Your server login |
+| **Key** | Select the key you added to Keychain |
+
+Using the MagicDNS name is the sweet spot: it stays stable even if the underlying Tailscale IP changes, and it's human-readable.
+
+### Connect
+
+Tap/click the host. As long as Tailscale is connected on both ends, you're in — from anywhere in the world, over an encrypted WireGuard tunnel, with no public exposure.
+
+---
+
+## Part 4 — Mobile Workflow (the real payoff)
+
+On a phone, the flow is:
+
+1. Open the Tailscale app, ensure the VPN toggle is **on** (it runs quietly in the background).
+2. Open Termius, tap your host.
+3. You're connected.
+
+Tailscale's mobile client is battery-friendly and reconnects automatically. You can leave it on all day. The combination turns a phone into a legitimate remote-admin tool.
+
+**iOS tip:** Tailscale installs as a VPN profile. iOS may occasionally drop it on aggressive battery saving — if a connection fails, glance at the Tailscale app first.
+
+---
+
+## Part 5 — Optional: Tailscale SSH (skip Termius keys entirely)
+
+Tailscale can manage SSH auth itself, using your tailnet identity instead of SSH keys. Enable it on the server:
+
+```bash
+sudo tailscale up --ssh
+```
+
+Then add an ACL rule in the admin console (**Access Controls**) permitting SSH, e.g.:
+
+```json
+{
+  "action": "accept",
+  "src":    ["autogroup:member"],
+  "dst":    ["autogroup:self"],
+  "users":  ["autogroup:nonroot", "youruser"]
+}
+```
+
+With this, connecting from any tailnet device needs no key exchange — Tailscale authenticates the identity and issues short-lived credentials. In Termius you can still connect normally; you just won't need a stored key. Great for reducing key sprawl, though many people keep standard keys for portability.
+
+---
+
+## Part 6 — Hardening the Server (defense in depth)
+
+Even behind Tailscale, tighten `/etc/ssh/sshd_config`:
+
+```
+PasswordAuthentication no
+PermitRootLogin no
+```
+
+Optionally, bind sshd to the Tailscale interface only, so it literally does not listen on your public/LAN interfaces:
+
+```
+ListenAddress 100.x.y.z
+```
+
+Restart after changes:
+
+```bash
+sudo systemctl restart ssh
+```
+
+This makes SSH reachable *exclusively* through the tailnet — belt and suspenders.
+
+---
+
+## Troubleshooting
+
+| Symptom | Likely cause / fix |
+|---------|-------------------|
+| Can't reach `100.x.y.z` | Tailscale not connected on client. Toggle it on; check `tailscale status`. |
+| MagicDNS name won't resolve | Enable MagicDNS in admin console → DNS. Re-run `tailscale up` on client. |
+| Connection drops on mobile | OS killed the VPN for battery. Reopen Tailscale app. |
+| Server left tailnet after reboot | Rare; run `sudo tailscale up` again. Consider an auth key for unattended setup. |
+| `tailscale status` shows device offline | Check the daemon: `sudo systemctl status tailscaled`. |
+| Termius auth fails | Wrong key selected, or public key not in `authorized_keys`. Verify permissions (`700` on `~/.ssh`, `600` on the file). |
+
+---
+
+## Quick Reference
+
+```bash
+# Server: install + join
+curl -fsSL https://tailscale.com/install.sh | sh
+sudo tailscale up
+
+# Get your address
+tailscale ip -4
+tailscale status
+
+# Optional Tailscale-native SSH
+sudo tailscale up --ssh
+```
+
+**Termius host:** Address = MagicDNS name or `100.x.y.z`, Port 22, key from Keychain. Keep Tailscale connected on both ends. Done.
+
+---
+
+## Why It Holds Up
+
+You've replaced a publicly exposed SSH port with a zero-trust private network. The only way to reach your server is to be an authenticated member of *your* tailnet, and even then WireGuard encrypts the whole path. Add key-only auth and interface binding on top, and there's simply no public surface for anyone to attack. Termius makes the day-to-day experience pleasant across all your devices, and MagicDNS means you never memorize an IP again.
